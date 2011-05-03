@@ -1,0 +1,46 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta http-equiv=\"refresh\" content=\"1\" />
+<title>DomoWeb</title>
+<link rel="stylesheet" type="text/css" href="index.css" />
+<if variable="form.write">
+   <write name="&form.module;.&form.name;.state" value="&form.write;" />
+</if>
+
+</head>
+
+<body>
+<div class="content">
+ <div class="menu" ><include file="menu.dml" /></div>
+ <div class="head">&form.name;</div>
+ <div class="main"><table class="maincenter" >
+    <tr><th>Sensor</th><th>Value</th><th>Type</th><th>Online</th><th>State</th></tr>
+    <emit source="sensor" name="&form.module;.&form.name;"  new=""  ><tr>
+    <td><a href="/sensor.dml?name=&_.name;&amp;module=&form.module;">&_.name;</a></td>
+    <td>&_.value;</td>
+ <td><if variable="_.type = 1"><img height="20px" src="/icons/Input.png" /></if>
+    <if variable="_.type = 2"><img height="20px" src="/icons/Output.png" /></if>
+    <if variable="_.type = 3"><img height="20px" src="/icons/Sensor.png" /></if></td>
+
+<td><if variable="_.online = 1"><img height="20px" src="/icons/Green_Dot.png" /></if>
+    <if variable="_.online = 0"><img height="20px" src="/icons/Red_Dot.png" /></if></td>
+
+    <td><if variable="_.state = 1">
+    <a href="/sensor.dml?name=&_.name;&amp;module=&_.module;&amp;write=0"><img height="30px" src="/icons/Light Bulb On.png" /></a></if>
+    <if variable="_.state = 0">
+    <a href="/sensor.dml?name=&_.name;&amp;module=&_.module;&amp;write=1"><img height="30px" src="/icons/Light Bulb Off.png" /></a></if></td>
+    
+    </tr></emit>
+ </table>
+ <if variable="form.module = PlugWise" >
+ <rrdgraph name="&form.name;" graph="DEF:kWH=/media/log/&form.name;.rrd:power:AVERAGE LINE2:kWH#FF0000" />
+ </if>
+ <if variable="form.module = OWFS" >
+ <rrdgraph name="&form.name;" graph="DEF:kWH=/media/log/&form.name;.rrd:temperature:AVERAGE LINE2:kWH#FF0000" />
+ </if>
+</div>
+</div>
+</body>
+</html>

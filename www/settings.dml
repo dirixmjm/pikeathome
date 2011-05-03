@@ -1,0 +1,34 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>DomoWeb</title>
+<link rel="stylesheet" type="text/css" href="index.css" />
+<if variable="form.write">
+   <write name="Heater.testHeat" temperature="&form.temperature;" />
+   <redirect to="/index.dml" />
+</if>
+
+</head>
+
+<body>
+<div class="content">
+ <div class="menu" ><include file="menu.dml" />
+  <emit source="modules">
+  &nbsp;<a href="/settings.dml?module=&_.name;">&_.name;</a><br />
+  </emit> 
+ </div>
+ <div class="head" >Settings</div>
+ <div class="main">
+ <if variable="form.module">
+    <emit source="parameters" name="&form.module;">
+    &_.name;<br />
+    </emit>
+ </if>
+ <form method="GET"> <table class="maincenter" >
+ </table></form>
+
+ </div>
+</div>
+</body>
+</html>

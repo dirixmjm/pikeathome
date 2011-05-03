@@ -1,0 +1,38 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>DomoWeb</title>
+<link rel="stylesheet" type="text/css" href="index.css" />
+<meta http-equiv="refresh" content="10" />
+<if variable="form.write">
+   <write name="Heater.CV.temperature" value="&form.temperature;" />
+   <redirect to="/index.dml" />
+</if>
+
+</head>
+
+<body>
+<div class="content">
+ <div class="menu" ><include file="menu.dml" /></div>
+ <div class="head" >Home</div>
+ <div class="main"><div class="mainitem" >
+  <emit source="sensor" name="Heater.CV" >
+     <table class="mainitem" >
+     <tr>
+     <td colspan="3" class="huge" ><date time="" /></td></tr><tr>
+     <td rowspan="2" class="huge" >&_.value;</td>
+     <td><if variable="_.state = 1"><img height="30px" src="/icons/flame.png" /></if></td>
+     <set variable="_.temp" value="_.temperature" />
+     <inc variable="_.temp" value="0.5" />
+     <td><a href="/index.dml?write=1&amp;temperature=&_.temp;"><img height="70px" src="/icons/Up_Arrow.png" /></a></td></tr>
+     <tr><td class="large" >&_.temperature;</td>
+     <set variable="_.temp" value="_.temperature" />
+     <dec variable="_.temp" value="0.5" />
+     <td><a href="/index.dml?write=1&amp;temperature=&_.temp;"><img height="70px" src="/icons/Down_Arrow.png" /></a></td></tr>
+     </table>
+  </emit>
+ </div></div>
+</div>
+</body>
+</html>
