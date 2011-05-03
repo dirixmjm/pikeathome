@@ -18,6 +18,7 @@ constant progname="PikeAtHome";
 constant pid_file="/var/run/pikeathome.pid";
 
 constant default_installpath="/usr/local/pikeathome";
+constant default_config = "/usr/local/pikeathome/pikeathome.conf";
 
 constant version="0.0.1";
 object domotica;
@@ -36,7 +37,7 @@ int main( int argc, array(string) argv )
    foreach( Getopt.find_all_options(argv,options) , array opt )
       run_config+=([ opt[0]:opt[1] ]);
    if( !has_index( run_config, "configfile" ) )
-      run_config->configfile = "pikeathome.conf";
+      run_config->configfile = default_config;
    if( ! Stdio.is_file ( run_config->configfile ) )
    {
       werror("Config file not found: %s\n",run_config->configfile);
