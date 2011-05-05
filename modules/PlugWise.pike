@@ -77,6 +77,7 @@ class sensor
 
    void log()
    {
+      call_out(log,(int) configuration->log );
       plug->info();
       if( ! plug->online)
          return;
@@ -107,7 +108,10 @@ class sensor
 #ifdef PLUGWISEDEBUG
          domotica->log(LOG_EVENT,LOG_DEBUG,"Loghour:%d data %d, current timestamp %d, Plugtime %O\n",log_item->hour, (int) log_item->kwh, time(1), Calendar.Minute(plug->clock()) ); 
 #endif
-            domotica->log(LOG_DATA,sensor_name,(["power":(string) log_item->kwh]),log_item->hour);
+            if( log_item->hour > time(1) )
+               domotica->log(LOG_EVENT,LOG_ERR,"Loghour %d is larger then current timestamp %d\n",log_item->hour, time(1)); 
+            else 
+               domotica->log(LOG_DATA,sensor_name,(["power":(string) log_item->kwh]),log_item->hour);
          }
          configuration->lastaddress=nextaddress;
       }
@@ -119,9 +123,6 @@ class sensor
 #endif
          call_out(log, 60 );
       }
-      else
-         call_out(log,(int) configuration->log );
-
    }
 
 }
