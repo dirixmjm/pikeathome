@@ -8,7 +8,7 @@ int module_type = MODULE_LOG;
 string module_name = "SYSLog";
 void module_init()
 {
-   System.openlog("Domotica",LOG_PID,LOG_DAEMON);
+   System.openlog("pikeathome",LOG_PID,LOG_DAEMON);
 }
 void log_event( int level, string format, mixed ... args )
 {
