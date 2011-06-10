@@ -6,7 +6,7 @@
 <link rel="stylesheet" type="text/css" href="index.css" />
 <meta http-equiv="refresh" content="10" />
 <if variable="form.write">
-   <write name="Heater.CV.temperature" value="&form.temperature;" />
+   <write name="Heater.CV.temperature" value="&form.newtemperature;" />
    <redirect to="/index.dml" />
 </if>
 
@@ -18,21 +18,30 @@
  <div class="head" >Home</div>
  <div class="main"><div class="mainitem" >
   <emit source="sensor" name="Heater.CV" >
+     <if variable="_.index = value">
+        <set variable="form.temperature" value="_.value" />
+     </if>
+     <if variable="_.index = temperature">
+        <set variable="form.set_temperature" value="_.value" />
+     </if>
+     <if variable="_.index = state">
+        <set variable="form.state" value="_.value" />
+     </if>
+  </emit>
      <table class="mainitem" >
      <tr>
      <td colspan="3" class="huge" ><date time="" /></td></tr><tr>
-     <td rowspan="2" class="huge" >&_.value;</td>
-     <td><if variable="_.state = 1"><img height="30px" src="/icons/flame.png" /></if></td>
-     <set variable="_.temp" value="_.temperature" />
-     <inc variable="_.temp" value="0.5" />
-     <td><a href="/index.dml?write=1&amp;temperature=&_.temp;"><img height="70px" src="/icons/Up_Arrow.png" /></a></td></tr>
-     <tr><td class="large" >&_.temperature;</td>
-     <set variable="_.temp" value="_.temperature" />
-     <dec variable="_.temp" value="0.5" />
-     <td><a href="/index.dml?write=1&amp;temperature=&_.temp;"><img height="70px" src="/icons/Down_Arrow.png" /></a></td></tr>
+     <td rowspan="2" class="huge" >&form.temperature;</td>
+     <td><if variable="form.state = 1"><img height="30px" src="/icons/flame.png" /></if></td>
+     <set variable="form.temp" value="form.set_temperature" />
+     <inc variable="form.temp" value="0.5" />
+     <td><a href="/index.dml?write=1&amp;newtemperature=&form.temp;"><img height="70px" src="/icons/Up_Arrow.png" /></a></td></tr>
+     <tr><td class="large" >&form.set_temperature;</td>
+     <set variable="form.temp" value="form.set_temperature" />
+     <dec variable="form.temp" value="0.5" />
+     <td><a href="/index.dml?write=1&amp;newtemperature=&form.temp;"><img height="70px" src="/icons/Down_Arrow.png" /></a></td></tr>
      </table>
-  </emit>
- </div></div>
+ </div><br />&OWFS.Zonneboiler.boiler;</div>
 </div>
 </body>
 </html>

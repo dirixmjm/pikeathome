@@ -50,12 +50,16 @@ array entity_callback(Parser.HTML p,
                string entity, mapping query )
 {
    
-   string scope="",variable="";
+   string scope,variable,sensor;
    int scan = sscanf(entity,"&%s.%s;",scope,variable);
-   if( scan < 2 || !has_index( query->entities, scope ) || 
-       !has_index(query->entities[scope],variable) )
+   if( scan < 2 )
       return ({ entity });
-   return ({ query->entities[scope][variable] });
+   //Must be a module.variable of module.sensor.variable key:
+   if ( sscanf(variable,"%s.%s",sensor,variable) == 2 )
+      return ({ (string) domotica->info(sprintf("%s.%s.%s",scope,sensor,variable),1) || entity });
+   if( has_index( query->entities, scope ) && has_index(query->entities[scope],variable) )
+      return ({ query->entities[scope][variable] });
+   return ({entity});
 }
 
 string resolve_entity(string entity, mapping query )
@@ -135,7 +139,15 @@ array EmitSensor( mapping args, mapping query )
    if( has_index(args,"name" ) )
    {
       if ( has_value( domotica->sensors, args->name ) )
-         return ({ domotica->info(args->name, args->new?1:0 ) });
+      {
+         mapping data = domotica->info(args->name, args->new?1:0 );
+         array res = ({});
+         foreach( indices(data), string index )
+         {
+            res+= ({ ([ "index":index, "value":data[index] ]) });
+         }
+         return res;
+      }
    }
    return ({});
 }
@@ -286,12 +298,12 @@ array DMLRRDgraph(Parser.HTML p,
 {
    if ( !has_index( args, "graph" ) || !has_index( args, "name") )
       return ({});
-   
-   mixed err = catch { Public.Tools.RRDtool.graph(configuration->webpath + "/img/" + args->name + ".png",
+   string name = args->filename || args->name; 
+   mixed err = catch { Public.Tools.RRDtool.graph(configuration->webpath + "/img/" + name + ".png",
                                args->graph/" " );
    };
    if( !err )
-      return ({ "<img src=\"/img/" + args->name + ".png\" />" });
+      return ({ "<img src=\"/img/" + name + ".png\" />" });
 }
 
 string DMLDate(Parser.HTML p, 

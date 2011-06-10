@@ -14,31 +14,34 @@
 <body>
 <div class="content">
  <div class="menu" ><include file="menu.dml" /></div>
- <div class="head">&form.name;</div>
+ <div class="head"><a href="/sensor.dml?name=&form.name;&amp;module=&form.module;">&form.name;</a></div>
  <div class="main"><table class="maincenter" >
-    <tr><th>Sensor</th><th>Value</th><th>Type</th><th>Online</th><th>State</th></tr>
+    <tr><th>Variable</th><th>Value</th></tr>
     <emit source="sensor" name="&form.module;.&form.name;"  new=""  ><tr>
-    <td><a href="/sensor.dml?name=&_.name;&amp;module=&form.module;">&_.name;</a></td>
+    <td>&_.index;</td>
     <td>&_.value;</td>
- <td><if variable="_.type = 1"><img height="20px" src="/icons/Input.png" /></if>
-    <if variable="_.type = 2"><img height="20px" src="/icons/Output.png" /></if>
-    <if variable="_.type = 3"><img height="20px" src="/icons/Sensor.png" /></if></td>
-
-<td><if variable="_.online = 1"><img height="20px" src="/icons/Green_Dot.png" /></if>
-    <if variable="_.online = 0"><img height="20px" src="/icons/Red_Dot.png" /></if></td>
-
-    <td><if variable="_.state = 1">
-    <a href="/sensor.dml?name=&_.name;&amp;module=&_.module;&amp;write=0"><img height="30px" src="/icons/Light Bulb On.png" /></a></if>
-    <if variable="_.state = 0">
-    <a href="/sensor.dml?name=&_.name;&amp;module=&_.module;&amp;write=1"><img height="30px" src="/icons/Light Bulb Off.png" /></a></if></td>
-    
-    </tr></emit>
+    </emit>
  </table>
  <if variable="form.module = PlugWise" >
- <rrdgraph name="&form.name;" graph="DEF:kWH=/media/log/&form.name;.rrd:power:AVERAGE LINE2:kWH#FF0000" />
+ <rrdgraph name="&form.name;" graph="--vertical-label WH DEF:kWH=/media/log/&form.name;.rrd:power:AVERAGE CDEF:WH=kWH,1000,* LINE2:WH#FF0000" />
+       <rrdgraph name="&form.name;" filename="&form.name_Month.png" graph="--start 1304114400 --step 86400 --vertical-label kWH DEF:kWH=/media/log/&form.name;.rrd:power:AVERAGE CDEF:WH=kWH,24,* LINE2:WH#FF0000" />
+ 
  </if>
  <if variable="form.module = OWFS" >
+ <if variable="form.name = WoonkamerTemp">
  <rrdgraph name="&form.name;" graph="DEF:kWH=/media/log/&form.name;.rrd:temperature:AVERAGE LINE2:kWH#FF0000" />
+ </if>
+ <if variable="form.name = BadkamerTemp">
+ <rrdgraph name="&form.name;" graph="DEF:kWH=/media/log/&form.name;.rrd:temperature:AVERAGE LINE2:kWH#FF0000" />
+ </if>
+ <if variable="form.name = Zonneboiler">
+ <h3>Boiler Temperatuur</h3>
+ <rrdgraph name="&form.name;" graph="DEF:kWH=/media/log/&form.name;.rrd:boiler:AVERAGE LINE2:kWH#FF0000" /><br />
+ <h3>Collector Temperatuur</h3>
+ <rrdgraph name="&form.name;" filename="Zonneboiler_collector" graph="DEF:kWH=/media/log/&form.name;.rrd:collector:AVERAGE LINE2:kWH#FF0000" />
+ <h3>Pomp toerental</h3>
+ <rrdgraph name="&form.name;" filename="Zonneboiler_pump" graph="DEF:kWH=/media/log/&form.name;.rrd:pump:AVERAGE LINE2:kWH#FF0000" />
+ </if>
  </if>
 </div>
 </div>

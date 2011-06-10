@@ -6,7 +6,7 @@
 <title>DomoWeb</title>
 <link rel="stylesheet" type="text/css" href="index.css" />
 <if variable="form.write">
-   <write name="&form.module;.&form.name;.state" state="&form.write;" />
+   <write name="&form.module;.&form.name;.state" value="&form.write;" />
 </if>
 </head>
 
