@@ -13,7 +13,7 @@ string module_name="Heater";
 class sensor
 {
    inherit Sensor;
-   int sensor_type = SENSOR_SCHEDULE;
+   int sensor_type = SENSOR_FUNCTION;
 
    mapping sensor_var = ([
       "module": "Heater",
