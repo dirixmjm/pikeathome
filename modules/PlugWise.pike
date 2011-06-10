@@ -67,7 +67,7 @@ class sensor
    protected void getnew( )
    {
 #ifdef PLUGWISEDEBUG
-   domotica->log(LOG_EVENT,LOG_DEBUG,"Retrieving new values for plug %s\n",sensor_name);
+   domotica->log(LOG_EVENT,LOG_DEBUG,"Retrieving new values for plug %s\n",sensor_var->name);
 #endif
          plug->info();
          sensor_var->state = plug->powerstate;
@@ -89,7 +89,7 @@ class sensor
       if( nextaddress < plug->logaddress )
       {
 #ifdef PLUGWISEDEBUG
-            domotica->log(LOG_EVENT,LOG_DEBUG,"Retrieving address %d for plug %s with current address %d\n",nextaddress,sensor_name,(int) plug->logaddress);
+            domotica->log(LOG_EVENT,LOG_DEBUG,"Retrieving address %d for plug %s with current address %d\n",nextaddress,sensor_var->name,(int) plug->logaddress);
 #endif
          array logs = ({});
          catch {
@@ -111,7 +111,7 @@ class sensor
             if( log_item->hour > time(1) )
                domotica->log(LOG_EVENT,LOG_ERR,"Loghour %d is larger then current timestamp %d\n",log_item->hour, time(1)); 
             else 
-               domotica->log(LOG_DATA,sensor_name,(["power":(string) log_item->kwh]),log_item->hour);
+               domotica->log(LOG_DATA,sensor_var->module,sensor_var->name,(["power":log_item->kwh]),log_item->hour);
          }
          configuration->lastaddress=nextaddress;
       }

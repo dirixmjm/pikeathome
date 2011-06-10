@@ -10,8 +10,14 @@ void module_init()
       configuration["logpath"]="/tmp";
 }
 
-void log_data( string name, mapping data, int|void tstamp )
+void log_data( string module, string name, mapping data, int|void tstamp )
 {
+   //RRD only take mapping(string:string)
+   foreach(indices(data),string index)
+   {
+      data[index] = (string) data[index];
+      //intp(data[index]) ? sprintf("%d",data[index]):sprintf("%f",data[index]);
+   } 
    string filename = configuration->logpath + "/"+ name + ".rrd";
    mixed c_error = catch {
    if( !zero_type(tstamp ) )

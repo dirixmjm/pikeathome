@@ -28,17 +28,44 @@ class sensor
    protected mapping sensor_var = ([
                                     "module":"OWFS",
                                     "online": 1,
-                                    "value": 0.0
                                    ]);
 
    void getnew()
    {
-      sensor_var->value = (float) OWFS->read(configuration->path) + (float) configuration->bias;
+      switch ( configuration->type )
+      {
+         case "vbus":
+            get_vbus();
+            break;
+         default:
+            sensor_var->temperature = (float) OWFS->read(configuration->path) + (float) configuration->bias;
+            break;
+      }
    } 
-   
+  
+   void get_vbus()
+   {
+      string data = OWFS->read(configuration->path);
+      if(!sizeof(data) )
+         return;
+      sensor_var->collector = (float) (data[3] + (data[4]<<8)) / 10;
+      sensor_var->boiler = (float) (data[5] + (data[6]<<8)) / 10 ;
+      sensor_var->pump = (int) data[11] ;
+      //sensor_var->state = (int) data[25] ;
+   }
+ 
    void log()
    {
-      domotica->log(LOG_DATA,sensor_name,(["temperature":sprintf("%f",(float) OWFS->read(configuration->path) + (float) configuration->bias) ]), time(1) );
+      getnew();
+      switch ( configuration->type )
+      {
+         case "vbus":
+            domotica->log(LOG_DATA,sensor_var->module,sensor_var->name,(["collector":sensor_var->collector,"boiler":sensor_var->boiler,"pump":sensor_var->pump ]) );
+            break;
+         default:
+            domotica->log(LOG_DATA,sensor_var->module,sensor_var->name,(["temperature":sensor_var->temperature ]), time(1) );
+            break;
+      }
    }
 }
 

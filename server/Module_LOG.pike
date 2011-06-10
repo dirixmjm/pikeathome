@@ -21,7 +21,7 @@ void module_init()
 {
 }
 
-void log_data( string name, mapping data )
+void log_data( string module,string name, mapping data )
 {
 
 }

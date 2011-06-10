@@ -56,8 +56,8 @@ int main( int argc, array(string) argv )
    if( ! has_index( run_config, "nodaemon" ) )
    {
       detach();
+      set_signal();
    }
-   set_signal();
    return -1;
 }
 
