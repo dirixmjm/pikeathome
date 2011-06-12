@@ -34,21 +34,16 @@ void http_callback( Protocols.HTTP.Server.Request request )
    switch(call->method_name)
    {
       case "modules":
-         foreach(indices(domotica->modules),string module)
-            answer += ({ ([ "name":module, "type":domotica->modules[module]["module_type"] ]) });
+         answer = domotica->modules;
          break;
       case "sensors":
-         foreach(domotica->sensors,string sensor)
-            answer += ({ ([ "name":sensor ]) });
+         answer = domotica->sensors;
          break;
       case "sensor.info":
          foreach( call->params, mapping sensor )
          {
             //FIXME What if the sensor doesn't exist?
-            if ( has_value(domotica->sensors, sensor->name ) )
-            {
                answer += ({ domotica->info(sensor->name, sensor["new"] ) });
-            }
          }
          break;
       case "sensor.write":
