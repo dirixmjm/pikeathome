@@ -16,7 +16,6 @@ mapping tags = ([
 "dec":DMLDec,
 "redirect":DMLRedirect,
 "date":DMLDate,
-"rrdgraph":DMLRRDgraph,
 ]);
 
 mapping emit = ([
@@ -44,7 +43,29 @@ void create( object domi , object Config)
    parser->_set_entity_callback( entity_callback );
    parser->lazy_entity_end(1);
    configuration = Config;
+   init_modules(({configuration->module}));
 }
+
+void init_modules( array names )
+{
+   foreach(names, string name)
+   {
+      object mod;
+      mixed catch_result = catch {
+         mod = master()->resolv(name)(this, configuration );
+
+      };
+      if(catch_result)
+      {
+         domotica->log(LOG_ERR,"Error Module INIT %O\n%s\t\t%s\n%O\n",catch_result,name,describe_error(catch_result),backtrace());
+         continue;
+      }
+      parser->add_tags(mod->tags);
+      parser->add_containers(mod->containers);
+      
+   }
+}
+
 
 array entity_callback(Parser.HTML p, 
                string entity, mapping query )
@@ -144,7 +165,6 @@ array EmitSensor( mapping args, mapping query )
    if( has_index(args,"name" ) )
    {
       mapping data = domotica->info(args->name, args->new?1:0 );
-      domotica->log(LOG_DEBUG,"%O\n",data);
       array res = ({});
       foreach( indices(data), string index )
       {
@@ -294,19 +314,6 @@ string DMLRedirect(Parser.HTML p,
    }
    else
       return "Missing argument to";
-}
-
-array DMLRRDgraph(Parser.HTML p, 
-               mapping args, mapping query )
-{
-   if ( !has_index( args, "graph" ) || !has_index( args, "name") )
-      return ({});
-   string name = args->filename || args->name; 
-   mixed err = catch { Public.Tools.RRDtool.graph(configuration->webpath + "/img/" + name + ".png",
-                               args->graph/" " );
-   };
-   if( !err )
-      return ({ "<img src=\"/img/" + name + ".png\" />" });
 }
 
 string DMLDate(Parser.HTML p, 
