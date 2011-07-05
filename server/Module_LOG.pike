@@ -31,22 +31,35 @@ void log_event( int level, string name, string format, mixed ... args )
 
 }
 
+
 array getvar()
 {
    array ret = ({});
-   foreach( defvar, array vars )
-   {
-      ret += ({ ([
-               "name":vars[0],
-               "type":vars[1],
-               "default":vars[2],
-               "description":vars[3],
-               "value":configuration[vars[0]]
-              ]) });
-   }
+   foreach(defvar, array var)
+      ret+= ({var + ({ configuration[var[0]] })});
    return ret;
 }
 
+array setvar( mapping params )
+{
+   int mod_reload = 0;
+   foreach(defvar, array option)
+   {
+      if( has_value( params, option[0] ))
+      {
+         configuration[option[0]]=params[option[0]];
+         if( option[4] == POPT_MODRELOAD )
+            mod_reload = 1;
+      }
+   }
+   reload();
+}
+
+
+void reload()
+{
+   module_init();
+}
 void close()
 {
 

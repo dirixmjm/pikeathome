@@ -16,14 +16,14 @@ void create( object Domo )
 {
    domotica = Domo;
    configuration = domotica->configuration(module_name);
-#ifdef DEBUG
-   domotica->log(LOG_EVENT,LOG_DEBUG,"Init Module %s\n",module_name);
-#endif
    module_init();
 }
 
 void module_init()
 {
+#ifdef DEBUG
+   domotica->log(LOG_EVENT,LOG_DEBUG,"Init Module %s\n",module_name);
+#endif
    if( (module_type & MODULE_SENSOR) && has_index(configuration,"sensor") )
    {
       array load_sensors = arrayp(configuration->sensor)?configuration->sensor:({configuration->sensor});
@@ -34,32 +34,45 @@ void module_init()
    }
 }
 
-array getvar()
-{
-   array ret = ({});
-   foreach( defvar, array vars )
-   {
-      ret += ({([
-               "name":vars[0],
-               "type":vars[1],
-               "default":vars[2],
-               "description":vars[3],
-               "value":configuration[vars[0]]
-              ])});
-   }
-   return ret;
-}
-
 //Expect either to receive a mapping (["key":value,...) 
 mapping write( mapping what)
 {
 }
 
+array getvar()
+{
+   array ret = ({});
+   foreach(defvar, array var)
+      ret+= ({ var + ({ configuration[var[0]] })});
+   return ret;
+}
+
+array setvar( mapping params )
+{
+   int mod_reload = 0;
+   foreach(defvar, array option)
+   {
+      if( has_value( params, option[0] ) )
+      {
+         configuration[option[0]]=params[option[0]];
+         if( option[4] == POPT_MODRELOAD )
+            mod_reload = 1;
+      }
+   }
+   reload();
+}
 
 class sensor
 {
 inherit Sensor;
 
+}
+
+void reload()
+{
+   foreach(values(sensors),object sensor)
+      sensor->close();
+   module_init(); 
 }
 
 void close()
@@ -68,6 +81,4 @@ void close()
       sensor->close();
    domotica = 0;
    configuration = 0;   
-
-   
 }

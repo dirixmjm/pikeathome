@@ -8,8 +8,18 @@ object circle_plus;
 
 array plugs = ({});
 
+array defvar = ({
+                   ({ "port",PARAM_STRING,"/dev/ttyUSB0","TTY Port of the USB Stick", POPT_MODRELOAD }),
+                   ({ "circleplus",PARAM_STRING,"","The Mac Address of the Circle Plus", POPT_MODRELOAD }),
+                   ({ "debug",PARAM_BOOLEAN,0,"Turn On / Off Debugging (Requires Reload)", POPT_MODRELOAD }),
+                   });
+
 void module_init() 
 {
+#ifdef DEBUG
+   domotica->log(LOG_EVENT,LOG_DEBUG,"Init Module %s\n",module_name);
+#endif
+
      circle_plus = Public.IO.PlugWise.Plug(configuration->port,configuration->circleplus);
      foreach(configuration->sensor, string name )
      {
@@ -105,9 +115,6 @@ class sensor
          int sum=0;
          foreach( logs, mapping log_item )
          {
-#ifdef PLUGWISEDEBUG
-         domotica->log(LOG_EVENT,LOG_DEBUG,"Loghour:%d data %d, current timestamp %d, Plugtime %O\n",log_item->hour, (int) log_item->kwh, time(1), Calendar.Minute(plug->clock()) ); 
-#endif
             if( log_item->hour > time(1) )
                domotica->log(LOG_EVENT,LOG_ERR,"Loghour %d is larger then current timestamp %d\n",log_item->hour, time(1)); 
             else 
@@ -126,6 +133,15 @@ class sensor
    }
 
 }
+
+void reload()
+{
+   remove_call_out(log);
+   sensors = ([]);
+   circle_plus->close();
+   module_init(); 
+}
+
 void close()
 {
    remove_call_out(log);

@@ -22,7 +22,6 @@ mapping emit = ([
 "sensors": EmitSensors,
 "sensor": EmitSensor,
 "modules": EmitModules,
-"parameters": EmitParameters,
 ]);
 
 mapping containers = ([
@@ -43,7 +42,7 @@ void create( object domi , object Config)
    parser->_set_entity_callback( entity_callback );
    parser->lazy_entity_end(1);
    configuration = Config;
-   init_modules(({configuration->module}));
+   init_modules(configuration->module);
 }
 
 void init_modules( array names )
@@ -52,7 +51,7 @@ void init_modules( array names )
    {
       object mod;
       mixed catch_result = catch {
-         mod = master()->resolv(name)(this, configuration );
+         mod = master()->resolv(name)(domotica, configuration );
 
       };
       if(catch_result)
@@ -62,7 +61,7 @@ void init_modules( array names )
       }
       parser->add_tags(mod->tags);
       parser->add_containers(mod->containers);
-      
+      emit += mod->emit; 
    }
 }
 
@@ -123,21 +122,6 @@ array EmitModules( mapping args, mapping query )
      ret+= ({  ([ "name":name ]) });
   return ret;
 }
-
-array EmitParameters( mapping args, mapping query )
-{
-   if( has_index(args,"name" ) )
-   {
-/*FIXME
-      if ( has_value( domotica->xmlrpc("sensors.list",({ "module": args->name}) )) || has_value(  domotica->xmlrpc("sensors.list",({ "module": args->name} ))) )
-      {
-//         return domotica->parameters(args->name);
-      }
-*/
-   }
-   return ({});
-}
-
 
 array EmitSensors( mapping args, mapping query )
 {
@@ -203,7 +187,7 @@ string DMLWrite(Parser.HTML p,
    
    if( !has_index( args, "name" ))
       return "";
-   domotica->write(args->name,args->value);
+   domotica->sensor_write(args->name,args->value);
    return "";
 }
 

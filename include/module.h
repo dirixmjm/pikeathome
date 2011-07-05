@@ -18,3 +18,11 @@
 //Log Types
 #define LOG_DATA	(1<<0)
 #define LOG_EVENT	(1<<1)
+
+//Parameter Types
+#define PARAM_STRING  1
+#define PARAM_BOOLEAN 2
+
+//Parameter Options
+#define POPT_RELOAD   (1<<0)
+#define POPT_MODRELOAD   (1<<0)

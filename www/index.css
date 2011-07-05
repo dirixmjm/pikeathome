@@ -18,6 +18,17 @@ div.menu{
    width: 10%;
 }
 
+div.modules{
+   height: 100%;
+   float: left;
+   width: 10%;
+}
+div.sensors{
+   height: 100%;
+   float: left;
+   width: 10%;
+}
+
 div.head{
    width: 89%;
    height:30px;
@@ -35,10 +46,9 @@ td.huge{
 }
 
 div.main{
-   width: 89%;
    overflow:auto;
    float: left;
-   text-align: right;
+   text-align: center;
 }
 
 table.mainitem

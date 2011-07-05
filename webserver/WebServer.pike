@@ -95,14 +95,29 @@ mixed info( string sensor, int|void new)
    return xmlrpc( "sensor.info", ({ ([ "name":sensor, "new":new ]) }) )[0];
 }
 
+mixed sensor_write( string sensor, mixed value )
+{
+   return xmlrpc( "sensor.write", ({ ([ "name":sensor, "values":value ]) }) );
+}
+
 array sensors()
 {
-   return xmlrpc( "sensors", ({  }) );
+   return xmlrpc( "sensor.list", ({  }) );
 }
 
 array modules()
 {
-   return xmlrpc( "modules", ({  }) );
+   return xmlrpc( "module.list", ({  }) );
+}
+
+array parameters(string module_sensor)
+{
+   return xmlrpc( "parameters.list", ({ ([ "name":module_sensor ])  }) );
+}
+
+array write_parameters(string module_sensor, mapping parameters)
+{
+   return xmlrpc( "parameters.write", ({ ([ "name":module_sensor, "parameters":parameters ]) }) );
 }
 
 protected array xmlrpc( string method, array variables )
@@ -117,11 +132,11 @@ protected array xmlrpc( string method, array variables )
    return  Protocols.XMLRPC.decode_response(req->data());
 }
 
-void log( int log_level, mixed ... args )
+void log( int log_level, string format, mixed ... args )
 {
-   System.syslog( log_level, @args );
+   System.syslog( log_level, sprintf(format,@args) );
 #ifdef DEBUG
-      Stdio.stdout.write(@args);
+      Stdio.stdout.write(format,@args);
 #endif
 }
 

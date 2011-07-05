@@ -119,14 +119,18 @@ mixed write( string sensor, mixed values )
       return UNDEFINED;
 }
 
-// Returns all module or sensor parameters in an array(mapping)
-// The mapping contains, "name","type","default","description","value"
-array parameters( string module_sensor )
+// Returns all module or sensor parameters in an array
+array parameters( string module_sensor, mapping|void params )
 {
    array split = split_module_sensor_value(module_sensor);
    object sense = get_module_sensor(split);
-   if( sense )  
+   if( sense )
+   {
+      if( mappingp(params) )
+         sense->setvar(params);
       return sense->getvar();
+   }
+   return ({});
 }
 
 mixed `->(string key)

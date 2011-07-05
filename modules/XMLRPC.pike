@@ -33,10 +33,17 @@ void http_callback( Protocols.HTTP.Server.Request request )
 #endif
    switch(call->method_name)
    {
-      case "modules":
+      case "module.list":
          answer = domotica->modules;
          break;
-      case "sensors":
+      case "parameters.list":
+         //FIXME Also return server parameters (main).
+         answer = domotica->parameters(call->params[0]->name);
+         break;
+      case "parameters.write":
+         answer = domotica->parameters(call->params[0]->name, call->params[0]->parameters);
+         break;
+      case "sensor.list":
          answer = domotica->sensors;
          break;
       case "sensor.info":
@@ -48,13 +55,11 @@ void http_callback( Protocols.HTTP.Server.Request request )
          break;
       case "sensor.write":
          if ( ! sizeof(call->params) )
-            break;
+            break; 
          foreach( call->params, mapping sensor )
          {
-            if ( has_value(domotica->sensors, sensor->name ) )
-               answer +=({  ([ "name":sensor->name, 
-                "state": domotica->write(sensor->name,sensor)
-                              ])
+            answer +=({  ([ "name":sensor->name, 
+                         ]) +  domotica->write(sensor->name,sensor->values)
                          });
          }
          break;

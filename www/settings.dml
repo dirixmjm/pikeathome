@@ -4,26 +4,25 @@
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 <title>DomoWeb</title>
 <link rel="stylesheet" type="text/css" href="index.css" />
-<if variable="form.write">
-   <write name="Heater.testHeat" temperature="&form.temperature;" />
-   <redirect to="/index.dml" />
-</if>
 
 </head>
 
 <body>
 <div class="content">
  <div class="menu" ><include file="menu.dml" />
+ </div>
+ <div class="head" >Settings</div>
+ <div class="modules">
   <emit source="modules">
   &nbsp;<a href="/settings.dml?module=&_.name;">&_.name;</a><br />
   </emit> 
  </div>
- <div class="head" >Settings</div>
+ </if>
  <div class="main">
  <if variable="form.module">
-    <emit source="parameters" name="&form.module;">
-    &_.name;<br />
-    </emit>
+    <table>
+       <configuration name="&form.module;" />
+    </table>
  </if>
  <form method="GET"> <table class="maincenter" >
  </table></form>
