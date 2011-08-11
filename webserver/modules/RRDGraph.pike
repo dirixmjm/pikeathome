@@ -1,7 +1,6 @@
 #include <module.h>
 
 
-//FIXME Protect with Mutex?
 protected object domotica;
 protected object configuration;
 
