@@ -1,9 +1,10 @@
 #include <module.h>
+#include <command.h>
 
 
 //FIXME Protect with Mutex?
 protected Sql.Sql db;
-protected object domotica;
+protected object webserver;
 protected object configuration;
 Parser.HTML parser;
 
@@ -30,9 +31,10 @@ mapping containers = ([
 ]);
 
 
-void create( object domi , object Config)
+void create( object webserver_ , object Config)
 {
-   domotica= domi;
+   webserver= webserver_;
+   parser = DMLParser();
    parser = DMLParser();
    parser->add_tags(tags);
    parser->add_containers(containers);
@@ -47,16 +49,21 @@ void create( object domi , object Config)
 
 void init_modules( array names )
 {
+   if( !has_value(names,"Configuration") )
+   {
+      names+=({"Configuration"});
+      configuration->module+=({"Configuration"});
+   }
    foreach(names, string name)
    {
       object mod;
       mixed catch_result = catch {
-         mod = master()->resolv(name)(domotica, configuration );
+         mod = master()->resolv(name)(webserver, configuration );
 
       };
       if(catch_result)
       {
-         domotica->log(LOG_ERR,"Error Module INIT %O\n%s\t\t%s\n%O\n",catch_result,name,describe_error(catch_result),backtrace());
+         webserver->log(LOG_ERR,"Error Module INIT %O\n%s\t\t%s\n%O\n",catch_result,name,describe_error(catch_result),backtrace());
          continue;
       }
       parser->add_tags(mod->tags);
@@ -77,8 +84,9 @@ array entity_callback(Parser.HTML p,
    //Must be a module.variable of module.sensor.variable key:
    if ( sscanf(variable,"%s.%s",sensor,variable) == 2 )
    {
-      return ({ (string) domotica->info(sprintf("%s.%s.%s",scope,sensor,variable),1) || entity });
-        return ({});
+      string val = (string) xmlrpc( sprintf("%s.%s.%s",scope,sensor,variable),
+                       COM_INFO, ([ "new":1]) );
+      return ({ val || entity });
    }
    if( has_index( query->entities, scope ) && has_index(query->entities[scope],variable) )
       return ({ query->entities[scope][variable] });
@@ -118,7 +126,8 @@ int exists_entity(string entity, mapping query )
 array EmitModules( mapping args, mapping query )
 {
   array ret=({});
-  foreach( domotica->modules(), string name)
+  array modules = xmlrpc( "server", COM_MODLIST, 0 );
+  foreach( modules, string name)
      ret+= ({  ([ "name":name ]) });
   return ret;
 }
@@ -134,12 +143,15 @@ array EmitSensors( mapping args, mapping query )
        sensor_type |= SENSOR_SCHEDULE;
    if( has_index(args,"all") || ( !has_index(args,"input") && 
                    !has_index(args,"output") && !has_index(args,"schedule") ) )
-       sensor_type = SENSOR_INPUT | SENSOR_OUTPUT | SENSOR_SCHEDULE;
+       sensor_type = 0xFF;
    array ret = ({});
-   foreach( domotica->sensors() , string sensor )
+   array sensors = xmlrpc( args->name?args->name:"server", COM_SENSLIST, ([ "new":args->new?1:0]) ); 
+  
+   foreach( sensors , string sensor )
    {
-      if( domotica->info(sensor,0)->sensor_type & sensor_type )
-         ret += ({ domotica->info( sensor, args->new?1:0 ) });
+      mapping info = xmlrpc( sensor, COM_INFO, ([ "new":args->new?1:0]) );
+      if( info->sensor_type & sensor_type )
+         ret += ({ info  });
    }
    return ret;
 }
@@ -148,8 +160,10 @@ array EmitSensor( mapping args, mapping query )
 {
    if( has_index(args,"name" ) )
    {
-      mapping data = domotica->info(args->name, args->new?1:0 );
       array res = ({});
+      mapping data = xmlrpc( args->name, COM_INFO, ([ "new":args->new?1:0]) );
+      if( !data )
+         return ({});
       foreach( indices(data), string index )
       {
          res+= ({ ([ "index":index, "value":data[index] ]) });
@@ -163,21 +177,31 @@ array DMLEmit(Parser.HTML p,
                mapping args, string content, mapping query )
 {
    if(!has_index(args,"source") || !has_index(emit,args->source) )
-      return ({"Source not found<br />"});
+      return ({"Emit Source not found<br />"});
    string ret="";
+   string scope = args->scope || "_";
    array data = emit[args->source](args, query);
    foreach( data, mapping values)
    {
       mapping q = query +([]);
-      m_delete(q->entities,"_");
+      if( has_index(q->entities,scope) )
+         m_delete(q->entities,scope);
       foreach( indices(values), string ind )
-         q->entities["_"] += ([ ind: (string) values[ind] ]);
+      {
+         //FIXME What to do with objects?
+         if(!objectp(values[ind]))
+            q->entities[scope] += ([ ind: (string) values[ind] ]);
+      }
+      /*FIXME recursive? this->parse(request, clone)*/
       object emitparser = parser->clone();
       emitparser->set_extra(q);
-      emitparser->feed(content);
+      emitparser->ignore_tags(1);
+      string pass_1 = emitparser->feed(content)->finish()->read();
+      emitparser->ignore_tags(0);
+      emitparser->feed(pass_1);
       ret+= emitparser->read();
    }
-   m_delete(query->entities,"_");
+   m_delete(query->entities,scope);
    return ({ ret });
 }
 
@@ -187,7 +211,7 @@ string DMLWrite(Parser.HTML p,
    
    if( !has_index( args, "name" ))
       return "";
-   domotica->sensor_write(args->name,args->value);
+   array sensors = xmlrpc( args->name, COM_WRITE, ([ "value":args->value]) ); 
    return "";
 }
 
@@ -213,16 +237,14 @@ string DMLIf(Parser.HTML p,
       {
             return content;
       }
-
-      if ( sizeof(arr) == 2 )
+      else if ( sizeof(arr) == 2 )
       {
          return "";
       }
-      string var = resolve_entity(arr[0],query);
-      string is = arr[2..]*" ";
-
-      if ( arr[1] == "=" || arr[1] == "==" || arr[1] == "is" )
+      else if ( arr[1] == "=" || arr[1] == "==" || arr[1] == "is" )
       {
+         string var = resolve_entity(arr[0],query);
+         string is = arr[2..]*" ";
          if ( var == is )
             return content;
          else 
@@ -230,6 +252,8 @@ string DMLIf(Parser.HTML p,
       } 
       else if ( arr[1] == "!=" ) 
       {
+         string var = resolve_entity(arr[0],query);
+         string is = arr[2..]*" ";
          if ( var != is )
             return content;
          else 
@@ -343,7 +367,7 @@ class DMLFile
 
    void create( string data, mapping request )
    {
-       ::create( data, "R");
+      ::create( data, "R");
       if( has_index( request, "state" ) )
       {
          return_code = request->state->return_code;
@@ -365,3 +389,44 @@ class DMLParser
    }
 
 }
+
+protected mixed xmlrpc( string method, int command, mapping parameters )
+{
+  //Check if the method is internal
+   if ( method == "webserver" )
+      return webserver->internal_command(method, command,parameters );
+   
+#ifdef DEBUG
+   webserver->log(LOG_DEBUG,"XMLRPC: Send Request %s %d\n",method, command );
+#endif
+   string data = Protocols.XMLRPC.encode_call(method,({command,parameters}) );
+   //FIXME Cache the connection?
+   object req = Protocols.HTTP.do_method("POST",
+                                           configuration->xmlrpcserver,0,
+                                           (["Content-Type":"text/xml"]),
+                                           0,data);
+   if(!req)
+   {  
+      webserver->log(LOG_ERR,"XMLRPC: Lost Connection\n" );
+      return UNDEFINED;
+   }
+
+   if(req->status != 200 )
+   {
+      webserver->log(LOG_ERR,"XMLRPC: Server returned with \"%d\"\n",req->status );
+      return UNDEFINED;
+   }
+
+#ifdef DEBUG
+   webserver->log(LOG_DEBUG,"XMLRPC: %O\n",Protocols.XMLRPC.decode_response(req->data()) );
+#endif
+
+   array res = Protocols.XMLRPC.decode_response(req->data());
+   if( mappingp( res[0] ) && has_index(res[0],"error") )
+   {
+      webserver->log(LOG_ERR,"XMLRPC: Server returned with \"%s\"\n",res[0]->error );
+      return UNDEFINED;
+   }
+   return res[0];
+}
+

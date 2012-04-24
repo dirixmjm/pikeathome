@@ -7,18 +7,49 @@
 // later version.
 //
 #include <syslog.h>
+#include <parameters.h>
+#include <command.h>
 
 object configuration;
 object HTTPServer;
 object dmlparser;
+object Configparser;
+mapping run_config;
 
-void create( array run_config )
+constant defvar = ({
+                   ({ "port",PARAM_STRING,"8080","Listen Port",POPT_RELOAD }),
+                   ({ "username",PARAM_STRING,"","Username",0 }),
+                   ({ "password",PARAM_STRING,"","Password",0 }),
+                   });
+
+void create( mapping rconfig )
 {
+   //Get basic parameters: run_config 
+   run_config=rconfig; 
    //Open Log.
    System.openlog("pikeathomewebserver",LOG_PID,LOG_DAEMON);
-   //Open config.
+   //Open config database.
    object config = master()->resolv("Config")( run_config->database );
+   //Open Webserver configuration
    configuration = config->Configuration("WebServer");
+
+   if ( !has_index(run_config, "webpath" ))
+   {
+      log(LOG_ERR,"No webpath undefined in config file, exiting\n");
+      exit(11);
+   }
+   if ( !has_index(configuration, "port" ))
+   {
+      log(LOG_ERR,"No Port defined, using default port 8080\n");
+      configuration["port"]="8080";
+   }
+   if( !has_index(configuration,"username") && has_index(run_config,"username" ) )
+      configuration["username"]=run_config->username;
+   if( !has_index(configuration,"password") && has_index(run_config,"password" ) )
+      configuration["password"]=run_config->password;
+   if( !has_index(configuration,"xmlrpcserver" ))
+      configuration->xmlrpcserver=run_config->xmlrpcserver;
+
    //Start webserver.
    dmlparser = master()->resolv("DML")( this , configuration );
    log(LOG_DEBUG,"Create Web Interface Port %d\n",(int) configuration->port );
@@ -30,8 +61,8 @@ void create( array run_config )
 void http_callback( Protocols.HTTP.Server.Request request )
 {
    mapping response = ([ "server":"Domotica DML Webserver" ]);
-
    //Check Auth. Require only auth if username is set in the database.
+   //FIXME add multiple auth and user management
    if( has_index(configuration,"username") )
    {
       string auth = "Basic "+ MIME.encode_base64(configuration->username +":"+configuration->password);
@@ -75,61 +106,116 @@ Stdio.File find_file(object request)
     if( request->not_query=="" )
        request->not_query="index.dml";
     request->not_query = replace(request->not_query,({"%20"}),({" "}));
-    if ( Stdio.is_file( configuration->webpath + request->not_query ) )
+#ifdef 0
+    //Enter the configuration system
+    if ( has_prefix( request->not_query, "configuration/" ) )
+    {
+       if( !Configparser ) 
+          Configparser = master()->resolv("Configuration")( this , configuration );
+       werror("%O\n",Configparser->abc);
+       return Configparser->parse(request);
+    }
+    else
+#endif 
+    if ( Stdio.is_file( run_config->webpath + request->not_query ) )
     {
        array v = request->not_query/".";
        if ( sizeof(v) >= 2 && v[-1]=="dml" )
        {
-          string data = Stdio.read_file(configuration->webpath + request->not_query );
+          string data = Stdio.read_file(run_config->webpath + request->not_query );
           return dmlparser->parse(request,data);
        }
        else
-          return Stdio.File(configuration->webpath + request->not_query,"R");
+          return Stdio.File(run_config->webpath + request->not_query,"R");
     }
     else
        return 0;
 }
 
-mixed info( string sensor, int|void new)
+/* Split a sensor or module pointer into an array.
+ * The array contains ({ module, sensor, attribute });
+*/
+array split_module_sensor_value(string what)
 {
-   return xmlrpc( "sensor.info", ({ ([ "name":sensor, "new":new ]) }) )[0];
+   array ret = ({});
+   string parse = what;
+   int i=search(what,".");
+   while(i>0)
+   {
+      if( what[++i] != '.' )
+      {
+         ret += ({ what[..i-2] });
+         what = what[i..];
+         i=0;
+      }
+      i++;
+      i=search(what,".",i);
+   }
+   if(sizeof(what))
+      ret+= ({ what });
+   return ret;
 }
 
-mixed sensor_write( string sensor, mixed value )
+mixed internal_command( string method, int command, mapping parameters )
 {
-   return xmlrpc( "sensor.write", ({ ([ "name":sensor, "values":value ]) }) );
+   switch(command)
+   {
+      case COM_PARAM:
+      array var = ({});
+      foreach( defvar, array thisvar )
+      {
+         //Set parameters if given
+         if(parameters && has_index(parameters,thisvar[0] ) )
+            configuration[thisvar[0]]=parameters[thisvar[0]];
+
+         if( has_index( configuration, thisvar[0] ) )
+            var += ({ thisvar + ({ configuration[thisvar[0]] }) });
+         else
+            var += ({ thisvar });
+      }
+      return var;
+      break;
+      default:
+      log(LOG_ERR,"Unknow Command %d\n",command);
+      return ([]);
+   }
 }
 
-array sensors()
+mixed xmlrpc( string method, int command, mapping parameters )
 {
-   return xmlrpc( "sensor.list", ({  }) );
-}
-
-array modules()
-{
-   return xmlrpc( "module.list", ({  }) );
-}
-
-array parameters(string module_sensor)
-{
-   return xmlrpc( "parameters.list", ({ ([ "name":module_sensor ])  }) );
-}
-
-array write_parameters(string module_sensor, mapping parameters)
-{
-   return xmlrpc( "parameters.write", ({ ([ "name":module_sensor, "parameters":parameters ]) }) );
-}
-
-protected array xmlrpc( string method, array variables )
-{
-   string data = Protocols.XMLRPC.encode_call(method,variables);
+   //Check if the method is internal
+   if ( method == "webserver" )
+   {
+      return internal_command(method, command,parameters );
+   }
+#ifdef DEBUG
+   log(LOG_DEBUG,"XMLRPC: Send Request %s %d\n",method, command );
+#endif
+   string data = Protocols.XMLRPC.encode_call(method,({command,parameters}) );
    object req = Protocols.HTTP.do_method("POST",
-                                           configuration->xmlrpcserver,0,
+                                           run_config->xmlrpcserver,0,
                                            (["Content-Type":"text/xml"]),
                                            0,data);
-   if(!req || req->status != 200 )
-      return ({});
-   return  Protocols.XMLRPC.decode_response(req->data());
+   if(!req)
+   {
+      log(LOG_ERR,"XMLRPC: Lost Connection\n" );
+      return UNDEFINED;
+   }
+   if(req->status != 200 )
+   {
+      log(LOG_ERR,"XMLRPC: Server returned with \"%d\"\n",req->status );
+      return UNDEFINED;
+   }
+#ifdef DEBUG
+   log(LOG_DEBUG,"XMLRPC: %O\n",Protocols.XMLRPC.decode_response(req->data() ));
+#endif
+   array res = Protocols.XMLRPC.decode_response(req->data());
+   if( mappingp( res[0] ) && has_index(res[0],"error") )
+   {
+      log(LOG_ERR,"XMLRPC: Server returned with \"%s\"\n",res[0]->error );
+      return UNDEFINED;
+   }
+   return res[0];
 }
 
 void log( int log_level, string format, mixed ... args )
