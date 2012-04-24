@@ -28,12 +28,14 @@ class sensor
 
    void sensor_init()
    {
-      call_out(set_heater,30);
+      call_out(domotica->switchboard, 30, configuration->input, COM_INFO, (["new":1]), set_heater);
    }
 
-   void set_heater()
+   void set_heater(int|float|string value )
    {
-      if ( ! ( sensor_var->value = domotica->info(configuration->input, 1) ) )
+      call_out(domotica->switchboard, 30, configuration->input, COM_INFO, (["new":1]), set_heater);
+      //FIXME Error handling is old
+      if ( ! ( sensor_var->value = (float) value ) )
       {
          domotica->log(LOG_EVENT,LOG_ERR,"Error: Input Sensor %s not found, turning off heater\n",
                                                           configuration->input);
@@ -61,7 +63,6 @@ class sensor
       domotica->log(LOG_EVENT,LOG_DEBUG,"Sensor %f, Set %f, Output %d\n",sensor_var->value, sensor_var->temperature,(int) sensor_var->state);
 #endif
 
-      call_out(set_heater, 30 );
       domotica->write(configuration->output,sensor_var->state);
    }
 
@@ -102,6 +103,7 @@ class sensor
             }
             sensor_var->schedule = domotica->read(configuration->schedule+".next_schedule");
       }
+      return sensor_var;
    }
 
    void close()

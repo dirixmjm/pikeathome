@@ -15,9 +15,11 @@
 
 constant log_progname="Pike At Home Webserver";
 constant progname="PikeAtHomeWebServer";
-constant pid_file="/var/run/pikeathomewebserver.pid";
+constant pid_file="/var/run/pikeathomewebserver/pikeathomewebserver.pid";
 
 constant default_installpath="/usr/local/pikeathome";
+constant default_webpath="/usr/local/pikeathome/www/";
+constant default_webport=8080;
 constant default_config = "/usr/local/pikeathome/pikeathome.conf";
 
 constant version="0.0.1";
@@ -25,6 +27,9 @@ constant version="0.0.1";
 array options = ({
                ({ "configfile", Getopt.HAS_ARG, ({ "-c","--config" }) }),
                ({ "installpath", Getopt.HAS_ARG, ({ "-i","--install-path" }) }),
+               ({ "webpath", Getopt.HAS_ARG, ({ "-w","--webpath" }) }),
+               ({ "webport", Getopt.HAS_ARG, ({ "-p","--webport" }) }),
+               ({ "xmlrpcserver", Getopt.HAS_ARG, ({ "-x","--xmlrpcserver" }) }),
                ({ "database", Getopt.HAS_ARG, ({ "-d","--database" }) }),
                ({ "debug", Getopt.NO_ARG, ({ "-D","--debug" }) }),
                ({ "nodaemon", Getopt.NO_ARG, ({ "-N","--nodaemon" }) }),
@@ -37,6 +42,9 @@ object dmlparser;
 
 int main( int argc, array(string) argv )
 {
+
+   //Get all options from the commandline.
+
    foreach( Getopt.find_all_options(argv,options) , array opt )
       run_config+=([ opt[0]:opt[1] ]);
    if( !has_index( run_config, "configfile" ) )
@@ -46,9 +54,15 @@ int main( int argc, array(string) argv )
       werror("Config file not found: %s\n",run_config->configfile);
       exit(64);
    }
+
+   // Read configuration file, but don't overwrite.
    read_config();
    if( ! has_index( run_config, "installpath" ) )
       run_config->installpath = default_installpath;
+   if( ! has_index( run_config, "webpath" ) )
+      run_config->webpath = default_webpath;
+   if( ! has_index( run_config, "webport" ) )
+      run_config->webport = default_webport;
    if ( has_index( run_config, "debug" ))
       master()->CompatResolver()->add_predefine("DEBUG","1");
    master()->add_include_path(run_config->installpath+"/include" );
@@ -108,18 +122,18 @@ void reload()
 
 void detach()
 {
-   string devnull="/dev/null";
-   Stdio.File(devnull,"w")->dup2(Stdio.stdin);
-   Stdio.File(devnull,"w")->dup2(Stdio.stdout);
-   Stdio.File(devnull,"w")->dup2(Stdio.stderr);
-   if(fork()>0)
-      return 0;
+   if(fork()!=0)
+      exit(0);
    setsid();
    cd("/");
    ;{ object o=Stdio.FILE(pid_file,"wct");
       o->write("%d\n",getpid());
       o->close();
     }
-    //setproctitle(progname);
+   //setproctitle(progname);
+   string devnull="/dev/null";
+   Stdio.File(devnull,"w")->dup2(Stdio.stdin);
+   Stdio.File(devnull,"w")->dup2(Stdio.stdout);
+   Stdio.File(devnull,"w")->dup2(Stdio.stderr);
 }
 

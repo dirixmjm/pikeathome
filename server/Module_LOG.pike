@@ -1,29 +1,40 @@
 #include <module.h>
+#include <parameters.h>
+#include <command.h>
 
 protected object configuration;
 object domotica;
 
 int module_type = MODULE_LOG;
-string module_name = "module";
+string name = "module";
 array defvar = ({});
 
-void create( object domo )
+void create( string _name, object domo )
 {
    domotica = domo;
-   configuration = domotica->configuration(module_name);
+   name=_name;
+
+   configuration = domotica->configuration(name);
 #ifdef DEBUG
-   domotica->log(LOG_EVENT,LOG_DEBUG,"Init Module %s\n",module_name);
+   domotica->log(LOG_EVENT,LOG_DEBUG,"Init Module %s\n",name);
 #endif
-   module_init();
 }
 
-void module_init()
+void init()
 {
 }
 
-void log_data( string module,string name, mapping data )
+array split_module_sensor_value(string what)
 {
+   return domotica->split_module_sensor_value(what);
+}
 
+void log_data( string name, string|int data, int|void tstamp )
+{
+}
+
+mapping retr_data( string name, int|void start, int|void end)
+{
 }
 
 void log_event( int level, string name, string format, mixed ... args )
@@ -40,7 +51,7 @@ array getvar()
    return ret;
 }
 
-array setvar( mapping params )
+void setvar( mapping params )
 {
    int mod_reload = 0;
    foreach(defvar, array option)
@@ -58,9 +69,21 @@ array setvar( mapping params )
 
 void reload()
 {
-   module_init();
+   init();
 }
 void close()
 {
 
 }
+
+void rpc( string module_sensor_value, int command, mapping parameters, function callback, mixed ... callback_args)
+{
+   switch(command)
+   {
+      case COM_LOGDATA:
+      mapping ret = retr_data( parameters->name, parameters->start, parameters->end);
+      call_out(callback,0,ret,@callback_args);
+      break;       
+   }
+}
+

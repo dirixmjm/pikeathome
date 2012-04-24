@@ -2,13 +2,29 @@
 inherit Module;
 
 int module_type = MODULE_SENSOR;
+
 string module_name = "Comperator";
+
+constant defvar = ({
+                  });
+
+constant sensvar = ({
+                   ({ "input",PARAM_SENSORINPUT,"","Input Sensor",0 }),
+                   ({ "output",PARAM_SENSOROUTPUT,"","Output Sensor",0 }),
+                   ({ "timer",PARAM_INT,300,"Time Value (Seconds)",0 }),
+                   ({ "highlevel",PARAM_INT,300,"Input High Threshold",0 }),
+                   ({ "lowlevel",PARAM_INT,300,"Input Low Threshold",0 }),
+                   ({ "gracecount",PARAM_INT,300,"Grace Time = Grace Count * timer",0 }),
+                   ({ "function",PARAM_INT,0,"Comperator Function",0 }),
+                   });
 
 class sensor
 {
    inherit Sensor;
    int sensor_type = SENSOR_FUNCTION;
-    
+   //Grace counter;
+   int counter = 0;
+ 
    protected mapping sensor_var = ([
                                   "module":"Comperator",
                                   "name":"",
@@ -17,17 +33,38 @@ class sensor
                                   ]); 
    void sensor_init(  )
    {
-      call_out(compare,(int) configuration->timer );
+      counter = (int) configuration->gracecount;
+      call_out(sensor_timer, (int) configuration->timer);
    }
-   
-   void compare()
-   {
-      int lastlevel = sensor_var->level;
-      if( domotica->info(configuration->input, 1) > (float) configuration->high )
-         sensor_var->level = 1;
 
-      if( domotica->info(configuration->input, 1) < (float) configuration->high )
-         sensor_var->level = 0;
+   protected void sensor_timer()
+   {
+      call_out(sensor_timer, (int) configuration->timer);
+      call_out(module->switchboard, 0, configuration->input, COM_INFO, (["new":1]), compare);
+   }
+
+   void written(mixed returnvalue )
+   {
+     return;
+ 
+   }
+ 
+   void compare(float|int|string|mapping input)
+   {
+      //FIXME Error handling
+
+      int lastlevel = sensor_var->level;
+      int newlevel = (float) input > (float) configuration->highlevel;
+      if( newlevel !=  lastlevel )
+      {
+         if( (--counter) == 0 )
+         {
+            sensor_var->level = newlevel;
+            counter = (int) configuration->gracecount;
+         }
+      }
+      else
+         counter = (int) configuration->gracecount;
 
       /*Detect LOW (function = 0) or HIGH (function = 1) levels.
        *The sensor sensor will send ON (1) and OFF (0) signals to
@@ -42,11 +79,11 @@ class sensor
           switch( (int) configuration->function )
           {
              case 0:
-                domotica->write(configuration->output, 0);
+                call_out(module->switchboard,0,configuration->output,COM_WRITE,(["values":0]),written);
                 break;
              case 1:
              case 2:
-                domotica->write(configuration->output, 1);
+                call_out(module->switchboard,0,configuration->output,COM_WRITE,([ "values":1]),written);
                 break;
           }
        }
@@ -55,15 +92,14 @@ class sensor
           switch( (int) configuration->function )
           {
              case 1:
-                domotica->write(configuration->output, 0);
+                call_out(module->switchboard,0,configuration->output,COM_WRITE,(["values":0]),written);
                 break;
              case 0:
              case 3:
-                domotica->write(configuration->output, 1);
+                call_out(module->switchboard,0,configuration->output,COM_WRITE,([ "values":1]),written);
                 break;
           }
        }
-       call_out(compare,(int) configuration->timer );
    } 
 
 }

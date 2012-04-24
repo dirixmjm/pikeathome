@@ -4,7 +4,7 @@ inherit Module_LOG;
 int module_type = MODULE_LOG;
 string module_name = "RRDLog";
 
-void module_init() 
+void init() 
 {
    if( !has_index(configuration,"logpath") )
       configuration["logpath"]="/tmp";

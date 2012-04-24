@@ -15,7 +15,7 @@
 
 constant log_progname="Pike At Home";
 constant progname="PikeAtHome";
-constant pid_file="/var/run/pikeathome.pid";
+constant pid_file="/var/run/pikeathome/pikeathome.pid";
 
 constant default_installpath="/usr/local/pikeathome";
 constant default_config = "/usr/local/pikeathome/pikeathome.conf";
@@ -25,6 +25,7 @@ object domotica;
 array options = ({
                ({ "configfile", Getopt.HAS_ARG, ({ "-c","--config" }) }),
                ({ "installpath", Getopt.HAS_ARG, ({ "-i","--install-path" }) }),
+               ({ "xmlrpcserver", Getopt.HAS_ARG, ({ "-i","--xmlrpcserver" }) }),
                ({ "database", Getopt.HAS_ARG, ({ "-d","--database" }) }),
                ({ "debug", Getopt.NO_ARG, ({ "-D","--debug" }) }),
                ({ "nodaemon", Getopt.NO_ARG, ({ "-N","--nodaemon" }) }),
@@ -111,18 +112,18 @@ void reload()
 
 void detach()
 {
-   string devnull="/dev/null";
-   Stdio.File(devnull,"w")->dup2(Stdio.stdin);
-   Stdio.File(devnull,"w")->dup2(Stdio.stdout);
-   Stdio.File(devnull,"w")->dup2(Stdio.stderr);
-   if(fork()>0)
-      return 0;
+   if(fork()!=0)
+      exit(0);
    setsid();
    cd("/");
    ;{ object o=Stdio.FILE(pid_file,"wct");
       o->write("%d\n",getpid());
       o->close();
     }
-    //setproctitle(progname);
+   //setproctitle(progname);
+   string devnull="/dev/null";
+   Stdio.File(devnull,"w")->dup2(Stdio.stdin);
+   Stdio.File(devnull,"w")->dup2(Stdio.stdout);
+   Stdio.File(devnull,"w")->dup2(Stdio.stderr);
 }
 

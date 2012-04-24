@@ -4,6 +4,13 @@ inherit Module;
 int module_type = MODULE_SENSOR;
 string module_name = "Logger";
 
+constant defvar= ({
+                 });
+constant sensvar = ({
+                   ({ "input", PARAM_SENSORINPUT,"","Input Sensor",0 }),
+                   ({ "logtime", PARAM_INT,600,"Log Repeat",0 }),
+                   });
+
 class sensor
 {
    inherit Sensor;
@@ -17,15 +24,20 @@ class sensor
                                   ]); 
    void sensor_init(  )
    {
-      call_out(do_log,(int) configuration->logtime );
+     call_out(log_timer,(int) configuration->logtime );
+   }
+  
+   void log_timer()
+   {
+      call_out(log_timer,(int) configuration->logtime );
+      call_out(module->switchboard, 0, configuration->input, COM_INFO, (["new":1]), do_log);
    }
    
-   void do_log()
+   void do_log(int|float|string input)
    {
-      array msv = split_module_sensor_value(configuration->input);
+      call_out(module->switchboard, (int) configuration->logtime, configuration->input, COM_INFO, (["new":1]), do_log);
 
-      domotica->log(LOG_DATA,msv[0],msv[1],([msv[2]:domotica->info(configuration->input, 1)]),time(1));
-      call_out(do_log,(int) configuration->logtime );
+      logdata(configuration->input,input,time(1));
    }
 
  

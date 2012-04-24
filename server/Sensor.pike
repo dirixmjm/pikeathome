@@ -1,30 +1,30 @@
-#include <module.h>
+#include <sensor.h>
+#include <parameters.h>
+#include <command.h>
 
 int sensor_type = 0; 
 
 protected object configuration;
+object module;
 array defvar = ({});
 
 
 string sensor_name = "";
-object domotica;
 protected mapping sensor_var = ([
                                "module":"",
                                "name":"",
                                "sensor_type":sensor_type
                                ]);
 
-void create( string name, object Dom )
+void create( string name, object _module, object _configuration )
 {
    //FIXME Dynamically set module name? Should this be a create argument?
-   domotica = Dom;
-   configuration = domotica->configuration(name);
+   module = _module;
+   configuration = _configuration;
    sensor_name = name;
    sensor_var->name = name;
    sensor_var->sensor_type = sensor_type;
    sensor_init();
-   if ( has_index(configuration, "log") )
-      call_out(run_log,(int) configuration->log);
 }
 
 void sensor_init()
@@ -35,7 +35,7 @@ void sensor_init()
  * The write function takes a variable-name, and
  * the value which is to written to the variable.
  */
-mixed write( string variable, mixed value )
+mixed write( mapping what )
 {
 }
 
@@ -61,35 +61,11 @@ void getnew()
 }
 
 
-void run_log()
-{
-   log();
-   if ( has_index(configuration, "log") )
-      call_out(run_log,(int) configuration->log);
-}
-
-/* Each sensor should implement this function.
- * The log function is called periodically if the sensor
- * should log its values.
- */
-void log()
-{
-
-}
-
 array getvar()
 {
    array ret = ({});
-   foreach( defvar, array vars )
-   {
-      ret += ({ ([
-               "name":vars[0],
-               "type":vars[1],
-               "default":vars[2],
-               "description":vars[3],
-               "value":configuration[vars[0]]
-              ]) });
-   }
+   foreach(module->sensvar, array var)
+      ret+= ({ var + ({ configuration[var[0]] })});
    return ret;
 }
 
@@ -97,3 +73,59 @@ void close()
 {
    destruct(this);
 }
+
+
+void logdebug(mixed ... args )
+{
+   module->logdebug(@args);
+}
+void logerror(mixed ... args )
+{
+   module->logerror(@args);
+}
+void logdata(mixed ... args )
+{
+   module->logdata(@args);
+}
+
+array setvar( mapping params )
+{
+   int mod_options = 0;
+   //FIXME check if the parameter is defined?
+   //FIXME parameter options, like reload?
+   foreach( indices(params), string param )
+   {
+      configuration[param]=params[param];
+   }
+}
+
+void rpc( string module_sensor_value, int command, mapping parameters, function callback, mixed ... callback_args)
+{
+   array split = module->split_module_sensor_value(module_sensor_value);
+   switch(command)
+   {
+      case COM_INFO:
+      {
+      //FIXME This should also be a callback (and backends callback driven)
+      if( sizeof(split) > 2 )
+         //FIXME Error if variable does not exist?
+         call_out(callback, 0, info( parameters->new )[split[2]],@callback_args );
+      else
+         call_out(callback, 0, info( parameters->new ),@callback_args );
+      }
+      break;
+      case COM_WRITE:
+      {
+         if( sizeof( split ) > 2  )
+            call_out( callback, 0 , write( ([ split[2]:parameters->values ]) ), @callback_args );
+         else if ( mappingp(parameters->values ) )
+            call_out( callback, 0 , write( parameters->values ), @callback_args );
+         else
+            call_out( callback, 0 , (["error": sprintf("Unknown values format %O\n",parameters->values)]), @callback_args );
+      }
+      default:
+         call_out(callback, 0, (["error":"Unknown Command"]),@callback_args );
+   }
+}
+
+

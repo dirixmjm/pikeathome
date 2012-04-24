@@ -13,6 +13,14 @@ void create( string dburi )
 
 }
 
+string _m_delete(string name)
+{
+   Thread.MutexKey lock = inuse->lock();
+   Sql.Sql db =  Sql.Sql( database ) ;
+   db->query("DELETE FROM  configuration WHERE "+ 
+             "name=:name ;",([ ":name":name]));
+   return name;
+}
 
 void createdb( string dburi )
 {
@@ -32,29 +40,20 @@ void create(string cname)
     name=cname;
 }
 
-array decode(array to_decode )
-{
-   array res = ({});
-   foreach(to_decode, string value )
-   {
-      res+=({ decode_value(value) });
-   }
-   return res;
-}
-
 string|array get_value(string key)
 {
    Thread.MutexKey lock = inuse->lock();
    Sql.Sql db =  Sql.Sql( database ) ;
-   array queryres = db->query("SELECT value,encoded FROM configuration WHERE name='"
-                              + name + "' AND key='"+ key +"';");
+   array queryres = db->query("SELECT value,encoded FROM configuration WHERE " +
+                              "name=:name AND key=:key;",
+                             ([ ":name":name,":key":key ]));
    if ( !sizeof ( queryres ) )
       return UNDEFINED;
    array result = queryres->value;
-   //If the database values are encoded, the result is always an array.
+   //Decode value if non-string-int.
    if ( (int) queryres[0]->encoded == 1 )
    {
-      return decode( result );
+      return decode_value( result[0] );
    }
    //If there is only one value, the value is return, else an array of values.
    if ( sizeof( result ) == 1 )
@@ -62,27 +61,22 @@ string|array get_value(string key)
    else
       return result;
 }
-void write_value(string key, string|array value )
+
+void write_value(string key, mixed value )
 {
    Thread.MutexKey lock = inuse->lock();
    Sql.Sql db =  Sql.Sql( database ) ;
-   //It is impossible to decide which value to update 
-   //if value = string, but the db an array, or vice versa.
-   //so delete and update all
-   db->query("DELETE FROM  configuration WHERE key='"+key+"'"+
-             "AND name='"+name+"';");
-   array values = (arrayp(value))?value:({value});
-   foreach( values, string|int|mapping|array val )
-   {
-     if( ! stringp(val) && ! intp(val) )
-        db->query("INSERT INTO configuration (name,key,value,encoded)"
-                + " VALUES ('"+ name + "','"+ key +"',:val,1);", 
-                ([":val":encode_value(val)]));
-     else
-        db->query("INSERT INTO configuration (name,key,value)"
-                + " VALUES ('"+ name + "','"+ key +"','"+ val + "');");
-
-   }
+   //First delete the key, and reinsert the new one.
+   db->query("DELETE FROM  configuration WHERE key=:key AND name=:name;",
+             ([ ":name":name,":key":key]));
+   if( ! stringp(value) && ! intp(value) )
+      db->query("INSERT INTO configuration (name,key,value,encoded)"
+                + " VALUES (:name,:key,:val,1);", 
+                ([":name":name,":key":key,":val":encode_value(value)]));
+   else
+      db->query("INSERT INTO configuration (name,key,value)"
+                + " VALUES (:name,:key,:value);",
+                ([ ":name":name,":key":key,":value":value ]));
 }
 
 string|array `->(string key)
@@ -101,9 +95,8 @@ array(string) _indices()
    Thread.MutexKey lock = inuse->lock();
    Sql.Sql db =  Sql.Sql( database ) ;
    array queryres = db->query("SELECT distinct(key) FROM configuration "+
-                              " WHERE name='" + name + "';");
+                              " WHERE name=:name", ([ ":name":name ]) );
    return queryres->key;
-
 }
 
 
@@ -117,4 +110,19 @@ void `->=(string key ,string|array|int value)
    write_value(key,value);
 }
 
+void `+(mapping values)
+{
+   foreach(values; string index; mixed value)
+   {
+       write_value( index, get_value(index) + value );
+   }
+}
+
+void `-(mapping values )
+{
+   foreach(values; string index; mixed value)
+   {
+       write_value( index, get_value(index) - value );
+   }
+}
 }

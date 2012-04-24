@@ -3,28 +3,60 @@ inherit Module;
 
 
 int module_type = MODULE_SENSOR;
-string module_name = "PlugWise";
 object circle_plus;
 
-array plugs = ({});
 
-array defvar = ({
-                   ({ "port",PARAM_STRING,"/dev/ttyUSB0","TTY Port of the USB Stick", POPT_MODRELOAD }),
-                   ({ "circleplus",PARAM_STRING,"","The Mac Address of the Circle Plus", POPT_MODRELOAD }),
-                   ({ "debug",PARAM_BOOLEAN,0,"Turn On / Off Debugging (Requires Reload)", POPT_MODRELOAD }),
+constant defvar = ({
+                   ({ "port",PARAM_STRING,"/dev/ttyUSB0","TTY Port of the USB Stick", POPT_RELOAD }),
+                   ({ "circleplus",PARAM_STRING,"","The Mac Address of the Circle Plus", POPT_RELOAD }),
+                   ({ "debug",PARAM_BOOLEAN,0,"Turn On / Off Debugging (Requires Reload)", POPT_RELOAD }),
                    });
 
-void module_init() 
+/* Sensor Specific Variables */
+constant sensvar = ({
+                   ({ "lastaddress",PARAM_INT,-1,"Current Log Pointer (-1 use plug headpointer)",0   }),
+                   ({ "log",PARAM_BOOLEAN,0,"Turn On / Off Logging",0   }),
+                });
+
+void init() 
 {
 #ifdef DEBUG
-   domotica->log(LOG_EVENT,LOG_DEBUG,"Init Module %s\n",module_name);
+   logdebug("Init Module %s\n",name);
 #endif
 
-     circle_plus = Public.IO.PlugWise.Plug(configuration->port,configuration->circleplus);
-     foreach(configuration->sensor, string name )
-     {
-        sensors+= ([ name: sensor( name, circle_plus->proto, domotica ) ]);
-     }
+     mixed err = catch { circle_plus = Public.IO.PlugWise.Plug(configuration->port,configuration->circleplus);
+     };
+     init_sensors( configuration->sensor+({}) );
+}
+
+void init_sensors( array load_sensors )
+{
+   foreach(load_sensors, string name )
+   {
+      sensors+= ([ name: sensor( name, circle_plus->proto, this, domotica->configuration(name) ) ]);
+   }
+}
+
+
+/* We need to do some sort of odd caching here otherwise the server 
+   will hang to long */
+array plugs = ({});
+
+array find_sensors(int|void manual)
+{
+  array ret=({});
+  call_out(_find_plugs,1);
+  foreach(plugs, string plug)
+  {
+     ret += ({ ([ "sensor":plug,"module":name,"parameters":sensvar ]) });
+  }
+  return ret;
+}
+
+protected void _find_plugs()
+{
+   plugs = circle_plus->find_plugs();
+   plugs += ({ configuration->circleplus });
 }
 
 class sensor
@@ -35,7 +67,7 @@ class sensor
    Public.IO.PlugWise.Plug plug;
  
    mapping sensor_var = ([
-                           "module":"PlugWise",
+                           "module":"",
                            "name": "",
                            "sensor_type": sensor_type,
                            "state": 0,
@@ -43,14 +75,15 @@ class sensor
                            "value": 0.0,
                         ]);
 
-   void create( string name, object plugport, object Domotica)
+   void create( string name, object plugport, object _module, object _configuration)
    {
-      domotica = Domotica;
-      configuration = domotica->configuration(name);
+      sensor_var->module = _module->name;
+      module = _module;
+      configuration = _configuration;
       sensor_name = name;
       sensor_var->name = name;
-      plug = Public.IO.PlugWise.Plug(plugport,configuration->mac);
-      if( has_index( configuration, "log" ) )
+      plug = Public.IO.PlugWise.Plug(plugport,configuration->sensor);
+      if( has_index( configuration, "log" ) && (int) configuration->log == 1 )
          call_out(log,0);
    }
 
@@ -77,7 +110,7 @@ class sensor
    protected void getnew( )
    {
 #ifdef PLUGWISEDEBUG
-   domotica->log(LOG_EVENT,LOG_DEBUG,"Retrieving new values for plug %s\n",sensor_var->name);
+   logdebug("Retrieving new values for plug %s\n",sensor_var->name);
 #endif
          plug->info();
          sensor_var->state = plug->powerstate;
@@ -87,11 +120,12 @@ class sensor
 
    void log()
    {
-      call_out(log,(int) configuration->log );
+      call_out(log,3600 );
       plug->info();
       if( ! plug->online)
          return;
-      if( !has_index(configuration, "lastaddress" ) )
+      if( !has_index(configuration, "lastaddress" ) || 
+                      (int) configuration->lastaddress== -1 )
          configuration->lastaddress = (int) plug->logaddress;
       if( plug->logaddress < (int) configuration->lastaddress && (int) configuration->lastaddress > 1 )
          configuration->lastaddress = 0; 
@@ -99,7 +133,7 @@ class sensor
       if( nextaddress < plug->logaddress )
       {
 #ifdef PLUGWISEDEBUG
-            domotica->log(LOG_EVENT,LOG_DEBUG,"Retrieving address %d for plug %s with current address %d\n",nextaddress,sensor_var->name,(int) plug->logaddress);
+            logdebug("Retrieving address %d for plug %s with current address %d\n",nextaddress,sensor_var->name,(int) plug->logaddress);
 #endif
          array logs = ({});
          catch {
@@ -108,17 +142,18 @@ class sensor
          if( sizeof(logs) < 4  )
          {
 #ifdef PLUGWISEDEBUG
-            domotica->log(LOG_EVENT,LOG_ERR,"Emtpy Log %s %O\n",configuration->name,logs);
+            logerror("Emtpy Log %s %O\n",configuration->name,logs);
 #endif
             return;
          }
          int sum=0;
          foreach( logs, mapping log_item )
          {
-            if( log_item->hour > time(1) )
-               domotica->log(LOG_EVENT,LOG_ERR,"Loghour %d is larger then current timestamp %d\n",log_item->hour, time(1)); 
-            else 
-               domotica->log(LOG_DATA,sensor_var->module,sensor_var->name,(["power":log_item->kwh]),log_item->hour);
+            //1 Minute Time shift occured
+            //FIXME Correct plug time here?
+            if( log_item->hour - time(1) > 60 )
+               logerror("Loghour %d is larger then current timestamp %d\n",log_item->hour, time(1)); 
+            logdata(sensor_var->name+".power",log_item->kwh,log_item->hour);
          }
          configuration->lastaddress=nextaddress;
       }
@@ -126,7 +161,7 @@ class sensor
       if( ++nextaddress < plug->logaddress )
       {
 #ifdef PLUGWISEDEBUG
-         domotica->log(LOG_EVENT,LOG_DEBUG,"Multiple logs, running 60 second timer\n" ); 
+         logdebug("Multiple logs, running 60 second timer\n" ); 
 #endif
          call_out(log, 60 );
       }
@@ -138,8 +173,9 @@ void reload()
 {
    remove_call_out(log);
    sensors = ([]);
-   circle_plus->close();
-   module_init(); 
+   if( circle_plus )
+      circle_plus->close();
+   init(); 
 }
 
 void close()
@@ -149,5 +185,4 @@ void close()
    sensors = ([]);
    circle_plus->close();
    configuration = 0;
-   domotica = 0;
 }

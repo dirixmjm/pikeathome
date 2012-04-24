@@ -6,7 +6,7 @@ string module_name = "LMSensors";
 
 static object LMSensors;
 
-void module_init() 
+void init() 
 {
    LMSensors = Public.IO.LMSensors( configuration->sensorsconf );
    array load_sensors; 

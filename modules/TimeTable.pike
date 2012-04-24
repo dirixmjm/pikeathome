@@ -4,8 +4,17 @@
 inherit Module;
 
 int module_type = MODULE_SENSOR | MODULE_SCHEDULE;
-
 string module_name="TimeTable";
+
+constant defvar = ({
+                  });
+
+constant sensvar = ({
+                   ({ "output",PARAM_SENSOROUTPUT,"","Output Sensor",0 }),
+                   ({ "preoutput",PARAM_BOOLEAN,0,"Turn On / Off Adaptive Scheduling",0 }),
+                   ({ "scheduletime",PARAM_INT,600,"Fallback Schedule Timing",0 }),
+                   ({ "schedule",PARAM_SCHEDULE,"","The Schedule",0 }),
+                   });
 
 class sensor
 {
@@ -32,7 +41,8 @@ class sensor
       theschedule = configuration->schedule;
       sort_schedule();
       find_last_schedule();
-      if ( has_index(configuration, "scheduletime") )
+      // FIXME Why? if ( has_index(configuration, "scheduletime") )
+      if( theschedule && sizeof(theschedule) )
          call_out(run_schedule,0);
    }
 
@@ -40,7 +50,7 @@ class sensor
    {
       if(!theschedule || !sizeof(theschedule) )
       {
-         domotica->log(LOG_EVENT,LOG_ERR,"No Schedule defined for TimePlan %s",sensor_var->name);
+         module->log(LOG_EVENT,LOG_ERR,"No Schedule defined for TimePlan %s",sensor_var->name);
          return;
       }
       array to_sort = ({});
@@ -58,11 +68,11 @@ class sensor
    {
 
      int seconds  = schedule();
-
       //Set output sensor to current setting to the newly scheduled.
-      domotica->write(configuration->output, theschedule[sensor_var->current_schedule]->value ); 
+      call_out(module->switchboard,0,configuration->output,COM_WRITE,(["values":theschedule[sensor_var->current_schedule]->value]),written);
+
 #ifdef TIMETABLEDEBUG
-      domotica->log(LOG_EVENT,LOG_DEBUG,"Done schedule, output %d\n", theschedule[sensor_var->current_schedule]->value);
+      module->log(LOG_EVENT,LOG_DEBUG,"Done schedule, output %d\n", theschedule[sensor_var->current_schedule]->value);
 #endif
 
      if ( seconds >= 0 )
@@ -82,8 +92,9 @@ class sensor
 
    void preannounce()
    {
-      if ( has_index(configuration, "preoutput" ) )
-         domotica->write(configuration->output, theschedule[sensor_var->next_schedule]->value ); 
+      if ( has_index(configuration, "preoutput" ) && configuration->preoutput==1 )
+         call_out(module->switchboard,0,configuration->output,COM_WRITE,(["values":theschedule[sensor_var->current_schedule]->value]),written);
+
    }
 
    void find_last_schedule()
@@ -102,7 +113,7 @@ class sensor
       {
          if(loopcount++ > 16 )
          {
-            domotica->log(LOG_EVENT,LOG_ERR,"TimePlan Loop Safety Gauch Applied");
+            module->log(LOG_EVENT,LOG_ERR,"TimePlan Loop Safety Gauch Applied");
             return;
          }
          schedule_start--;
@@ -124,7 +135,7 @@ class sensor
       }
 
 #ifdef TIMETABLEDEBUG
-      domotica->log(LOG_EVENT,LOG_DEBUG,"Current %O %d\n", last_schedule, schedule_start );
+      module->log(LOG_EVENT,LOG_DEBUG,"Current %O %d\n", last_schedule, schedule_start );
 #endif
       //Set the current (and next, schedule sets current = next)
       sensor_var->current_schedule=schedule_start;
@@ -134,9 +145,9 @@ class sensor
    int schedule()
    {
 #ifdef TIMETABLEDEBUG
-      domotica->log(LOG_EVENT,LOG_DEBUG,"Next %d\n",sensor_var->next_schedule );
+      module->log(LOG_EVENT,LOG_DEBUG,"Next %d\n",sensor_var->next_schedule );
 #endif
-      if(!schedule || !sizeof(theschedule))
+      if(!theschedule || !sizeof(theschedule))
          return -1;
       //A safety gauch, to prevent it from looping forever.
       int loopcount = 0;
@@ -151,7 +162,7 @@ class sensor
       {
          if(loopcount++ > 16 )
          {
-            domotica->log(LOG_EVENT,LOG_ERR,"TimePlan Loop Safety Gauch Applied");
+            module->log(LOG_EVENT,LOG_ERR,"TimePlan Loop Safety Gauch Applied");
             return -1;
          }
          //Go to next schedule in theschedule table.
@@ -161,7 +172,6 @@ class sensor
             day++;
             object a = Calendar.Day() + Calendar.Day()*day;
             dow = a->week_day();
-            werror("%d\n",day);
          }
 
          if(has_value( theschedule[schedule_start]->dow/",", (string) dow) )
@@ -177,7 +187,7 @@ class sensor
       sensor_var->next_schedule_time = next_schedule; 
       //Schedule next run when the next schedule starts.
 #ifdef TIMETABLEDEBUG
-      domotica->log(LOG_EVENT,LOG_DEBUG,"Current %d Next %O %d\n", sensor_var->current_schedule, next_schedule, schedule_start );
+      module->log(LOG_EVENT,LOG_DEBUG,"Current %d Next %O %d\n", sensor_var->current_schedule, next_schedule, schedule_start );
 #endif
       return sensor_var->next_schedule_time->unix_time()-time();
    }
@@ -185,10 +195,15 @@ class sensor
    mapping write( mapping what )
    {
 #ifdef TIMETABLEDEBUG
-      domotica->log(LOG_EVENT,LOG_DEBUG,"Write %O\n",what );
+      module->log(LOG_EVENT,LOG_DEBUG,"Write %O\n",what );
 #endif
    }
-   
+  
+   void written( mixed returnvalue )
+   {
+   }
+
+ 
    void close()
    {
       remove_call_out(run_schedule);

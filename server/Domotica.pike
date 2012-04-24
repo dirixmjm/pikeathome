@@ -3,16 +3,24 @@
 
 protected mapping modules = ([]);
 protected array loggers = ({});
-object config;
-protected object configuration;
+object config,xmlrpc;
+protected object server_configuration;
 protected mapping run_config;
+protected array compiled_modules=({});
 
 void create( mapping rconfig)
 {
    run_config = rconfig;
    config = Config( run_config->database );
-   configuration = config->Configuration("main");
-   init_modules( arrayp(configuration->module)?configuration->module:({configuration->module}) );
+   server_configuration = config->Configuration("main");
+   xmlrpc = XMLRPC( run_config->xmlrpcserver, this ); 
+   if ( server_configuration->module )
+      moduleinit( server_configuration->module );
+}
+
+object configuration(string name )
+{
+   return config->Configuration(name);
 }
 
 void log( int log_type, mixed ... args )
@@ -65,111 +73,129 @@ array split_module_sensor_value(string what)
    return ret;
 }
 
-/* Find the module or sensor
- *
- */
-protected object get_module_sensor(array split )
+void run_command( int command, mapping parameters, function callback, mixed ... callback_args )
 {
-   //A module is requested
-   if ( sizeof(split) == 1 && has_index(modules,split[0]) )
-      return modules[split[0]];
-   //A module with a parameter is requested, the module is returned
-   //if a sensorname = parameter name, the sensor is returned.
-   else if ( sizeof(split) == 2 && !has_index(modules[split[0]]->sensors,split[1]) )
-      return modules[split[0]];
-   //A sensor is requested.
-   else if ( sizeof(split) >= 2 && has_index(modules[split[0]]->sensors,split[1]) )
-      return modules[split[0]]->sensors[split[1]];
+   switch( command )
+   {
+      case COM_MODLIST:
+      {
+         array failed_modules=({});
+         if( parameters && has_index(parameters,"compile") )
+         {
+            if( !sizeof(compiled_modules) || parameters->new )
+            {
+               compiled_modules = ({});
+               object moddir = Filesystem.Traversion(run_config->installpath + "/modules" );
+               foreach( moddir; string dirname; string filename )
+               { 
+                  string name="";
+                  if( !has_suffix(filename,".pike")) continue;
+                  sscanf(filename,"%s\.pike",name);
+                  object themodule;
+                  mixed catch_result = catch { 
+                     themodule =compile_file(dirname+filename)(name,this);
+                  };
+                  if(catch_result)
+                  {
+                     failed_modules += ({ ([  "name":name,
+                                  "error": "Compilation Failed" ]) });
+#ifdef DEBUG
+         log(LOG_EVENT,LOG_ERR,"Error:%O\n",catch_result);
+#endif
+                  }
+                  else
+                  {
+                     compiled_modules += ({ ([ "name":name,
+                                   "parameters":themodule->defvar ]) });
+                  }
+               }
+            }
+            call_out(callback, 0, compiled_modules + failed_modules ,@callback_args );
+         }
+         else
+            call_out(callback, 0, indices(modules) ,@callback_args );
+      }
+      break;
+      case COM_SENSLIST:
+      {
+         array sensors=({});
+         foreach( indices(modules), string module)
+         {
+           if( ! (modules[module]->module_type & MODULE_SENSOR) )
+              continue;
+           foreach( values(modules[module]->sensors), object sensor )
+              sensors+=({ sensor->sensor_name });
+         }
+         call_out(callback, 0, sensors ,@callback_args );
+      }
+      break;
+      case COM_ADD:
+      {
+         string name = parameters->name;
+         m_delete(parameters,"name");
+         if ( has_value(server_configuration->module, name ) )
+         {
+            string error=sprintf("There already exists a module instance with name %s\n",name);
+            log(LOG_EVENT,LOG_ERR,error);
+         call_out(callback, 0, ([ "error":error ]) ,@callback_args );
+         }
+         server_configuration->module+=({name});
+         object cfg = config->Configuration( name );
+         foreach ( parameters; string index; mixed value )
+           cfg[index]=value;
+         moduleinit(({ name } ) );
+         call_out(callback, 0, 0 ,@callback_args );
+      }
+      break;
+      case COM_DROP:
+      {
+         if( !has_index(modules, parameters->name ))
+           call_out(callback, 0, (["error": sprintf("Can't Delete unknown module %s",parameters->name) ]) ,@callback_args );
+         modules[parameters->name]->close();
+         m_delete(modules,parameters->name);
+         server_configuration->module -= ({ parameters->name });
+         m_delete(config, parameters->name );
+      }
+      break;
+      default:
+      call_out(callback, 0, ([ "error":sprintf("Unknown Command %d for server",command) ]),@callback_args );
+   }
 }
 
+mapping follow = ([]);
 
+//void add_hook ( string module_sensor_value
 
-mixed info( string sensor, int|void new )
+void switchboard( string module_sensor_value, int command, mapping parameters, function callback, mixed ... callback_args )
 {
-   array split = split_module_sensor_value(sensor);
-   object sense = get_module_sensor(split);
-   if( sense )
+#ifdef DEBUG
+         log(LOG_EVENT,LOG_DEBUG,"Switchboard received command %d for module/sensor %s\n",command,module_sensor_value);
+#endif
+   if( !module_sensor_value || !sizeof(module_sensor_value ))
+      call_out(callback, 0, ([ "error":"No module,sensor or value is requested" ]),@callback_args );
+
+   //Server Parameters
+   if( module_sensor_value == "server" )
    {
-      if(sizeof(split) > 2 )
-         return sense->info(new)[split[2]];
-      else
-         return sense->info(new);
+      call_out(run_command, 0, command, parameters, callback, @callback_args );
+      return;
+   }
+
+   array split = split_module_sensor_value(module_sensor_value);
+
+   if ( ! has_index(modules,split[0]) )
+   {
+      call_out(callback, 0, ([ "error":sprintf("Module %s not found",split[0]) ]),@callback_args );
    }
    else
-      return UNDEFINED;
-}
-
-/* write a mapping (module.sensor) to a sensor
- * or write one value (module.sensor.variable) to a sensor
- * or write on value to a (module.variable) to a module
- * Returns the current value, or mapping of current values.
- */
-mixed write( string sensor, mixed values )
-{
-   array split = split_module_sensor_value(sensor);
-   object sense = get_module_sensor(split);
-   if( sense )
-      if ( mappingp(values) )
-      {
-         return sense->write(values);
-      }
-      else
-         return sense->write(([split[-1]:values]));
-   else
-      return UNDEFINED;
-}
-
-// Returns all module or sensor parameters in an array
-array parameters( string module_sensor, mapping|void params )
-{
-   array split = split_module_sensor_value(module_sensor);
-   object sense = get_module_sensor(split);
-   if( sense )
    {
-      if( mappingp(params) )
-         sense->setvar(params);
-      return sense->getvar();
+   //Call the requested module
+      call_out(modules[split[0]]->rpc, 0, module_sensor_value, command, parameters, callback, @callback_args );
    }
-   return ({});
+     
 }
 
-mixed `->(string key)
-{
-   switch(key)
-   {
-   case "sensors":
-      array sensors = ({});
-      foreach( values(modules), object module)
-      {
-         if( ! (module->module_type & MODULE_SENSOR) )
-            continue;
-         foreach( values(module->sensors), object sensor )
-            sensors+=({ module->module_name + "." + sensor->sensor_name });
-      }
-      return sensors;
-   case "init_modules":
-      return init_modules;
-   case "modules":
-      return indices(modules);
-   case "write":
-      return write;
-   case "info":
-      return info;
-   case "log":
-     return log;
-   case "configuration":
-     return config->Configuration;
-   case "parameters":
-     return parameters;
-   case "close":
-      return close;
-   default:
-     return UNDEFINED; 
-   }
-}
-
-//FIXME Should this be in here?
-void init_modules( array names )
+void moduleinit( array names )
 {
    foreach(names, string name)
    {
@@ -178,16 +204,23 @@ void init_modules( array names )
          master()->CompatResolver()->add_predefine(upper_case(name)+"DEBUG","1");
       else
          master()->CompatResolver()->remove_predefine(upper_case(name)+"DEBUG");
+      object themodule;
       mixed catch_result = catch {
-           modules+= ( [name:
-                    compile_file(run_config->installpath + "/modules/" + name + ".pike")(this )]);
+                    
+         themodule = compile_file(run_config->installpath + "/modules/" + mod_conf->module + ".pike")( name, this );
+       
 
       };
       if(catch_result)
       {
-         werror("Error Module INIT %O\n%s\t\t%s\n%O\n",catch_result,name,describe_error(catch_result),backtrace());
+         log(LOG_EVENT,LOG_ERR, "Error Module %s Compilation Failed\n",name);
          continue;
       }
+      else
+      {
+         themodule->init(); 
+         modules+= ( [name: themodule ]);
+      } 
       //Cache loggers, so they don't have to be search for every log.
       if( modules[name]->module_type & MODULE_LOG )
          loggers+= ({ name });

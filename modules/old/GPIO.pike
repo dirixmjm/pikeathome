@@ -24,10 +24,10 @@ class sensor()
       if( !Stdio.is_dir( "/sys/class/gpio/gpio"+configuration->address ) )
       {
          Stdio.File exp = Stdio.File("/sys/class/gpio/export","w");
-         exp->write(address);
+         exp->write(configuration->address);
          exp->close();
       }
-      Stdio.File dir =  Stdio.File("/sys/class/gpio/gpio"+address+"/direction","w");
+      Stdio.File dir =  Stdio.File("/sys/class/gpio/gpio"+configuration->address+"/direction","w");
       dir->write(configuration->direction);
       dir->close();
    }
@@ -35,11 +35,11 @@ class sensor()
    void getnew()
    {
          Stdio.File sensor = Stdio.File("/sys/class/gpio/gpio"+configuration->address+"/value","R");
-         sscanf(sensor->read(),"%d\n",a->state);
+         sscanf(sensor->read(),"%d\n",sensor_var->state);
          sensor->close();
    }
 
-   midex write ( string variable, mixed value )
+   void write( string variable, mixed value )
    {
       //FIXME Check direction?
       Stdio.File sensor = Stdio.File("/sys/class/gpio/gpio"+configuration->address+"/value","W");

@@ -6,18 +6,41 @@ string module_name = "OWFS";
 
 static object OWFS;
 
+constant defvar = ({
+                   ({ "port",PARAM_STRING,"/dev/ttyUSB0","TTY Port of the USB Stick", POPT_RELOAD }),
+                  });
+
+/* Sensor Specific Variable */
+constant sensvar = ({
+                   ({ "special_type",PARAM_STRING,"","Special Type Definition", 0 }),
+                    });
+
+
+
 void module_init() 
 {
    OWFS = Public.IO.OWFS( configuration->port );
-   array load_sensors; 
-   if(!arrayp(configuration->sensor) )
-      load_sensors = ({ configuration->sensor });
-   else
-      load_sensors = configuration->sensor;
-
-   foreach(load_sensors, string name )
-      sensors+= ([ name: sensor( name, domotica ) ]);
+   init_sensors(configuration->sensor + ({}) );
 }
+
+
+void init_sensors( array load_sensors )
+{
+   foreach(load_sensors, string name )
+   {
+      sensors+= ([ name: sensor( name, OWFS, domotica->configuration(name) ) ]);
+   }
+}
+
+array find_sensors(int|void manual)
+{
+   array ret = ({});
+//   foreach(OW->devices(1), object dev )
+//      ret+= ({ ([ "sensor":dev->serial, "module":name,"parameters":sensvar ]) }) ;
+   return ret;
+}
+
+
 
 class sensor
 {
@@ -54,18 +77,5 @@ class sensor
       //sensor_var->state = (int) data[25] ;
    }
  
-   void log()
-   {
-      getnew();
-      switch ( configuration->type )
-      {
-         case "vbus":
-            domotica->log(LOG_DATA,sensor_var->module,sensor_var->name,(["collector":sensor_var->collector,"boiler":sensor_var->boiler,"pump":sensor_var->pump ]) );
-            break;
-         default:
-            domotica->log(LOG_DATA,sensor_var->module,sensor_var->name,(["temperature":sensor_var->temperature ]), time(1) );
-            break;
-      }
-   }
 }
 
