@@ -13,7 +13,7 @@ void create( mapping rconfig)
    run_config = rconfig;
    config = Config( run_config->database );
    server_configuration = config->Configuration("main");
-   xmlrpc = XMLRPC( run_config->xmlrpcserver, this ); 
+   xmlrpc = .XMLRPC( run_config->xmlrpcserver, this ); 
    if ( server_configuration->module )
       moduleinit( server_configuration->module );
 }
