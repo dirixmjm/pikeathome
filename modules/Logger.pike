@@ -35,8 +35,6 @@ class sensor
    
    void do_log(int|float|string input)
    {
-      call_out(module->switchboard, (int) configuration->logtime, configuration->input, COM_INFO, (["new":1]), do_log);
-
       logdata(configuration->input,input,time(1));
    }
 
