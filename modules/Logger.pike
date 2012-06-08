@@ -30,13 +30,13 @@ class sensor
    void log_timer()
    {
       call_out(log_timer,(int) configuration->logtime );
-      call_out(module->switchboard, 0, configuration->input, COM_INFO, (["new":1]), do_log);
+      switchboard(sensor_var->name,configuration->input, COM_INFO, (["new":1]));
    }
-   
-   void do_log(int|float|string input)
+  
+   void got_answer(int|float|string params )
    {
-      logdata(configuration->input,input,time(1));
-   }
+      logdata(configuration->input,params,time(1));
+   } 
 
  
    /* Split a sensor or module pointer into an array.

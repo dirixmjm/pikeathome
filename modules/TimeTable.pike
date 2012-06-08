@@ -69,7 +69,7 @@ class sensor
 
      int seconds  = schedule();
       //Set output sensor to current setting to the newly scheduled.
-      call_out(module->switchboard,0,configuration->output,COM_WRITE,(["values":theschedule[sensor_var->current_schedule]->value]),written);
+      switchboard(sensor_var->name,configuration->output,COM_WRITE,(["values":theschedule[sensor_var->current_schedule]->value]));
 
 #ifdef TIMETABLEDEBUG
       module->log(LOG_EVENT,LOG_DEBUG,"Done schedule, output %d\n", theschedule[sensor_var->current_schedule]->value);
@@ -93,7 +93,7 @@ class sensor
    void preannounce()
    {
       if ( has_index(configuration, "preoutput" ) && configuration->preoutput==1 )
-         call_out(module->switchboard,0,configuration->output,COM_WRITE,(["values":theschedule[sensor_var->current_schedule]->value]),written);
+         switchboard(sensor_var->name,configuration->output,COM_WRITE,(["values":theschedule[sensor_var->current_schedule]->value]));
 
    }
 
@@ -199,11 +199,6 @@ class sensor
 #endif
    }
   
-   void written( mixed returnvalue )
-   {
-   }
-
- 
    void close()
    {
       remove_call_out(run_schedule);

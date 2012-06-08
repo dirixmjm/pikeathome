@@ -90,6 +90,12 @@ void setvar( mapping params )
       reload();
 }
 
+void got_answer(mixed parameters)
+{
+
+}
+
+
 class sensor
 {
 inherit Sensor;
@@ -111,53 +117,55 @@ void close()
    configuration = 0;   
 }
 
-void rpc( string module_sensor_value, int command, mapping parameters, function callback, mixed ... callback_args)
+void rpc_command( string sender, string receiver, int command, mapping parameters)
 {
-   array split = split_module_sensor_value(module_sensor_value);
+   //This module is the receiver.
+   //FIXME Check if the request is for this module.
+   array split = split_module_sensor_value(receiver);
  
-   //Check if the request is for this module.
+
    //Check if the request is for a sensor.
    if( sizeof(split) > 1)
    {
       if ( ! has_index(sensors,split[0]+"."+split[1]) )
       {
-         call_out(callback, 0, ([ "error":sprintf("Sensor %s in module %s not found",split[1],split[0]) ]),@callback_args );
+         werror("%O %O\n",indices(sensors),split[0]+"."+split[1]);
+         switchboard( receiver,sender,COM_ERROR, ([ "error":sprintf("Sensor %s in module %s not found",split[1],split[0]) ]) );
       }
       else
       {
       //Call the requested module
-         call_out(sensors[split[0]+"."+split[1]]->rpc, 0, module_sensor_value, command, parameters, callback, @callback_args );
+         call_out(sensors[split[0]+"."+split[1]]->rpc_command, 0, sender, receiver, command, parameters );
       }
    }
    else
    {
       switch(command)
       {
+         case COM_ANSWER:
+            got_answer(parameters);
+         break;
          case COM_INFO:
          {
-            call_out(callback, 0, module_var ,@callback_args );
+            switchboard( receiver,sender, COM_ANSWER, module_var );
          }
          break;
          case COM_PARAM:
          {
          if( parameters && sizeof( parameters ) > 0 )
             setvar(parameters);
-         call_out(callback, 0, getvar() ,@callback_args );
+            switchboard( receiver,sender, COM_ANSWER, getvar() );
          }
          break;
-
          case COM_SENSLIST:
          {
          //FIXME This should probably callbacks too.
          if( parameters && parameters->new )
-            call_out(callback, 0, 
-              find_sensors( parameters?parameters->manual:0)  ,@callback_args );
+            switchboard( receiver,sender, COM_ANSWER, find_sensors( parameters?parameters->manual:0)  );
          else
-            call_out(callback, 0, indices(sensors) ,@callback_args );
-         
+            switchboard( receiver,sender, COM_ANSWER, indices(sensors)  );
          }
          break;
-         
          case COM_ADD: //Add Sensor
          {
             //FIXME Should I add module_name at this point?
@@ -165,7 +173,8 @@ void rpc( string module_sensor_value, int command, mapping parameters, function 
             m_delete(parameters,"name");
             if( has_value( configuration->sensor, name ) )
             {
-               call_out(callback, 0, (["error": sprintf("There already exists a sensor with name %s",name) ]) ,@callback_args );
+               switchboard( receiver,sender, COM_ERROR, 
+                           (["error": sprintf("There already exists a sensor with name %s",name) ]) );
                return;
             }
             configuration->sensor+= ({ name });
@@ -175,15 +184,14 @@ void rpc( string module_sensor_value, int command, mapping parameters, function 
                cfg[index]=value;
             }
             init_sensors( ({ name }) );
-            call_out(callback, 0, 0 ,@callback_args );
+            switchboard(receiver,sender, COM_ANSWER, 0 );
          }
          break;
-
          case COM_DROP: //drop sensor
          {
             if(!has_index ( sensors, parameters->name ) )
             {
-               call_out(callback, 0, (["error": sprintf("Can't Delete unknown sensor %s",parameters->name) ]) ,@callback_args );
+               switchboard( receiver,sender, COM_ERROR, (["error": sprintf("Can't Delete unknown sensor %s",parameters->name) ]) );
                return;
             }
             sensors[parameters->name]->close();
@@ -191,11 +199,14 @@ void rpc( string module_sensor_value, int command, mapping parameters, function 
             configuration->sensor -= ({ parameters->name });
             //FIXME Is this the correct way to do this?
             m_delete(domotica->config, parameters->name ); 
-            call_out(callback,0 ,0 , @callback_args ); 
+            switchboard( receiver,sender,COM_ANSWER,UNDEFINED); 
          }
          break;
+         case COM_ERROR:
+            logerror("%s received error %O\n",receiver,parameters->error);
+         break;
          default:
-         call_out(callback, 0, ([ "error":sprintf("Module %s unknown command %d",split[0],command) ]),@callback_args );
+         switchboard( receiver,sender, COM_ERROR, ([ "error":sprintf("Module %s unknown command %d",split[0],command) ]) );
       }
    }
 }

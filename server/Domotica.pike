@@ -73,7 +73,7 @@ array split_module_sensor_value(string what)
    return ret;
 }
 
-void run_command( int command, mapping parameters, function callback, mixed ... callback_args )
+void rpc_command( string sender, string receiver, int command, mapping parameters )
 {
    switch( command )
    {
@@ -110,10 +110,10 @@ void run_command( int command, mapping parameters, function callback, mixed ... 
                   }
                }
             }
-            call_out(callback, 0, compiled_modules + failed_modules ,@callback_args );
+            switchboard("server", sender,0, compiled_modules + failed_modules );
          }
          else
-            call_out(callback, 0, indices(modules) ,@callback_args );
+            switchboard("server", sender, 0, indices(modules) );
       }
       break;
       case COM_SENSLIST:
@@ -126,7 +126,7 @@ void run_command( int command, mapping parameters, function callback, mixed ... 
            foreach( values(modules[module]->sensors), object sensor )
               sensors+=({ sensor->sensor_name });
          }
-         call_out(callback, 0, sensors ,@callback_args );
+         switchboard("server", sender ,0, sensors);
       }
       break;
       case COM_ADD:
@@ -137,20 +137,20 @@ void run_command( int command, mapping parameters, function callback, mixed ... 
          {
             string error=sprintf("There already exists a module instance with name %s\n",name);
             log(LOG_EVENT,LOG_ERR,error);
-         call_out(callback, 0, ([ "error":error ]) ,@callback_args );
+         switchboard("server", sender, 30, ([ "error":error ]));
          }
          server_configuration->module+=({name});
          object cfg = config->Configuration( name );
          foreach ( parameters; string index; mixed value )
            cfg[index]=value;
          moduleinit(({ name } ) );
-         call_out(callback, 0, 0 ,@callback_args );
+         switchboard("server", sender, 0, UNDEFINED );
       }
       break;
       case COM_DROP:
       {
          if( !has_index(modules, parameters->name ))
-           call_out(callback, 0, (["error": sprintf("Can't Delete unknown module %s",parameters->name) ]) ,@callback_args );
+           switchboard("server", sender, 30, (["error": sprintf("Can't Delete unknown module %s",parameters->name) ]) );
          modules[parameters->name]->close();
          m_delete(modules,parameters->name);
          server_configuration->module -= ({ parameters->name });
@@ -158,39 +158,66 @@ void run_command( int command, mapping parameters, function callback, mixed ... 
       }
       break;
       default:
-      call_out(callback, 0, ([ "error":sprintf("Unknown Command %d for server",command) ]),@callback_args );
+      switchboard("server", sender, 30, ([ "error":sprintf("Unknown Command %d for server",command) ]) );
    }
 }
+
+/*
+* There are two ways to get values from an sensor 
+* Either a direct call to the switchboard with receiver and sender
+* or add a hook to a given sensor / variable and receive it everytime
+* the variable enters the switchboard
+*/
 
 mapping follow = ([]);
 
 //void add_hook ( string module_sensor_value
 
-void switchboard( string module_sensor_value, int command, mapping parameters, function callback, mixed ... callback_args )
+void switchboard( string sender, string receiver, int command, mixed parameters )
 {
-#ifdef DEBUG
-         log(LOG_EVENT,LOG_DEBUG,"Switchboard received command %d for module/sensor %s\n",command,module_sensor_value);
-#endif
-   if( !module_sensor_value || !sizeof(module_sensor_value ))
-      call_out(callback, 0, ([ "error":"No module,sensor or value is requested" ]),@callback_args );
 
-   //Server Parameters
-   if( module_sensor_value == "server" )
+#ifdef DEBUG
+         log(LOG_EVENT,LOG_DEBUG,"Switchboard received command %d for %s from %s \n",command,receiver, sender);
+#endif
+
+   //A receiver should always be given
+   if( !receiver || !sizeof(receiver ))
    {
-      call_out(run_command, 0, command, parameters, callback, @callback_args );
+      call_out(switchboard, 0, "switchboard", sender, 30, ([ "error":"No module,sensor or value is requested" ]) );
+      log(LOG_EVENT,LOG_ERR,"Switchboard called without any receiver\n");
+   }
+   //Server Parameters
+   if( receiver == "server" )
+   {
+      call_out(rpc_command, 0, sender, receiver, command, parameters );
+      return;
+   }
+   
+   if( receiver == "xmlrpc" )
+   {
+      call_out(xmlrpc->rpc_command, 0, sender, receiver, command, parameters );
       return;
    }
 
-   array split = split_module_sensor_value(module_sensor_value);
+   if( receiver == "switchboard" )
+   {
+      if( command = COM_ERROR )
+         log(LOG_EVENT,LOG_ERR,"Switchboard received error %O\n",parameters->error);
+      else
+         log(LOG_EVENT,LOG_ERR,"Switchboard received unknown command %d\n",command);
+      return;
+   }
+   array split = split_module_sensor_value(receiver);
 
    if ( ! has_index(modules,split[0]) )
    {
-      call_out(callback, 0, ([ "error":sprintf("Module %s not found",split[0]) ]),@callback_args );
+      call_out(switchboard, 0, "switchboard", sender, 30, ([ "error":sprintf("Module %s not found",split[0]) ]) );
+      log(LOG_EVENT,LOG_ERR,"Switchboard called with unknown module %s\n",split[0]);
    }
    else
    {
    //Call the requested module
-      call_out(modules[split[0]]->rpc, 0, module_sensor_value, command, parameters, callback, @callback_args );
+      call_out(modules[split[0]]->rpc_command, 0, sender, receiver, command, parameters );
    }
      
 }

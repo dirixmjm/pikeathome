@@ -31,6 +31,10 @@ void close()
    domotica = 0;
 }   
 
+//FIMXE prune the request_buffer with timeouts?
+
+mapping request_buffer = ([]);
+
 //FIXME Create better error / failure reporting.
 void http_callback( Protocols.HTTP.Server.Request request )
 {
@@ -40,7 +44,34 @@ void http_callback( Protocols.HTTP.Server.Request request )
 #ifdef XMLRPCDEBUG
    domotica->log(LOG_EVENT,LOG_DEBUG,"XMLRPC Received call %s with command %O\n",call->method_name,call->params[0]);
 #endif
-   call_out(domotica->switchboard,0, call->method_name, call->params[0], call->params[1], xmlrpcanswer, request);
+   mapping req = ([ "time":time(1), "request":request ]);
+   request_buffer[call->method_name] += ({ req });
+   
+   //switchboard( sender, receiver, command, parameters)
+   switchboard("xmlrpc", call->method_name, call->params[0], call->params[1]);
+}
+
+
+
+void rpc_command( string sender, string receiver, int command, mapping parameters )
+{
+   //Maybe the request timed out.
+   if( !has_index( request_buffer, sender ) )
+   {
+      return;
+   }
+
+   foreach( request_buffer[sender], mapping req )
+   {
+      //We don't check for internal timeout here, because if we have the value
+      //we might as well return it.
+      if(!req->request)
+         domotica->log(LOG_EVENT,LOG_ERR,"XMLRPC Lost connection\n");
+      else
+         xmlrpcanswer( parameters, req->request );
+   }
+   //At this point all requests for this sender should have been handled.
+   m_delete( request_buffer, sender);
 }
 
 void xmlrpcanswer( array|mapping|int|float|string answer, object request )
@@ -48,10 +79,18 @@ void xmlrpcanswer( array|mapping|int|float|string answer, object request )
 #ifdef XMLRPCDEBUG
    domotica->log(LOG_EVENT,LOG_DEBUG,"XMLRPC Sending Answer %O\n",answer);
 #endif
-   if(!request)
-      domotica->log(LOG_EVENT,LOG_ERR,"XMLRPC Lost connection\n");
 
-   //FIXME Handle Errors.
+   //FIXME Handle Errors. 
+   //FIMXE Handle UNDEFINED answer.
    mapping response = ([ "data": Protocols.XMLRPC.encode_response(({ answer })) ]);
    request->response_and_finish(response);
+}
+
+
+/*
+* Helper Function for sensors to call the switchboard
+*/
+void switchboard ( mixed ... args )
+{
+   call_out( domotica->switchboard,0, @args );
 }

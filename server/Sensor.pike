@@ -88,6 +88,11 @@ void logdata(mixed ... args )
    module->logdata(@args);
 }
 
+void got_answer(mixed params )
+{
+
+}
+
 array setvar( mapping params )
 {
    int mod_options = 0;
@@ -99,33 +104,48 @@ array setvar( mapping params )
    }
 }
 
-void rpc( string module_sensor_value, int command, mapping parameters, function callback, mixed ... callback_args)
+void rpc_command( string sender, string receiver, int command, mapping parameters, function callback, mixed ... callback_args)
 {
-   array split = module->split_module_sensor_value(module_sensor_value);
+   array split = module->split_module_sensor_value(receiver);
    switch(command)
    {
+      case COM_ANSWER:
+        got_answer(parameters);
+      break;
       case COM_INFO:
       {
       //FIXME This should also be a callback (and backends callback driven)
+      //And create a buffer of callers, in order to de-multiplex?
       if( sizeof(split) > 2 )
          //FIXME Error if variable does not exist?
-         call_out(callback, 0, info( parameters->new )[split[2]],@callback_args );
+         switchboard(receiver, sender, COM_ANSWER, info( parameters->new )[split[2]]);
       else
-         call_out(callback, 0, info( parameters->new ),@callback_args );
+         switchboard(receiver, sender, COM_ANSWER, info( parameters->new ) );
       }
       break;
       case COM_WRITE:
       {
          if( sizeof( split ) > 2  )
-            call_out( callback, 0 , write( ([ split[2]:parameters->values ]) ), @callback_args );
+            switchboard(receiver, sender, COM_ANSWER, write( ([ split[2]:parameters->values ]) ), @callback_args );
          else if ( mappingp(parameters->values ) )
-            call_out( callback, 0 , write( parameters->values ), @callback_args );
+            switchboard(receiver, sender, COM_ANSWER,write( parameters->values ), @callback_args );
          else
-            call_out( callback, 0 , (["error": sprintf("Unknown values format %O\n",parameters->values)]), @callback_args );
+            switchboard(receiver, sender, COM_ERROR, (["error": sprintf("Unknown values format %O\n",parameters->values)]), @callback_args );
       }
+      break;
+      case COM_ERROR:
+         logerror("%s received error %O\n",receiver,parameters->error);
+      break;
       default:
-         call_out(callback, 0, (["error":"Unknown Command"]),@callback_args );
+         switchboard(receiver, sender, COM_ERROR, (["error":"Unknown Command"]),@callback_args );
    }
 }
 
+/*
+* Helper Function for sensors to call the switchboard
+*/
+void switchboard ( mixed ... args )
+{
+   module->switchboard( @args );
+}
 

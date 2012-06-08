@@ -76,14 +76,22 @@ void close()
 
 }
 
-void rpc( string module_sensor_value, int command, mapping parameters, function callback, mixed ... callback_args)
+void rpc_command( string sender, string receiver, int command, mapping parameters )
 {
    switch(command)
    {
       case COM_LOGDATA:
       mapping ret = retr_data( parameters->name, parameters->start, parameters->end);
-      call_out(callback,0,ret,@callback_args);
+      break;
+      case COM_ERROR:
+         logerror("%s received error %O\n",receiver,parameters->error);
       break;       
    }
 }
+
+void logerror(mixed ... args)
+{
+   call_out(domotica->log(LOG_EVENT,LOG_ERR,@args),0);
+}
+
 
