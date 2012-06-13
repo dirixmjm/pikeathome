@@ -1,5 +1,6 @@
 #define XMLRPCDEBUG
 #include <module.h>
+#define MAXREQUESTTIME 30
 
 string module_name = "XMLRPC";
 
@@ -32,6 +33,26 @@ void close()
 }   
 
 //FIMXE prune the request_buffer with timeouts?
+void request_timeout()
+{
+   foreach( request_buffer; string key;  array reqs )
+   {
+      array req_out = ({});
+      foreach( reqs, mapping req )
+      {
+         if ( req->time < time()+MAXREQUESTTIME )
+         {
+            destruct(req->request );
+         }
+         else
+            req_out+= ({ req } );
+      }
+      if( sizeof(req_out) )
+         request_buffer[key] = req_out;
+      else
+         m_delete(request_buffer, key);
+   }
+}
 
 mapping request_buffer = ([]);
 
@@ -46,7 +67,7 @@ void http_callback( Protocols.HTTP.Server.Request request )
 #endif
    mapping req = ([ "time":time(1), "request":request ]);
    request_buffer[call->method_name] += ({ req });
-   
+   call_out( request_timeout, MAXREQUESTTIME );   
    //switchboard( sender, receiver, command, parameters)
    switchboard("xmlrpc", call->method_name, call->params[0], call->params[1]);
 }
