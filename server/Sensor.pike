@@ -133,6 +133,11 @@ void rpc_command( string sender, string receiver, int command, mapping parameter
             switchboard(receiver, sender, COM_ERROR, (["error": sprintf("Unknown values format %O\n",parameters->values)]), @callback_args );
       }
       break;
+      case COM_PARAM:
+      if( parameters && sizeof( parameters ) > 0 )
+         setvar(parameters);
+         switchboard( receiver,sender, COM_ANSWER, getvar() );
+      break;
       case COM_ERROR:
          logerror("%s received error %O\n",receiver,parameters->error);
       break;

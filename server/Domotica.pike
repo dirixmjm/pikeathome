@@ -23,6 +23,11 @@ object configuration(string name )
    return config->Configuration(name);
 }
 
+//Array with server configuration parameters
+//Goal is to keep it to a minimum and let modules worry about operation.
+array defvar = ({});
+
+
 void log( int log_type, mixed ... args )
 {
     switch( log_type)
@@ -77,37 +82,43 @@ void rpc_command( string sender, string receiver, int command, mapping parameter
 {
    switch( command )
    {
-      case COM_MODLIST:
+      //FIXME Runtime parameters
+      case COM_PARAM:
+         array ret = ({});
+         foreach(defvar, array var)
+            ret+= ({ var + ({ server_configuration[var[0]] }) });
+         switchboard("server", sender, 0, ret );
+      break;
+      case COM_LIST:
       {
          array failed_modules=({});
-         if( parameters && has_index(parameters,"compile") )
+         if( parameters && has_index(parameters,"new") )
          {
-            if( !sizeof(compiled_modules) || parameters->new )
-            {
-               compiled_modules = ({});
-               object moddir = Filesystem.Traversion(run_config->installpath + "/modules" );
-               foreach( moddir; string dirname; string filename )
-               { 
-                  string name="";
-                  if( !has_suffix(filename,".pike")) continue;
-                  sscanf(filename,"%s\.pike",name);
-                  object themodule;
-                  mixed catch_result = catch { 
-                     themodule =compile_file(dirname+filename)(name,this);
-                  };
-                  if(catch_result)
-                  {
-                     failed_modules += ({ ([  "name":name,
-                                  "error": "Compilation Failed" ]) });
+            compiled_modules = ({});
+            object moddir = Filesystem.Traversion(run_config->installpath + "/modules" );
+            foreach( moddir; string dirname; string filename )
+            { 
+               string name="";
+               if( !has_suffix(filename,".pike")) continue;
+               sscanf(filename,"%s\.pike",name);
+               object themodule;
+               mixed catch_result = catch { 
+                  themodule =compile_file(dirname+filename)(name,this);
+               };
+               if(catch_result)
+               {
+                  failed_modules += ({ ([  "module":name,
+                               "error": "Compilation Failed" ]) });
 #ifdef DEBUG
          log(LOG_EVENT,LOG_ERR,"Error:%O\n",catch_result);
 #endif
-                  }
-                  else
-                  {
-                     compiled_modules += ({ ([ "name":name,
-                                   "parameters":themodule->defvar ]) });
-                  }
+               }
+               else
+               {
+                  compiled_modules += ({ ([ "module":name,
+                                "parameters":themodule->defvar +
+                                ({ ({ "name",PARAM_STRING,"default","Name"}) })
+                                 ]) });
                }
             }
             switchboard("server", sender,0, compiled_modules + failed_modules );
@@ -116,7 +127,7 @@ void rpc_command( string sender, string receiver, int command, mapping parameter
             switchboard("server", sender, 0, indices(modules) );
       }
       break;
-      case COM_SENSLIST:
+      case COM_ALLSENSOR:
       {
          array sensors=({});
          foreach( indices(modules), string module)
@@ -144,7 +155,7 @@ void rpc_command( string sender, string receiver, int command, mapping parameter
          foreach ( parameters; string index; mixed value )
            cfg[index]=value;
          moduleinit(({ name } ) );
-         switchboard("server", sender, 0, UNDEFINED );
+         switchboard("server", sender, COM_ANSWER, UNDEFINED );
       }
       break;
       case COM_DROP:

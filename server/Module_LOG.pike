@@ -83,9 +83,18 @@ void rpc_command( string sender, string receiver, int command, mapping parameter
       case COM_LOGDATA:
       mapping ret = retr_data( parameters->name, parameters->start, parameters->end);
       break;
+         case COM_PARAM:
+         {
+         if( parameters && sizeof( parameters ) > 0 )
+            setvar(parameters);
+            switchboard( receiver,sender, COM_ANSWER, getvar() );
+         }
+         break;
       case COM_ERROR:
          logerror("%s received error %O\n",receiver,parameters->error);
-      break;       
+      break;
+      default:
+         switchboard( receiver,sender, COM_ERROR, ([ "error":sprintf("Module %s unknown command %d",receiver,command) ]) );
    }
 }
 
@@ -94,4 +103,8 @@ void logerror(mixed ... args)
    call_out(domotica->log(LOG_EVENT,LOG_ERR,@args),0);
 }
 
+void switchboard ( mixed ... args )
+{
+   call_out( domotica->switchboard,0, @args );
+}
 

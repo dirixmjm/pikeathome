@@ -126,7 +126,7 @@ int exists_entity(string entity, mapping query )
 array EmitModules( mapping args, mapping query )
 {
   array ret=({});
-  array modules = xmlrpc( "server", COM_MODLIST, 0 );
+  array modules = xmlrpc( "server", COM_LIST, 0 );
   foreach( modules, string name)
      ret+= ({  ([ "name":name ]) });
   return ret;
@@ -145,7 +145,7 @@ array EmitSensors( mapping args, mapping query )
                    !has_index(args,"output") && !has_index(args,"schedule") ) )
        sensor_type = 0xFF;
    array ret = ({});
-   array sensors = xmlrpc( args->name?args->name:"server", COM_SENSLIST, ([ "new":args->new?1:0]) ); 
+   array sensors = xmlrpc( args->name?args->name:"server", COM_ALLSENSOR, ([ "new":args->new?1:0]) ); 
   
    foreach( sensors , string sensor )
    {

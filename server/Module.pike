@@ -57,13 +57,12 @@ void init_sensors( array load_sensors )
 
 //If possible return an array containing alle sensors that can be found 
 // in the sensornetwork.
-array find_sensors( int|void manual)
+array find_sensors( )
 {
-   array ret = ({});
-   //manual is 2 per XMLRPC.pike module.sensor.add.manual
-   if( manual == 2 )
-      ret+= ({ ([ "sensor":"manual","module":name,"parameters":sensvar ])});
-   return ret;
+   //Default return manual sensor entry
+   array var = sensvar;
+   var+= ({ ({ "name",PARAM_STRING,"default","Name"}) }) ;
+   return ({ ([ "sensor":"manual","module":name,"parameters":var ])});
 }
 
 array getvar()
@@ -76,11 +75,12 @@ array getvar()
 
 void setvar( mapping params )
 { 
+   werror("Params %O\n",params);
    int mod_options = 0;
    foreach(defvar, array option)
    {
-      //Find the parameter, and check if it has changed.
-      if( has_index( params, option[0] ) && params[option[0]] != configuration[option[0]] )
+      //Find the parameter, and always set it
+      if( has_index( params, option[0] ) )
       {
          configuration[option[0]]=params[option[0]];
          mod_options |= option[4];
@@ -157,11 +157,11 @@ void rpc_command( string sender, string receiver, int command, mapping parameter
             switchboard( receiver,sender, COM_ANSWER, getvar() );
          }
          break;
-         case COM_SENSLIST:
+         case COM_LIST:
          {
          //FIXME This should probably callbacks too.
          if( parameters && parameters->new )
-            switchboard( receiver,sender, COM_ANSWER, find_sensors( parameters?parameters->manual:0)  );
+            switchboard( receiver,sender, COM_ANSWER, find_sensors());
          else
             switchboard( receiver,sender, COM_ANSWER, indices(sensors)  );
          }
@@ -169,36 +169,40 @@ void rpc_command( string sender, string receiver, int command, mapping parameter
          case COM_ADD: //Add Sensor
          {
             //FIXME Should I add module_name at this point?
-            string name = parameters->name;
+            //What if this isn't a sensor-type module?
+            string sensor_name = name + "." + parameters->name;
             m_delete(parameters,"name");
-            if( has_value( configuration->sensor, name ) )
+            if( !has_index( configuration, "sensor" ) )
+               configuration->sensor=({});
+            if( has_value( configuration->sensor, sensor_name ) )
             {
                switchboard( receiver,sender, COM_ERROR, 
-                           (["error": sprintf("There already exists a sensor with name %s",name) ]) );
+                           (["error": sprintf("There already exists a sensor with name %s",sensor_name) ]) );
                return;
             }
-            configuration->sensor+= ({ name });
-            object cfg = domotica->configuration( name );
+            configuration->sensor+= ({ sensor_name });
+            object cfg = domotica->configuration( sensor_name );
             foreach( parameters; string index; mixed value )
             {
                cfg[index]=value;
             }
-            init_sensors( ({ name }) );
+            init_sensors( ({ sensor_name }) );
             switchboard(receiver,sender, COM_ANSWER, 0 );
          }
          break;
          case COM_DROP: //drop sensor
          {
-            if(!has_index ( sensors, parameters->name ) )
+            string sensor_name = name + "." + parameters->name;
+            if(!has_index ( sensors, sensor_name ) )
             {
-               switchboard( receiver,sender, COM_ERROR, (["error": sprintf("Can't Delete unknown sensor %s",parameters->name) ]) );
+               switchboard( receiver,sender, COM_ERROR, (["error": sprintf("Can't Delete unknown sensor %s",sensor_name) ]) );
                return;
             }
-            sensors[parameters->name]->close();
-            m_delete(sensors,parameters->name);
-            configuration->sensor -= ({ parameters->name });
+            sensors[sensor_name]->close();
+            m_delete(sensors,sensor_name);
+            configuration->sensor -= ({ sensor_name });
             //FIXME Is this the correct way to do this?
-            m_delete(domotica->config, parameters->name ); 
+            m_delete(domotica->config, sensor_name ); 
             switchboard( receiver,sender,COM_ANSWER,UNDEFINED); 
          }
          break;

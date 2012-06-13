@@ -38,13 +38,13 @@ void init_sensors( array load_sensors )
 
 
 
-array find_sensors(int|void manual)
+array find_sensors( )
 {
   array ret=({});
+  array var = sensvar;
+  var+= ({ ({ "name",PARAM_STRING,"default","Name"}) });
   foreach(PlugWise->Plugs; string mac; object plug)
-  {
-     ret += ({ ([ "sensor":mac,"module":name,"parameters":sensvar ]) });
-  }
+     ret += ({ ([ "sensor":mac,"module":name,"parameters":var ]) });
   return ret;
 }
 
@@ -114,7 +114,6 @@ class sensor
 
    void log_callback( array data, int logaddress )
    {
-      logdebug("Log Data arrived for plug %s\n",sensor_var->name);
       int sum=0;
       foreach( data, mapping log_item )
       {
@@ -130,14 +129,18 @@ class sensor
          configuration->nextaddress=logaddress+1;
       //Get next log if we lag behind  
       if( logaddress+1 < plug->powerlogpointer )
+      {
          plug->powerlog(logaddress+1);
+#ifdef PLUGWISEDEBUG
+            logdebug("Retrieving address %d for plug %s with current address %d\n",(int) logaddress+1,sensor_var->name,(int) plug->powerlogpointer);
+#endif
+      }
    }
 
 
    void log()
    {
       call_out(log,3600 );
-      logdebug("Log for plug %s\n",sensor_var->name);
       object plug = module->PlugWise->Plugs[configuration->sensor]; 
       //FIXME Log error?
       if( ! plug )
@@ -160,7 +163,6 @@ class sensor
       }
       
       plug->set_powerlog_callback( log_callback );
-      logdebug("Request Log Data for plug %s\n",sensor_var->name);
 
       if( (int) configuration->nextaddress < plug->powerlogpointer )
       {
@@ -182,7 +184,7 @@ void reload()
 {
    remove_call_out(log);
    sensors = ([]);
-//   PlugWise->close();
+   PlugWise->close();
    init(); 
 }
 
@@ -191,6 +193,6 @@ void close()
    remove_call_out(log);
    //Stdio.stdout("Closing PlugWise\n");
    sensors = ([]);
-//   PlugWise->close();
+   PlugWise->close();
    configuration = 0;
 }
