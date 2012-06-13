@@ -190,6 +190,7 @@ mixed xmlrpc( string method, int command, mapping parameters )
    }
 #ifdef DEBUG
    log(LOG_DEBUG,"XMLRPC: Send Request %s %d\n",method, command );
+   log(LOG_DEBUG,"XMLRPC: %O\n",parameters );
 #endif
    string data = Protocols.XMLRPC.encode_call(method,({command,parameters}) );
    object req = Protocols.HTTP.do_method("POST",
@@ -211,10 +212,7 @@ mixed xmlrpc( string method, int command, mapping parameters )
 #endif
    array res = Protocols.XMLRPC.decode_response(req->data());
    if( mappingp( res[0] ) && has_index(res[0],"error") )
-   {
       log(LOG_ERR,"XMLRPC: Server returned with \"%s\"\n",res[0]->error );
-      return UNDEFINED;
-   }
    return res[0];
 }
 
