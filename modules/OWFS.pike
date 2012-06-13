@@ -2,9 +2,8 @@
 inherit Module;
 
 int module_type = MODULE_SENSOR;
-string module_name = "OWFS";
 
-static object OWFS;
+object OWFS;
 
 constant defvar = ({
                    ({ "port",PARAM_STRING,"/dev/ttyUSB0","TTY Port of the USB Stick", POPT_RELOAD }),
@@ -12,34 +11,17 @@ constant defvar = ({
 
 /* Sensor Specific Variable */
 constant sensvar = ({
-                   ({ "special_type",PARAM_STRING,"","Special Type Definition", 0 }),
+                   ({ "path",PARAM_STRING,"","OWFS Path to sensor", 0 }),
+                   ({ "type",PARAM_STRING,"","Special Type Definition", 0 }),
                     });
 
 
 
-void module_init() 
+void init() 
 {
    OWFS = Public.IO.OWFS( configuration->port );
    init_sensors(configuration->sensor + ({}) );
 }
-
-
-void init_sensors( array load_sensors )
-{
-   foreach(load_sensors, string name )
-   {
-      sensors+= ([ name: sensor( name, OWFS, domotica->configuration(name) ) ]);
-   }
-}
-
-array find_sensors(int|void manual)
-{
-   array ret = ({});
-//   foreach(OW->devices(1), object dev )
-//      ret+= ({ ([ "sensor":dev->serial, "module":name,"parameters":sensvar ]) }) ;
-   return ret;
-}
-
 
 
 class sensor
