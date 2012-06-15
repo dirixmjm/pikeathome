@@ -29,28 +29,49 @@ class sensor
 
    inherit Sensor;
 
-   int sensor_type = SENSOR_INPUT;    
    protected mapping sensor_var = ([
                                     "module":"OWFS",
                                     "online": 1,
                                    ]);
+   void sensor_init()
+   {
+      string low_type = OWFS->read(configuration->path+"type") ;
+      switch ( low_type )
+      {
+         case "DS2413":
+            sensor_var->sensor_type=SENSOR_INPUT|SENSOR_OUTPUT;
+         break; 
+         case "DS2502":
+         case "DS1820":
+         case "DS18B20":
+            sensor_var->sensor_type=SENSOR_INPUT;
+         break;
+      }
+   }
 
    void getnew()
    {
-      switch ( configuration->type )
+      string low_type = OWFS->read(configuration->path+"type") ;
+      switch ( low_type )
       {
-         case "vbus":
-            get_vbus();
+         case "DS2413":
+            sensor_var->PIOA = (int)  OWFS->read(configuration->path+"PIO.A");
+            sensor_var->PIOB = (int)  OWFS->read(configuration->path+"PIO.B");
+         break; 
+         case "DS2502":
+            if( configuration->type == "vbus" )
+               get_vbus();
             break;
-         default:
-            sensor_var->temperature = (float) OWFS->read(configuration->path) + (float) configuration->bias;
+         case "DS1820":
+         case "DS18B20":
+            sensor_var->temperature = (float) OWFS->read(configuration->path+"temperature") + (float) configuration->bias;
             break;
       }
    } 
   
    void get_vbus()
    {
-      string data = OWFS->read(configuration->path);
+      string data = OWFS->read(configuration->path+"memory");
       if(!sizeof(data) )
          return;
       sensor_var->collector = (float) (data[3] + (data[4]<<8)) / 10;
