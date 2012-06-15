@@ -1,0 +1,27 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>PikeAtHome Configuration</title>
+<link rel="stylesheet" type="text/css" href="/index.css" />
+</head>
+
+<body>
+<div class="content">
+ <div class="menu" ><include file="/menu.dml" />
+ </div>
+ <div class="head" >Pike At Home Configuration (&form.name;) </div>
+ <div class="modules">
+  &nbsp;Modules<br />
+  <a href="/configuration/index.dml">Webserver</a><br />
+  <a href="/configuration/module.dml?name=server">Server</a><br />
+  <emit source="modules">
+  &nbsp;<a href="/configuration/module.dml?name=&_.name;">&_.name;</a><br />
+  </emit> 
+ </div>
+ <div class="main">
+  <configuration name="&form.name;" />
+ </div>
+</div>
+</body>
+</html>

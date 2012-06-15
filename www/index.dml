@@ -17,8 +17,8 @@
  <div class="menu" ><include file="menu.dml" /></div>
  <div class="head" >Home</div>
  <div class="main"><div class="mainitem" >
-  <emit source="sensor" name="Heater.CV" >
-     <if variable="_.index = value">
+  <emit source="sensor" name="OneWire.WoonkamerTemp" >
+     <if variable="_.index = temperature">
         <set variable="form.temperature" value="_.value" />
      </if>
      <if variable="_.index = temperature">
@@ -41,7 +41,7 @@
      <dec variable="form.temp" value="0.5" />
      <td><a href="/index.dml?write=1&amp;newtemperature=&form.temp;"><img height="70px" src="/icons/Down_Arrow.png" /></a></td></tr>
      </table>
- </div><br />&OWFS.Zonneboiler.boiler;</div>
+ </div><br />&PlugWise.PV.value;</div>
 </div>
 </body>
 </html>
