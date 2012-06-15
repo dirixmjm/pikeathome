@@ -75,7 +75,6 @@ array getvar()
 
 void setvar( mapping params )
 { 
-   werror("Params %O\n",params);
    int mod_options = 0;
    foreach(defvar, array option)
    {
@@ -129,7 +128,6 @@ void rpc_command( string sender, string receiver, int command, mapping parameter
    {
       if ( ! has_index(sensors,split[0]+"."+split[1]) )
       {
-         werror("%O %O\n",indices(sensors),split[0]+"."+split[1]);
          switchboard( receiver,sender,COM_ERROR, ([ "error":sprintf("Sensor %s in module %s not found",split[1],split[0]) ]) );
       }
       else

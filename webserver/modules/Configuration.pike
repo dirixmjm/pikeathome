@@ -46,7 +46,6 @@ array DMLConfiguration(Parser.HTML p, mapping args, mapping query )
                 sprintf("%O\n",params) });
      
    //Check for save button, formref and write values.
-      werror("%O\n",query->entities); 
    if( has_index( query->entities->form, "Save" ) && 
        has_index( query->entities->form, "formref" ) &&
        query->entities->form->formref == name )
