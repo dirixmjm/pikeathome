@@ -37,7 +37,7 @@ array DMLConfiguration(Parser.HTML p, mapping args, mapping query )
       return ({ "<H1>Error</H1><p>Configuration not available for values" });
 
    //Find Parameters of the module or sensor.
-   array|mapping params = webserver->xmlrpc( args->name, COM_PARAM, 0 );
+   array|mapping params = webserver->xmlrpc( args->name, COM_PARAM );
 
    if( mappingp(params) && has_index(params,"error"))
       return ({ sprintf("<H1>Server Return An Error</H1><p>%O",params->error) });
@@ -58,7 +58,9 @@ array DMLConfiguration(Parser.HTML p, mapping args, mapping query )
   
    if( has_index( query->entities->form, "add_mod_sensor" ) )
    {
-      array module_sensors = webserver->xmlrpc( name, COM_LIST, ([ "new":1]) );
+      array|mapping module_sensors = webserver->xmlrpc( name, COM_LIST, ([ "new":1]) );
+      if( mappingp(module_sensors) && has_index(module_sensors,"error"))
+         return ({ sprintf("<H1>Server Return An Error</H1><p>%s",module_sensors->error) });
       foreach(module_sensors, mapping module_sensor)
       {
          if( has_index(module_sensor, "sensor" ) && has_index( query->entities->form, module_sensor->sensor  ) )
@@ -129,12 +131,9 @@ array DMLConfiguration(Parser.HTML p, mapping args, mapping query )
    //then list them
    if( sizeof(name_split) == 1 ) 
    {
-      array module_sensors = ({});
-      if( name == "webserver" )
-         module_sensors = ({});
-      else
-      //FIXME make general "module_sensor_list" command
-         module_sensors = webserver->xmlrpc( name, COM_LIST, 0 );
+      array|mapping module_sensors = webserver->xmlrpc( name, COM_LIST, 0 );
+      if( mappingp(module_sensors) && has_index(module_sensors,"error"))
+         return ({ sprintf("<H1>Server Return An Error</H1><p>%s",module_sensors->error) });
       ret+=({ "<FORM method=\"POST\" > " });
       ret+=({ "<input type=\"hidden\" name=\"update_mod_sensor\" value=\"1\"/>" });
       ret+=({ "<table border=\"1\">" });
@@ -146,6 +145,13 @@ array DMLConfiguration(Parser.HTML p, mapping args, mapping query )
             module_sensor_name = module_sensor_split[1];
          else 
             module_sensor_name = sensor;
+         //FIXME this must be changed to something more universally like
+         //server.module.sensor.value for all.
+         if( name == "webserver" )
+         {
+            module_sensor_name = "webserver."+module_sensor_name;
+            sensor = "webserver."+sensor;
+         }
 
          ret+=({ "<tr><td align=\"left\" >"});
          ret+=({ sprintf("<a href=\"module.dml?name=%s\">%s</a>",sensor,module_sensor_name ) });
@@ -170,7 +176,9 @@ array DMLConfiguration(Parser.HTML p, mapping args, mapping query )
       //List sensors That can be added
       if( has_index( query->entities->form, "find_sensor" ) )
       {
-         array module_sensors = webserver->xmlrpc( name, COM_LIST, ([ "new":1]) );
+         array|mapping module_sensors = webserver->xmlrpc( name, COM_LIST, ([ "new":1]) );
+         if( mappingp(module_sensors) && has_index(module_sensors,"error"))
+            return ({ sprintf("<H1>Server Return An Error</H1><p>%s",module_sensors->error) });
          ret+=({ "<FORM method=\"POST\">" });
          ret+=({ "<input type=\"hidden\" name=\"add_mod_sensor\" value=\"1\"/>" });
          ret+=({ "<table border=\"1\">" });
@@ -301,7 +309,9 @@ array make_form_input(array param, mapping query, string name)
    {
       string value= sizeof(param)>5?(string)param[5]:(string)param[2];
       ret+= ({ sprintf("<select name=\"%s\">",inname), });
-      array sensors = webserver->xmlrpc( "server", COM_LIST, 0 );
+      array|mapping sensors = webserver->xmlrpc( "server", COM_LIST, 0 );
+      if( mappingp(sensors) && has_index(sensors,"error"))
+         return ({ sprintf("<H1>Server Return An Error</H1><p>%s",sensors->error) });
       sensors = sort(sensors);
       foreach( sensors, string sensor )
       {

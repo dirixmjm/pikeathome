@@ -66,9 +66,9 @@ int main( int argc, array(string) argv )
    if ( has_index( run_config, "debug" ))
       master()->CompatResolver()->add_predefine("DEBUG","1");
    master()->add_include_path(run_config->installpath+"/include" );
-   master()->add_module_path(run_config->installpath+"/server" );
-   master()->add_module_path(run_config->installpath+"/webserver" );
-   master()->add_module_path(run_config->installpath+"/webserver/modules" );
+   //master()->add_module_path(run_config->installpath+"/server" );
+   master()->add_module_path(run_config->installpath+"/" );
+   master()->add_module_path(run_config->installpath+"/modules" );
    HTTPServer = master()->resolv("WebServer")(run_config);
 
    if( ! has_index( run_config, "nodaemon" ) )

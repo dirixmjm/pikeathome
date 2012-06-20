@@ -161,33 +161,83 @@ mixed internal_command( string method, int command, mapping parameters )
    switch(command)
    {
       case COM_PARAM:
-      array var = ({});
-      foreach( defvar, array thisvar )
+      array server_module_split =  split_module_sensor_value( method );
+      if( sizeof(server_module_split) == 1  )
       {
-         //Set parameters if given
-         if(parameters && has_index(parameters,thisvar[0] ) )
-            configuration[thisvar[0]]=parameters[thisvar[0]];
+         array var = ({});
+         foreach( defvar, array thisvar )
+         {
+            //Set parameters if given
+            if(parameters && has_index(parameters,thisvar[0] ) )
+               configuration[thisvar[0]]=parameters[thisvar[0]];
 
-         if( has_index( configuration, thisvar[0] ) )
-            var += ({ thisvar + ({ configuration[thisvar[0]] }) });
-         else
-            var += ({ thisvar });
-      }
+            if( has_index( configuration, thisvar[0] ) )
+               var += ({ thisvar + ({ configuration[thisvar[0]] }) });
+            else
+               var += ({ thisvar });
+         }
       return var;
+      }
+      else
+      {
+         //FIXME make interface for module variables
+         return ({});
+      }
+      break;
+      case COM_LIST:
+      if( parameters && has_index(parameters, "new" ) )
+      {
+         array compiled_modules = ({});
+         array failed_modules = ({});
+         object moddir = Filesystem.Traversion(run_config->installpath+"/modules" );
+         foreach( moddir; string dirname; string filename )
+         {
+            string name="";
+            if( !has_suffix(filename,".pike")) continue;
+            sscanf(filename,"%s\.pike",name);
+            object themodule;
+            mixed catch_result = catch {
+               themodule = compile_file(dirname+filename)(name,this);
+            };
+            if( catch_result)
+            {
+               failed_modules+= ({ ([ "module":name, "error":"Compilation Failed" ]) });
+#ifdef DEBUG
+         log(LOG_ERR,"Error:%O\n",catch_result);
+#endif
+            }
+            else
+            {
+               compiled_modules += ({ ([ "module":name,
+                             "parameters":themodule->defvar +
+                             ({ ({ "name",PARAM_STRING,"default","Name"}) })
+                              ]) });
+            }
+
+         }
+         return compiled_modules+failed_modules;
+      }
+      else
+      {
+         return configuration->module;
+      }
       break;
       default:
-      log(LOG_ERR,"Unknow Command %d\n",command);
-      return ([]);
+         log(LOG_ERR,"Unknown Command %d\n",command);
+         return ([ "error":sprintf("Unknown Command %d\n",command) ]);
    }
 }
 
-mixed xmlrpc( string method, int command, mapping parameters )
+mixed xmlrpc( string method, int command, mapping|void parameters )
 {
    //Check if the method is internal
-   if ( method == "webserver" )
+   if ( method == "webserver" || has_prefix( method, "webserver" ) )
    {
       return internal_command(method, command,parameters );
    }
+
+   //FIXME, maybe have multiple servers, with different names?
+
 #ifdef DEBUG
    log(LOG_DEBUG,"XMLRPC: Send Request %s %d\n",method, command );
    log(LOG_DEBUG,"XMLRPC: %O\n",parameters );

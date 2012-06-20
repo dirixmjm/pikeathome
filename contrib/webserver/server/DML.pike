@@ -145,8 +145,7 @@ array EmitSensors( mapping args, mapping query )
                    !has_index(args,"output") && !has_index(args,"schedule") ) )
        sensor_type = 0xFF;
    array ret = ({});
-   array sensors = xmlrpc( args->name?args->name:"server", COM_ALLSENSOR, ([ "new":args->new?1:0]) ); 
-  
+   array sensors = xmlrpc( args->name?args->name:"server", COM_ALLSENSOR ); 
    foreach( sensors , string sensor )
    {
       mapping info = xmlrpc( sensor, COM_INFO, ([ "new":args->new?1:0]) );
@@ -390,43 +389,8 @@ class DMLParser
 
 }
 
-protected mixed xmlrpc( string method, int command, mapping parameters )
+protected mixed xmlrpc( mixed ... args )
 {
-  //Check if the method is internal
-   if ( method == "webserver" )
-      return webserver->internal_command(method, command,parameters );
-   
-#ifdef DEBUG
-   webserver->log(LOG_DEBUG,"XMLRPC: Send Request %s %d\n",method, command );
-#endif
-   string data = Protocols.XMLRPC.encode_call(method,({command,parameters}) );
-   //FIXME Cache the connection?
-   object req = Protocols.HTTP.do_method("POST",
-                                           configuration->xmlrpcserver,0,
-                                           (["Content-Type":"text/xml"]),
-                                           0,data);
-   if(!req)
-   {  
-      webserver->log(LOG_ERR,"XMLRPC: Lost Connection\n" );
-      return UNDEFINED;
-   }
-
-   if(req->status != 200 )
-   {
-      webserver->log(LOG_ERR,"XMLRPC: Server returned with \"%d\"\n",req->status );
-      return UNDEFINED;
-   }
-
-#ifdef DEBUG
-   webserver->log(LOG_DEBUG,"XMLRPC: %O\n",Protocols.XMLRPC.decode_response(req->data()) );
-#endif
-
-   array res = Protocols.XMLRPC.decode_response(req->data());
-   if( mappingp( res[0] ) && has_index(res[0],"error") )
-   {
-      webserver->log(LOG_ERR,"XMLRPC: Server returned with \"%s\"\n",res[0]->error );
-      return UNDEFINED;
-   }
-   return res[0];
+   return webserver->xmlrpc(@args);
 }
 
