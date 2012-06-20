@@ -24,9 +24,9 @@ void init()
 {
 }
 
-array split_module_sensor_value(string what)
+array split_server_module_sensor_value(string what)
 {
-   return domotica->split_module_sensor_value(what);
+   return domotica->split_server_module_sensor_value(what);
 }
 
 void log_data( string name, string|int data, int|void tstamp )

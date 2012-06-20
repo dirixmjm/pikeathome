@@ -106,7 +106,7 @@ array setvar( mapping params )
 
 void rpc_command( string sender, string receiver, int command, mapping parameters, function callback, mixed ... callback_args)
 {
-   array split = module->split_module_sensor_value(receiver);
+   array split = module->split_server_module_sensor_value(receiver);
    switch(command)
    {
       case COM_ANSWER:
@@ -116,17 +116,17 @@ void rpc_command( string sender, string receiver, int command, mapping parameter
       {
       //FIXME This should also be a callback (and backends callback driven)
       //And create a buffer of callers, in order to de-multiplex?
-      if( sizeof(split) > 2 )
+      if( sizeof(split) > 3 )
          //FIXME Error if variable does not exist?
-         switchboard(receiver, sender, COM_ANSWER, info( parameters->new )[split[2]]);
+         switchboard(receiver, sender, COM_ANSWER, info( parameters->new )[split[3]]);
       else
          switchboard(receiver, sender, COM_ANSWER, info( parameters->new ) );
       }
       break;
       case COM_WRITE:
       {
-         if( sizeof( split ) > 2  )
-            switchboard(receiver, sender, COM_ANSWER, write( ([ split[2]:parameters->values ]) ), @callback_args );
+         if( sizeof( split ) > 3  )
+            switchboard(receiver, sender, COM_ANSWER, write( ([ split[3]:parameters->values ]) ), @callback_args );
          else if ( mappingp(parameters->values ) )
             switchboard(receiver, sender, COM_ANSWER,write( parameters->values ), @callback_args );
          else

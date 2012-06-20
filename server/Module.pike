@@ -120,20 +120,20 @@ void rpc_command( string sender, string receiver, int command, mapping parameter
 {
    //This module is the receiver.
    //FIXME Check if the request is for this module.
-   array split = split_module_sensor_value(receiver);
+   array split = split_server_module_sensor_value(receiver);
  
 
    //Check if the request is for a sensor.
-   if( sizeof(split) > 1)
+   if( sizeof(split) > 2)
    {
-      if ( ! has_index(sensors,split[0]+"."+split[1]) )
+      if ( ! has_index(sensors,split[0]+"."+split[1]+"."+split[2]) )
       {
          switchboard( receiver,sender,COM_ERROR, ([ "error":sprintf("Sensor %s in module %s not found",split[1],split[0]) ]) );
       }
       else
       {
       //Call the requested module
-         call_out(sensors[split[0]+"."+split[1]]->rpc_command, 0, sender, receiver, command, parameters );
+         call_out(sensors[split[0]+"."+split[1]+"."+split[2]]->rpc_command, 0, sender, receiver, command, parameters );
       }
    }
    else
@@ -240,7 +240,7 @@ void logdata(mixed ... args)
    call_out(domotica->log(LOG_DATA,@args),0);
 }
 
-array split_module_sensor_value(string module_sensor_value)
+array split_server_module_sensor_value(string module_sensor_value)
 {
-   return domotica->split_module_sensor_value(module_sensor_value);
+   return domotica->split_server_module_sensor_value(module_sensor_value);
 }

@@ -6,13 +6,16 @@ protected array loggers = ({});
 object config,xmlrpc;
 protected object server_configuration;
 protected mapping run_config;
-protected array compiled_modules=({});
+protected string name ="";
+
 
 void create( mapping rconfig)
 {
    run_config = rconfig;
+   name = run_config->name;
    config = Config( run_config->database );
-   server_configuration = config->Configuration("main");
+   server_configuration = config->Configuration(name);
+
    xmlrpc = .XMLRPC( run_config->xmlrpcserver, this ); 
    if ( server_configuration->module )
       moduleinit( server_configuration->module );
@@ -57,7 +60,7 @@ void logout(int log_level, mixed ... args )
 /* Split a sensor or module pointer into an array.
  * The array contains ({ module, sensor, attribute });
 */
-array split_module_sensor_value(string what)
+array split_server_module_sensor_value(string what)
 {
    array ret = ({});
    string parse = what;
@@ -91,10 +94,10 @@ void rpc_command( string sender, string receiver, int command, mapping parameter
       break;
       case COM_LIST:
       {
-         array failed_modules=({});
          if( parameters && has_index(parameters,"new") )
          {
-            compiled_modules = ({});
+            array failed_modules=({});
+            array compiled_modules = ({});
             object moddir = Filesystem.Traversion(run_config->installpath + "/modules" );
             foreach( moddir; string dirname; string filename )
             { 
@@ -197,20 +200,35 @@ void switchboard( string sender, string receiver, int command, mixed parameters 
       call_out(switchboard, 0, "switchboard", sender, 30, ([ "error":"No module,sensor or value is requested" ]) );
       log(LOG_EVENT,LOG_ERR,"Switchboard called without any receiver\n");
    }
-   //Server Parameters
-   if( receiver == "server" )
-   {
-      call_out(rpc_command, 0, sender, receiver, command, parameters );
-      return;
-   }
-   
-   if( receiver == "xmlrpc" )
-   {
-      call_out(xmlrpc->rpc_command, 0, sender, receiver, command, parameters );
-      return;
-   }
 
-   if( receiver == "switchboard" )
+   array split = split_server_module_sensor_value(receiver);
+   //FIXME Remove concatenating by preventing it in split_server_module_sensor.
+   // ({ server, server.module,server.module.sensor,server.module.sensor.value})
+   //Something went wrong and the switchboard is called
+   //Switchboard message for the current server
+   if ( split[0] == name)
+   {
+      //Message for the server
+      if( sizeof( split) == 1 )
+      {
+         call_out(rpc_command, 0, sender, receiver, command, parameters );
+      }
+      //Propagate to a module
+      else
+      {
+         if ( ! has_index(modules,split[0]+"."+split[1]) )
+         {
+            call_out(switchboard, 0, "switchboard", sender, 30, ([ "error":sprintf("Module %s not found",split[0])+"."+split[1] ]) );
+            log(LOG_EVENT,LOG_ERR,"Switchboard called with unknown module %s\n",split[0]+"."+split[0] );
+         }
+         else
+         {
+         //Call the requested module
+            call_out(modules[split[0]+"."+split[1]]->rpc_command, 0, sender, receiver, command, parameters );
+         }
+      }
+   }
+   else if( split[0] == "switchboard" )
    {
       if( command = COM_ERROR )
          log(LOG_EVENT,LOG_ERR,"Switchboard received error %O\n",parameters->error);
@@ -218,18 +236,13 @@ void switchboard( string sender, string receiver, int command, mixed parameters 
          log(LOG_EVENT,LOG_ERR,"Switchboard received unknown command %d\n",command);
       return;
    }
-   array split = split_module_sensor_value(receiver);
-
-   if ( ! has_index(modules,split[0]) )
-   {
-      call_out(switchboard, 0, "switchboard", sender, 30, ([ "error":sprintf("Module %s not found",split[0]) ]) );
-      log(LOG_EVENT,LOG_ERR,"Switchboard called with unknown module %s\n",split[0]);
-   }
    else
    {
-   //Call the requested module
-      call_out(modules[split[0]]->rpc_command, 0, sender, receiver, command, parameters );
+      //Message is for a different server
+      call_out(xmlrpc->rpc_command, 0, sender, receiver, command, parameters );
    }
+
+
      
 }
 

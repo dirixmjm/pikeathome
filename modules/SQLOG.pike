@@ -18,7 +18,7 @@ void init()
 void log_data( string name, float|int data, int|void tstamp )
 {
    DB = Sql.Sql(configuration->database);
-   array split = split_module_sensor_value(name);
+   array split = split_server_module_sensor_value(name);
  
    int stamp;
    if ( zero_type(tstamp) )
@@ -28,11 +28,12 @@ void log_data( string name, float|int data, int|void tstamp )
    //Check wether int or float (and upscale to int if float).
    int value = (int) ((float) data*(int) configuration->precision);
 
-   DB->query( "INSERT INTO log (module,sensor,variable,stamp,value) " +
-                 " VALUES (:module,:sensor,:variable,to_timestamp(:timestamp),:value );",
-                 ([ ":module":split[0],
-                    ":sensor":split[1],
-                    ":variable":split[2],
+   DB->query( "INSERT INTO log (sensor,variable,stamp,value) " +
+                 " VALUES (:sensor,:variable,to_timestamp(:timestamp),:value );",
+                 ([ ":server":split[0],
+                    ":module":split[1],
+                    ":sensor":split[2],
+                    ":variable":split[3],
                     ":timestamp":stamp,
                     ":value":value]) );
 }
@@ -40,7 +41,7 @@ void log_data( string name, float|int data, int|void tstamp )
 mapping retr_data( string name, int|void start, int|void end)
 {
    DB = Sql.Sql(configuration->database);
-   array split = split_module_sensor_value(name);
+   array split = split_server_module_sensor_value(name);
    int stamp_start=0,stamp_end;
    if ( zero_type(end) )
       stamp_end = time();
@@ -49,14 +50,15 @@ mapping retr_data( string name, int|void start, int|void end)
    if ( !zero_type(start) )
       stamp_start = start;
    array res = DB->query( "SELECT stamp,value FROM log "+
-                          "WHERE module=:module AND "+
+                          "WHERE server=:server AND module=:module AND "+
                           " sensor=:sensor AND "+
                           " variable=:variable AND "+
                           " stamp >= to_timestamp(:stampstart) AND "+
                           " stamp <= to_timestamp(:stampend);",
-                 ([ ":module":split[0],
-                    ":sensor":split[1],
-                    ":variable":split[2],
+                 ([ ":server":split[0],
+                    ":module":split[1],
+                    ":sensor":split[2],
+                    ":variable":split[3],
                     ":stampstart":stamp_start,
                     ":stampend":stamp_end]) );
   
