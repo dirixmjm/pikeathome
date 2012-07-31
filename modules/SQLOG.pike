@@ -27,15 +27,24 @@ void log_data( string name, float|int data, int|void tstamp )
       stamp = tstamp;
    //Check wether int or float (and upscale to int if float).
    int value = (int) ((float) data*(int) configuration->precision);
-
-   DB->query( "INSERT INTO log (sensor,variable,stamp,value) " +
-                 " VALUES (:sensor,:variable,to_timestamp(:timestamp),:value );",
+/*  DB->query( "INSERT INTO oldlog (server,module,sensor,variable,stamp,value) " +
+                " VALUES (:server,:module,:sensor,:variable,to_timestamp(:timestamp),:value );", */
+   mixed error = catch {
+   DB->query( "INSERT INTO log (source_id,stamp,value) " +
+                 " VALUES ((SELECT id FROM source WHERE server=:server "+
+                 " AND sensor=:sensor AND module=:module AND " +
+                 " variable=:variable LIMIT 1), " +
+                 "to_timestamp(:timestamp),:value );",
                  ([ ":server":split[0],
                     ":module":split[1],
                     ":sensor":split[2],
                     ":variable":split[3],
                     ":timestamp":stamp,
-                    ":value":value]) );
+                    ":value":(int) value]) );
+   };
+   if( error )
+     logerror("Query Failed with %O\n",error);
+     
 }
 
 mapping retr_data( string name, int|void start, int|void end)
@@ -49,7 +58,7 @@ mapping retr_data( string name, int|void start, int|void end)
       stamp_end = end;
    if ( !zero_type(start) )
       stamp_start = start;
-   array res = DB->query( "SELECT stamp,value FROM log "+
+   array res = DB->query( "SELECT stamp,value FROM oldlog "+
                           "WHERE server=:server AND module=:module AND "+
                           " sensor=:sensor AND "+
                           " variable=:variable AND "+
@@ -61,7 +70,19 @@ mapping retr_data( string name, int|void start, int|void end)
                     ":variable":split[3],
                     ":stampstart":stamp_start,
                     ":stampend":stamp_end]) );
-  
+
+   werror( "SELECT stamp,value FROM log "+
+                          "WHERE server=%s AND module=%s AND "+
+                          " sensor=%s AND "+
+                          " variable=%s AND "+
+                          " stamp >= to_timestamp(%d) AND "+
+                          " stamp <= to_timestamp(%d);",
+                 split[0],
+                    split[1],
+                    split[2],
+                    split[3],
+                    stamp_start,
+                    stamp_end );
   return ([ "timestamp":res->stamp,"value":res->value ]);
 }
     

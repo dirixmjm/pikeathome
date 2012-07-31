@@ -115,7 +115,7 @@ class sensor
       {
          case 0x10:
          case 0x28:
-            logdata(sensor_var->name+".temperature",sensor_var->temperature, time(1) );
+            logdata(sensor_prop->name+".temperature",sensor_var->temperature, time(1) );
             break;
       }
    }

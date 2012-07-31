@@ -30,7 +30,13 @@ class sensor
                                   "name":"",
                                   "type":sensor_type,
                                   "level": 0
-                                  ]); 
+                                  ]);
+   protected mapping sensor_prop = ([
+                                  "module":"Comperator",
+                                  "name":"",
+                                  "type":sensor_type,
+                                  ]);
+ 
    void sensor_init(  )
    {
       counter = (int) configuration->gracecount;
@@ -40,7 +46,7 @@ class sensor
    protected void sensor_timer()
    {
       call_out(sensor_timer, (int) configuration->timer);
-      switchboard(sensor_var->name,configuration->input, COM_INFO, (["new":1]), compare);
+      switchboard(sensor_prop->name,configuration->input, COM_INFO, (["new":1]), compare);
    }
 
    void written(mixed returnvalue )
@@ -84,11 +90,11 @@ class sensor
           switch( (int) configuration->function )
           {
              case 0:
-                switchboard(sensor_var->name,configuration->output,COM_WRITE,(["values":0]),written);
+                switchboard(sensor_prop->name,configuration->output,COM_WRITE,(["values":0]),written);
                 break;
              case 1:
              case 2:
-                switchboard(sensor_var->name,configuration->output,COM_WRITE,(["values":1]),written);
+                switchboard(sensor_prop->name,configuration->output,COM_WRITE,(["values":1]),written);
                 break;
           }
        }
@@ -97,11 +103,11 @@ class sensor
           switch( (int) configuration->function )
           {
              case 1:
-                switchboard(sensor_var->name,configuration->output,COM_WRITE,(["values":0]),written);
+                switchboard(sensor_prop->name,configuration->output,COM_WRITE,(["values":0]),written);
                 break;
              case 0:
              case 3:
-                switchboard(sensor_var->name,configuration->output,COM_WRITE,(["values":1]),written);
+                switchboard(sensor_prop->name,configuration->output,COM_WRITE,(["values":1]),written);
                 break;
           }
        }

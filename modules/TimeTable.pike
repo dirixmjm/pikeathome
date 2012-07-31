@@ -22,7 +22,6 @@ class sensor
    int sensor_type = SENSOR_SCHEDULE;
 
    mapping sensor_var = ([
-      "module": "TimeTable",
       "state": 0,
       //Variable of the schedule pre-announcer (Necessary for the Heater module)
        "current_schedule" : 0,
@@ -50,7 +49,7 @@ class sensor
    {
       if(!theschedule || !sizeof(theschedule) )
       {
-         module->log(LOG_EVENT,LOG_ERR,"No Schedule defined for TimePlan %s",sensor_var->name);
+         module->log(LOG_EVENT,LOG_ERR,"No Schedule defined for TimePlan %s",sensor_prop->name);
          return;
       }
       array to_sort = ({});
@@ -69,7 +68,7 @@ class sensor
 
      int seconds  = schedule();
       //Set output sensor to current setting to the newly scheduled.
-      switchboard(sensor_var->name,configuration->output,COM_WRITE,(["values":theschedule[sensor_var->current_schedule]->value]));
+      switchboard(sensor_prop->name,configuration->output,COM_WRITE,(["values":theschedule[sensor_var->current_schedule]->value]));
 
 #ifdef TIMETABLEDEBUG
       module->log(LOG_EVENT,LOG_DEBUG,"Done schedule, output %d\n", theschedule[sensor_var->current_schedule]->value);
@@ -93,7 +92,7 @@ class sensor
    void preannounce()
    {
       if ( has_index(configuration, "preoutput" ) && configuration->preoutput==1 )
-         switchboard(sensor_var->name,configuration->output,COM_WRITE,(["values":theschedule[sensor_var->current_schedule]->value]));
+         switchboard(sensor_prop->name,configuration->output,COM_WRITE,(["values":theschedule[sensor_var->current_schedule]->value]));
 
    }
 

@@ -12,7 +12,9 @@
 #define COM_ALLSENSOR	 8
 
 #define COM_PARAM	 10
+#define COM_PROP	 11
 
 #define COM_LOGDATA	 20
+#define COM_RETRLOGDATA	 21
 #define COM_ERROR	 30
 

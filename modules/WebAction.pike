@@ -19,14 +19,10 @@ class sensor
    int sensor_type = SENSOR_OUTPUT;
     
    protected mapping sensor_var = ([
-                                  "module":"WebAction",
-                                  "name":"",
-                                  "sensor_type":sensor_type,
                                   "state":0
                                   ]); 
    void sensor_init(  )
    {
-      sensor_var->sensor_type = SENSOR_OUTPUT;
    }
 
    mapping write( mapping what )

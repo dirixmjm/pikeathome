@@ -15,6 +15,9 @@ object HTTPServer;
 object dmlparser;
 object Configparser;
 mapping run_config;
+protected object Config;
+
+protected string name="";
 
 constant defvar = ({
                    ({ "port",PARAM_STRING,"8080","Listen Port",POPT_RELOAD }),
@@ -26,12 +29,13 @@ void create( mapping rconfig )
 {
    //Get basic parameters: run_config 
    run_config=rconfig; 
+   name = run_config->name;
    //Open Log.
    System.openlog("pikeathomewebserver",LOG_PID,LOG_DAEMON);
    //Open config database.
-   object config = master()->resolv("Config")( run_config->database );
+   Config = master()->resolv("Config")( run_config->database );
    //Open Webserver configuration
-   configuration = config->Configuration("WebServer");
+   configuration = Config->Configuration(name);
 
    if ( !has_index(run_config, "webpath" ))
    {
@@ -51,7 +55,7 @@ void create( mapping rconfig )
       configuration->xmlrpcserver=run_config->xmlrpcserver;
 
    //Start webserver.
-   dmlparser = master()->resolv("DML")( this , configuration );
+   dmlparser = master()->resolv("DML")( name, this , run_config, Config );
    log(LOG_DEBUG,"Create Web Interface Port %d\n",(int) configuration->port );
    HTTPServer = Protocols.HTTP.Server.Port( http_callback, (int) configuration->port);
 
@@ -106,17 +110,6 @@ Stdio.File find_file(object request)
     if( request->not_query=="" )
        request->not_query="index.dml";
     request->not_query = replace(request->not_query,({"%20"}),({" "}));
-#ifdef 0
-    //Enter the configuration system
-    if ( has_prefix( request->not_query, "configuration/" ) )
-    {
-       if( !Configparser ) 
-          Configparser = master()->resolv("Configuration")( this , configuration );
-       werror("%O\n",Configparser->abc);
-       return Configparser->parse(request);
-    }
-    else
-#endif 
     if ( Stdio.is_file( run_config->webpath + request->not_query ) )
     {
        array v = request->not_query/".";
@@ -219,7 +212,25 @@ mixed internal_command( string method, int command, mapping parameters )
       }
       else
       {
-         return configuration->module;
+         return configuration->module +({});
+      }
+      break;
+      case COM_ADD:
+      {
+         string module_name = name+"."+parameters->name;
+         m_delete(parameters,"name");
+         if( configuration->module && has_value( configuration->module, module_name ) )
+         {
+            log(LOG_ERR, "There already exists a module instance with name %s\n",module_name);
+            return ([ "error":sprintf("There already exists a module instance with name %s\n",module_name)]);
+
+         }
+         configuration->module+=({module_name});
+         object cfg = Config->Configuration(module_name);
+         foreach( parameters; string index; mixed value )
+            cfg[index]=value;
+         dmlparser->init_modules( ({ module_name }));
+         return UNDEFINED;
       }
       break;
       default:
@@ -231,7 +242,7 @@ mixed internal_command( string method, int command, mapping parameters )
 mixed xmlrpc( string method, int command, mapping|void parameters )
 {
    //Check if the method is internal
-   if ( method == "webserver" || has_prefix( method, "webserver" ) )
+   if ( method == name || has_prefix( method, name ) )
    {
       return internal_command(method, command,parameters );
    }

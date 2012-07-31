@@ -81,15 +81,24 @@ void rpc_command( string sender, string receiver, int command, mapping parameter
    switch(command)
    {
       case COM_LOGDATA:
-      mapping ret = retr_data( parameters->name, parameters->start, parameters->end);
+      {
+         log_data ( sender, parameters->data, has_index(parameters,"stamp")?parameters->stamp:UNDEFINED); 
+         switchboard( receiver,sender, COM_ANSWER, UNDEFINED );
+      }
       break;
-         case COM_PARAM:
-         {
+      case COM_RETRLOGDATA:
+      {
+         mapping ret = retr_data( parameters->name, parameters->start, parameters->end);
+         switchboard( receiver,sender, COM_ANSWER, ret );
+      }
+      break;
+      case COM_PARAM:
+      {
          if( parameters && sizeof( parameters ) > 0 )
             setvar(parameters);
             switchboard( receiver,sender, COM_ANSWER, getvar() );
-         }
-         break;
+      }
+      break;
       case COM_ERROR:
          logerror("%s received error %O\n",receiver,parameters->error);
       break;

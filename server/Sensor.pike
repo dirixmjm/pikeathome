@@ -16,14 +16,21 @@ protected mapping sensor_var = ([
                                "sensor_type":sensor_type
                                ]);
 
+protected mapping sensor_prop = ([
+                               "module":"",
+                               "name":"",
+                               "sensor_type":sensor_type
+                               ]);
+
 void create( string name, object _module, object _configuration )
 {
    //FIXME Dynamically set module name? Should this be a create argument?
    module = _module;
    configuration = _configuration;
    sensor_name = name;
-   sensor_var->name = name;
-   sensor_var->sensor_type = sensor_type;
+   sensor_prop->module = _module->name;
+   sensor_prop->name = name;
+   sensor_prop->sensor_type = sensor_type;
    sensor_init();
 }
 
@@ -44,11 +51,16 @@ mixed write( mapping what )
  * in a mapping.
  * If "new" is given, the sensor must be queried for new values.
  */
-mapping info( int|void new )
+mapping info( )
 {
-   if ( new )
-      getnew();
+
+   getnew();
    return  sensor_var;
+}
+
+mapping property()
+{
+   return sensor_prop;
 }
 
 /* Each sensor should implement this function. 
@@ -116,17 +128,28 @@ void rpc_command( string sender, string receiver, int command, mapping parameter
       {
       //FIXME This should also be a callback (and backends callback driven)
       //And create a buffer of callers, in order to de-multiplex?
-      if( sizeof(split) > 3 )
+      if( sizeof(split) == 4 )
          //FIXME Error if variable does not exist?
-         switchboard(receiver, sender, COM_ANSWER, info( parameters->new )[split[3]]);
+         switchboard(receiver, sender, COM_ANSWER, info( )[split[3]]);
       else
-         switchboard(receiver, sender, COM_ANSWER, info( parameters->new ) );
+         switchboard(receiver, sender, COM_ANSWER, info( ) );
+      }
+      break;
+      case COM_PROP:
+      {
+      //FIXME This should also be a callback (and backends callback driven)
+      //And create a buffer of callers, in order to de-multiplex?
+      if( sizeof(split) == 4 )
+         //FIXME Error if variable does not exist?
+         switchboard(receiver, sender, COM_ANSWER, property( )[split[3]]);
+      else
+         switchboard(receiver, sender, COM_ANSWER, property( ) );
       }
       break;
       case COM_WRITE:
       {
-         if( sizeof( split ) > 3  )
-            switchboard(receiver, sender, COM_ANSWER, write( ([ split[3]:parameters->values ]) ), @callback_args );
+         if( sizeof( split ) == 4  )
+            switchboard(receiver, sender, COM_ANSWER, write( ([ split[3]:parameters->value ]) ), @callback_args );
          else if ( mappingp(parameters->values ) )
             switchboard(receiver, sender, COM_ANSWER,write( parameters->values ), @callback_args );
          else

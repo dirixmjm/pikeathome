@@ -1,6 +1,6 @@
 #define XMLRPCDEBUG
 #include <module.h>
-#define MAXREQUESTTIME 30
+#define MAXREQUESTTIME 300
 
 string module_name = "XMLRPC";
 
@@ -56,7 +56,6 @@ void request_timeout()
 
 mapping request_buffer = ([]);
 
-//FIXME Create better error / failure reporting.
 void http_callback( Protocols.HTTP.Server.Request request )
 {
    object call;
@@ -69,6 +68,7 @@ void http_callback( Protocols.HTTP.Server.Request request )
    request_buffer[call->method_name] += ({ req });
    call_out( request_timeout, MAXREQUESTTIME );   
    //switchboard( sender, receiver, command, parameters)
+  //FIXME amend for bidirectional communication
    switchboard("xmlrpc", call->method_name, call->params[0], call->params[1]);
 }
 

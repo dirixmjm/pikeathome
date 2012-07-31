@@ -1,4 +1,4 @@
-#!/usr/bin/env pike
+#!/usr/bin/pike
 // Copyright (c) 2009-2010, Marc Dirix, The Netherlands.
 //                         <marc@electronics-design.nl>
 //
@@ -21,6 +21,7 @@ constant default_installpath="/usr/local/pikeathome";
 constant default_webpath="/usr/local/pikeathome/www/";
 constant default_webport=8080;
 constant default_config = "/usr/local/pikeathome/pikeathome.conf";
+constant default_name = "WebServer";
 
 constant version="0.0.1";
 
@@ -57,6 +58,9 @@ int main( int argc, array(string) argv )
 
    // Read configuration file, but don't overwrite.
    read_config();
+   //FIXME are these if's here the best sollution?
+   if( ! has_index( run_config, "name" ) )
+      run_config->name = default_name;
    if( ! has_index( run_config, "installpath" ) )
       run_config->installpath = default_installpath;
    if( ! has_index( run_config, "webpath" ) )
@@ -66,9 +70,7 @@ int main( int argc, array(string) argv )
    if ( has_index( run_config, "debug" ))
       master()->CompatResolver()->add_predefine("DEBUG","1");
    master()->add_include_path(run_config->installpath+"/include" );
-   //master()->add_module_path(run_config->installpath+"/server" );
-   master()->add_module_path(run_config->installpath+"/" );
-   master()->add_module_path(run_config->installpath+"/modules" );
+   master()->add_module_path(run_config->installpath+"/server" );
    HTTPServer = master()->resolv("WebServer")(run_config);
 
    if( ! has_index( run_config, "nodaemon" ) )

@@ -5,7 +5,17 @@
 //FIXME Protect with Mutex?
 protected Sql.Sql db;
 protected object webserver;
+//The Config object has access to all configurations
+//It is needed for module inits
+protected object Config;
+//The configuration object is used internally for the parser
 protected object configuration;
+//The configuration from the configurationfile
+mapping run_config;
+//The Configuration Module
+protected object Configuration_Interface;
+
+string servername;
 Parser.HTML parser;
 
 
@@ -31,9 +41,14 @@ mapping containers = ([
 ]);
 
 
-void create( object webserver_ , object Config)
+void create( string server_name, object webserver_ , mapping run_config_, object Config_)
 {
    webserver= webserver_;
+   servername = server_name;
+   run_config = run_config_;
+   Config = Config_;
+   configuration = Config->Configuration(servername);
+
    parser = DMLParser();
    parser = DMLParser();
    parser->add_tags(tags);
@@ -43,22 +58,23 @@ void create( object webserver_ , object Config)
    parser->add_entity("amp",0);
    parser->_set_entity_callback( entity_callback );
    parser->lazy_entity_end(1);
-   configuration = Config;
-   init_modules(configuration->module);
+
+   Configuration_Interface = master()->resolv("Configuration")(webserver, configuration);
+   parser->add_tags(Configuration_Interface->tags);
+   parser->add_containers(Configuration_Interface->containers);
+   emit += Configuration_Interface->emit; 
+
+   init_modules(configuration->module + ({}));
 }
 
 void init_modules( array names )
 {
-   if( !has_value(names,"Configuration") )
-   {
-      names+=({"Configuration"});
-      configuration->module+=({"Configuration"});
-   }
    foreach(names, string name)
    {
+      object mod_conf = Config->Configuration(name);
       object mod;
       mixed catch_result = catch {
-         mod = master()->resolv(name)(webserver, configuration );
+         mod = compile_file(run_config->installpath + "/modules/" + mod_conf->module + ".pike")( this, mod_conf );
 
       };
       if(catch_result)
@@ -85,7 +101,7 @@ array entity_callback(Parser.HTML p,
    if ( sscanf(variable,"%s.%s",sensor,variable) == 2 )
    {
       string val = (string) xmlrpc( sprintf("%s.%s.%s",scope,sensor,variable),
-                       COM_INFO, ([ "new":1]) );
+                       COM_INFO);
       return ({ val || entity });
    }
    if( has_index( query->entities, scope ) && has_index(query->entities[scope],variable) )
@@ -126,7 +142,7 @@ int exists_entity(string entity, mapping query )
 array EmitModules( mapping args, mapping query )
 {
   array ret=({});
-  array modules = xmlrpc( "server", COM_LIST, 0 );
+  array modules = xmlrpc( "xiserver", COM_LIST, 0 );
   foreach( modules, string name)
      ret+= ({  ([ "name":name ]) });
   return ret;
@@ -145,12 +161,14 @@ array EmitSensors( mapping args, mapping query )
                    !has_index(args,"output") && !has_index(args,"schedule") ) )
        sensor_type = 0xFF;
    array ret = ({});
-   array sensors = xmlrpc( args->name?args->name:"server", COM_ALLSENSOR ); 
+   array sensors = xmlrpc( args->name, COM_ALLSENSOR ); 
    foreach( sensors , string sensor )
    {
-      mapping info = xmlrpc( sensor, COM_INFO, ([ "new":args->new?1:0]) );
-      if( info->sensor_type & sensor_type )
-         ret += ({ info  });
+      mapping prop = xmlrpc( sensor, COM_PROP );
+      if( has_index(prop,"sensor_type") && (prop->sensor_type & sensor_type) )
+      {
+         ret += ({ prop  });
+      }
    }
    return ret;
 }
@@ -160,7 +178,7 @@ array EmitSensor( mapping args, mapping query )
    if( has_index(args,"name" ) )
    {
       array res = ({});
-      mapping data = xmlrpc( args->name, COM_INFO, ([ "new":args->new?1:0]) );
+      mapping data = xmlrpc( args->name, COM_INFO );
       if( !data )
          return ({});
       foreach( indices(data), string index )
@@ -389,7 +407,7 @@ class DMLParser
 
 }
 
-protected mixed xmlrpc( mixed ... args )
+mixed xmlrpc( mixed ... args )
 {
    return webserver->xmlrpc(@args);
 }

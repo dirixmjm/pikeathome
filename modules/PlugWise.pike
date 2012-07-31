@@ -54,9 +54,6 @@ class sensor
 
    int sensor_type = SENSOR_INPUT | SENSOR_OUTPUT;
    mapping sensor_var = ([
-                           "module":"",
-                           "name": "",
-                           "sensor_type": sensor_type,
                            "state": 0,
                            "online": 0,
                            "value": 0.0,
@@ -64,11 +61,12 @@ class sensor
 
    void create( string name, object _module, object _configuration)
    {
-      sensor_var->module = _module->name;
       module = _module;
       configuration = _configuration;
       sensor_name = name;
-      sensor_var->name = name;
+      sensor_prop->module = _module->name;
+      sensor_prop->name = name;
+      sensor_prop->sensor_type = sensor_type;
       if( has_index( configuration, "log" ) && (int) configuration->log == 1 )
          call_out(log,30);
    }
@@ -103,7 +101,7 @@ class sensor
    protected void getnew( )
    {
 #ifdef PLUGWISEDEBUG
-   logdebug("Retrieving new values for plug %s\n",sensor_var->name);
+   logdebug("Retrieving new values for plug %s\n",sensor_prop->name);
 #endif
          object plug = module->PlugWise->Plugs[configuration->sensor]; 
          plug->info();
@@ -114,26 +112,26 @@ class sensor
 
    void log_callback( array data, int logaddress )
    {
-      int sum=0;
-      foreach( data, mapping log_item )
-      {
-         //FIXME Correct plug time here?
-         if( log_item->hour - time(1) > 60 )
-            logerror("Loghour %d is larger then current timestamp %d\n",log_item->hour, time(1)); 
-         logdata(sensor_var->name+".power",log_item->kwh,log_item->hour);
-      }
       object plug = module->PlugWise->Plugs[configuration->sensor];
       configuration->nextaddress=logaddress+1;
       //Check for roundtrip
       if( logaddress > plug->powerlogpointer )
-         configuration->nextaddress=logaddress+1;
+         configuration->nextaddress=1;
       //Get next log if we lag behind  
       if( logaddress+1 < plug->powerlogpointer )
       {
          plug->powerlog(logaddress+1);
 #ifdef PLUGWISEDEBUG
-            logdebug("Retrieving address %d for plug %s with current address %d\n",(int) logaddress+1,sensor_var->name,(int) plug->powerlogpointer);
+            logdebug("Retrieving address %d for plug %s with current address %d\n",(int) logaddress+1,sensor_prop->name,(int) plug->powerlogpointer);
 #endif
+      }
+      //Now do the logging
+      foreach( data, mapping log_item )
+      {
+         //FIXME Correct plug time here?
+         if( log_item->hour - time(1) > 60 )
+            logerror("Loghour %d is larger then current timestamp %d\n",log_item->hour, time(1)); 
+         logdata(sensor_prop->name+".power",log_item->kwh,log_item->hour);
       }
    }
 
@@ -145,7 +143,7 @@ class sensor
       //FIXME Log error?
       if( ! plug )
       { 
-         logdebug("Can't log unknown plug? %s\n",sensor_var->name);
+         logdebug("Can't log unknown plug? %s\n",sensor_prop->name);
          return;
       }
       if( ! plug->online)
@@ -167,7 +165,7 @@ class sensor
       if( (int) configuration->nextaddress < plug->powerlogpointer )
       {
 #ifdef PLUGWISEDEBUG
-            logdebug("Retrieving address %d for plug %s with current address %d\n",(int) configuration->nextaddress,sensor_var->name,(int) plug->powerlogpointer);
+            logdebug("Retrieving address %d for plug %s with current address %d\n",(int) configuration->nextaddress,sensor_prop->name,(int) plug->powerlogpointer);
 #endif
          plug->powerlog( (int) configuration->nextaddress );
       }

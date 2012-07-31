@@ -30,28 +30,51 @@ class sensor
    inherit Sensor;
 
    protected mapping sensor_var = ([
-                                    "module":"OWFS",
                                     "online": 1,
                                    ]);
+
+   protected mapping sensor_prop = ([
+                                    "module":"",
+                                    "name":""
+                                   ]);
+
    void sensor_init()
    {
-      string low_type = OWFS->read(configuration->path+"type") ;
+      string low_type = "";
+      string catch_err = catch {
+         low_type = OWFS->read(configuration->path+"type") ;
+      };
+      if( catch_err )
+      {
+         logerror("Sensor %s not found\n",name);
+         sensor_var->online = 0;
+         return;
+      }
       switch ( low_type )
       {
          case "DS2413":
-            sensor_var->sensor_type=SENSOR_INPUT|SENSOR_OUTPUT;
+            sensor_prop->sensor_type=SENSOR_INPUT|SENSOR_OUTPUT;
          break; 
          case "DS2502":
          case "DS1820":
          case "DS18B20":
-            sensor_var->sensor_type=SENSOR_INPUT;
+            sensor_prop->sensor_type=SENSOR_INPUT;
          break;
       }
    }
 
    void getnew()
    {
-      string low_type = OWFS->read(configuration->path+"type") ;
+      string low_type = "";
+      string catch_err = catch {
+         low_type = OWFS->read(configuration->path+"type") ;
+      };
+      if( catch_err )
+      {
+         logerror("Sensor %s not found\n",name);
+         sensor_var->online = 0;
+         return;
+      }
       switch ( low_type )
       {
          case "DS2413":

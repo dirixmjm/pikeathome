@@ -90,7 +90,7 @@ void rpc_command( string sender, string receiver, int command, mapping parameter
          array ret = ({});
          foreach(defvar, array var)
             ret+= ({ var + ({ server_configuration[var[0]] }) });
-         switchboard("server", sender, 0, ret );
+         switchboard(name, sender, COM_ANSWER, ret );
       break;
       case COM_LIST:
       {
@@ -124,10 +124,10 @@ void rpc_command( string sender, string receiver, int command, mapping parameter
                                  ]) });
                }
             }
-            switchboard("server", sender,0, compiled_modules + failed_modules );
+            switchboard(name, sender,COM_ANSWER, compiled_modules + failed_modules );
          }
          else
-            switchboard("server", sender, 0, indices(modules) );
+            switchboard(name, sender, COM_ANSWER, indices(modules) );
       }
       break;
       case COM_ALLSENSOR:
@@ -140,31 +140,31 @@ void rpc_command( string sender, string receiver, int command, mapping parameter
            foreach( values(modules[module]->sensors), object sensor )
               sensors+=({ sensor->sensor_name });
          }
-         switchboard("server", sender ,0, sensors);
+         switchboard(name, sender ,COM_ANSWER, sensors);
       }
       break;
       case COM_ADD:
       {
-         string name = parameters->name;
+         string module_name = name+"."+parameters->name;
          m_delete(parameters,"name");
-         if ( has_value(server_configuration->module, name ) )
+         if ( has_value(server_configuration->module, module_name ) )
          {
-            string error=sprintf("There already exists a module instance with name %s\n",name);
+            string error=sprintf("There already exists a module instance with name %s\n",module_name);
             log(LOG_EVENT,LOG_ERR,error);
-         switchboard("server", sender, 30, ([ "error":error ]));
+         switchboard(module_name, sender, 30, ([ "error":error ]));
          }
-         server_configuration->module+=({name});
-         object cfg = config->Configuration( name );
+         server_configuration->module+=({module_name});
+         object cfg = config->Configuration( module_name );
          foreach ( parameters; string index; mixed value )
            cfg[index]=value;
-         moduleinit(({ name } ) );
-         switchboard("server", sender, COM_ANSWER, UNDEFINED );
+         moduleinit(({ module_name } ) );
+         switchboard(name, sender, COM_ANSWER, UNDEFINED );
       }
       break;
       case COM_DROP:
       {
          if( !has_index(modules, parameters->name ))
-           switchboard("server", sender, 30, (["error": sprintf("Can't Delete unknown module %s",parameters->name) ]) );
+           switchboard(name, sender, 30, (["error": sprintf("Can't Delete unknown module %s",parameters->name) ]) );
          modules[parameters->name]->close();
          m_delete(modules,parameters->name);
          server_configuration->module -= ({ parameters->name });
@@ -172,7 +172,7 @@ void rpc_command( string sender, string receiver, int command, mapping parameter
       }
       break;
       default:
-      switchboard("server", sender, 30, ([ "error":sprintf("Unknown Command %d for server",command) ]) );
+      switchboard(name, sender, 30, ([ "error":sprintf("Unknown Command %d for server",command) ]) );
    }
 }
 

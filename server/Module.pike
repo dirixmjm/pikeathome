@@ -190,7 +190,8 @@ void rpc_command( string sender, string receiver, int command, mapping parameter
          break;
          case COM_DROP: //drop sensor
          {
-            string sensor_name = name + "." + parameters->name;
+            logerror("Dropping %s\n", parameters->name); 
+            string sensor_name = parameters->name;
             if(!has_index ( sensors, sensor_name ) )
             {
                switchboard( receiver,sender, COM_ERROR, (["error": sprintf("Can't Delete unknown sensor %s",sensor_name) ]) );

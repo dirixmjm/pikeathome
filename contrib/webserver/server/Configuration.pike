@@ -112,13 +112,11 @@ array DMLConfiguration(Parser.HTML p, mapping args, mapping query )
          ret+= ({ "</td></tr>" });
       }
       ret+=({ "<tr><td>&nbsp;</td><td><input type=\"submit\" name=\"Save\" value=\"Save\" />" }); 
+      //FIXME this should be configurable
       if( sizeof(name_split) == 1 )
-      {
-         if( name=="webserver" || name=="server" )
-            ret+=({ "<input type=\"submit\" name=\"find_sensor\" value=\"Add Module\" /></td></tr>" }); 
-         else   
-            ret+=({ "<input type=\"submit\" name=\"find_sensor\" value=\"Add Sensor\" /></td></tr>" }); 
-      }
+         ret+=({ "<input type=\"submit\" name=\"find_sensor\" value=\"Add Module\" /></td></tr>" }); 
+      else if ( sizeof(name_split) == 2 )
+         ret+=({ "<input type=\"submit\" name=\"find_sensor\" value=\"Add Sensor\" /></td></tr>" }); 
       ret+=({ "</table>" });
       ret+=({ "</FORM>" });
    } //FIXME No Params.
@@ -127,9 +125,9 @@ array DMLConfiguration(Parser.HTML p, mapping args, mapping query )
       ret+= ({ "<H1>This Module Has No Parameters</H1>\n" });
    }
 
-   //Check if this is a module, and check if it contains sensor's, 
+   //Check if this is a server or a module, and check if it contains sensor's, 
    //then list them
-   if( sizeof(name_split) == 1 ) 
+   if( sizeof(name_split) <= 2 ) 
    {
       array|mapping module_sensors = webserver->xmlrpc( name, COM_LIST, 0 );
       if( mappingp(module_sensors) && has_index(module_sensors,"error"))
@@ -141,17 +139,10 @@ array DMLConfiguration(Parser.HTML p, mapping args, mapping query )
       {
          array module_sensor_split = webserver->split_module_sensor_value(sensor);
          string module_sensor_name = "";
-         if( sizeof(module_sensor_split) == 2 )
-            module_sensor_name = module_sensor_split[1];
+         if( sizeof(module_sensor_split) == 3 )
+            module_sensor_name = module_sensor_split[2];
          else 
             module_sensor_name = sensor;
-         //FIXME this must be changed to something more universally like
-         //server.module.sensor.value for all.
-         if( name == "webserver" )
-         {
-            module_sensor_name = "webserver."+module_sensor_name;
-            sensor = "webserver."+sensor;
-         }
 
          ret+=({ "<tr><td align=\"left\" >"});
          ret+=({ sprintf("<a href=\"module.dml?name=%s\">%s</a>",sensor,module_sensor_name ) });
@@ -176,7 +167,7 @@ array DMLConfiguration(Parser.HTML p, mapping args, mapping query )
       //List sensors That can be added
       if( has_index( query->entities->form, "find_sensor" ) )
       {
-         array|mapping module_sensors = webserver->xmlrpc( name, COM_LIST, ([ "new":1]) );
+         array|mapping module_sensors = webserver->xmlrpc( name, COM_LIST, (["new":1 ]) );
          if( mappingp(module_sensors) && has_index(module_sensors,"error"))
             return ({ sprintf("<H1>Server Return An Error</H1><p>%s",module_sensors->error) });
          ret+=({ "<FORM method=\"POST\">" });
@@ -309,21 +300,22 @@ array make_form_input(array param, mapping query, string name)
    {
       string value= sizeof(param)>5?(string)param[5]:(string)param[2];
       ret+= ({ sprintf("<select name=\"%s\">",inname), });
-      array|mapping sensors = webserver->xmlrpc( "server", COM_LIST, 0 );
+      //FIXME xiserver
+      array|mapping sensors = webserver->xmlrpc( "xiserver", COM_ALLSENSOR, 0 );
       if( mappingp(sensors) && has_index(sensors,"error"))
          return ({ sprintf("<H1>Server Return An Error</H1><p>%s",sensors->error) });
       sensors = sort(sensors);
       foreach( sensors, string sensor )
       {
          //FIXME I should be able to designate output variables from input values
-         mapping info = webserver->info(sensor,0);
-         if( info->sensor_type &  (param[1]==PARAM_SENSOROUTPUT?SENSOR_OUTPUT:SENSOR_INPUT) )
+         mapping prop = webserver->xmlrpc(sensor,COM_PROP);
+         if( prop->sensor_type &  (param[1]==PARAM_SENSOROUTPUT?SENSOR_OUTPUT:SENSOR_INPUT) )
          {
-            foreach( indices(info), string key )
+            mapping vars = webserver->xmlrpc(sensor,COM_INFO);
+            //vars = sort(vars);
+            foreach( indices(vars), string key )
             {
-               if( key=="module" || key=="name" || key=="sensor_type" )
-                  continue;
-               string sname = info->name +"."+key;
+               string sname = prop->name +"."+key;
                ret+=({ sprintf("<option value=\"%s\" %s>%s</option>",
                                  sname,sname==value?"selected":"",sname)});
             }
