@@ -198,20 +198,25 @@ array DMLEmit(Parser.HTML p,
    string ret="";
    string scope = args->scope || "_";
    array data = emit[args->source](args, query);
+   mapping scope_backup = ([]);
+   if ( has_index( query->entities, scope ) )
+   {
+     scope_backup = ([ scope: query->entities[scope] ]);
+     m_delete( query->entities, scope);
+   }
    foreach( data, mapping values)
    {
-      mapping q = query +([]);
-      if( has_index(q->entities,scope) )
-         m_delete(q->entities,scope);
+      if( has_index(query->entities,scope) )
+         m_delete(query->entities,scope);
       foreach( indices(values), string ind )
       {
          //FIXME What to do with objects?
          if(!objectp(values[ind]))
-            q->entities[scope] += ([ ind: (string) values[ind] ]);
+            query->entities[scope] += ([ ind: (string) values[ind] ]);
       }
       /*FIXME recursive? this->parse(request, clone)*/
       object emitparser = parser->clone();
-      emitparser->set_extra(q);
+      emitparser->set_extra(query);
       emitparser->ignore_tags(1);
       string pass_1 = emitparser->feed(content)->finish()->read();
       emitparser->ignore_tags(0);
@@ -219,6 +224,8 @@ array DMLEmit(Parser.HTML p,
       ret+= emitparser->read();
    }
    m_delete(query->entities,scope);
+   query->entities+=scope_backup;
+   webserver->log(LOG_DEBUG,"%O\n",query);
    return ({ ret });
 }
 
