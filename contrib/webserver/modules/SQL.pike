@@ -48,7 +48,7 @@ Sql.Sql mdb;
 
 Sql.Sql getdb()
 {
-  if( !mdb || mdb->ping() == -1 )  
+  if( !mdb  )  
     mdb = Sql.Sql(configuration->database);
   return mdb;
 }

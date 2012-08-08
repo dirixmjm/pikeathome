@@ -50,7 +50,6 @@ void create( string server_name, object webserver_ , mapping run_config_, object
    configuration = Config->Configuration(servername);
 
    parser = DMLParser();
-   parser = DMLParser();
    parser->add_tags(tags);
    parser->add_containers(containers);
    parser->add_entity ( "lt", 0);
@@ -225,7 +224,6 @@ array DMLEmit(Parser.HTML p,
    }
    m_delete(query->entities,scope);
    query->entities+=scope_backup;
-   webserver->log(LOG_DEBUG,"%O\n",query);
    return ({ ret });
 }
 
@@ -419,3 +417,10 @@ mixed xmlrpc( mixed ... args )
    return webserver->xmlrpc(@args);
 }
 
+
+string parse_dml(string content, mixed ... args )
+{
+   object p = parser->clone();
+   p->set_extra(@args);
+   return p->finish(content)->read();
+}
