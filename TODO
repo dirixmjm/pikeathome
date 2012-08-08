@@ -1,2 +1,6 @@
-Create universal message system between sensors.
-XMLRPC method=>sensorname
+Create variable control (rw, ro etc).
+Create variable types (switch / float / int).
+e.g. state == (setable) variable
+Switchboard add hook.
+Centralize the Logging structure more
+Remove #ifdef's around logging, making it more runtime-dynamic
