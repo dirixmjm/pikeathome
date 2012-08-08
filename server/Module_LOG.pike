@@ -117,3 +117,7 @@ void switchboard ( mixed ... args )
    call_out( domotica->switchboard,0, @args );
 }
 
+void logdebug(mixed ... args)
+{
+   domotica->log(LOG_EVENT,LOG_DEBUG,@args);
+}
