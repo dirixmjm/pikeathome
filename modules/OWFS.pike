@@ -19,6 +19,9 @@ constant sensvar = ({
 
 void init() 
 {
+#ifdef DEBUG
+   domotica->log(LOG_EVENT,LOG_DEBUG,"Init Module %s\n",name);
+#endif
    OWFS = Public.IO.OWFS( configuration->port );
    init_sensors(configuration->sensor + ({}) );
 }
@@ -41,12 +44,14 @@ class sensor
    void sensor_init()
    {
       string low_type = "";
+      if( !has_suffix( configuration->path, "/" ) )
+         configuration->path = configuration->path+"/";
       string catch_err = catch {
          low_type = OWFS->read(configuration->path+"type") ;
       };
       if( catch_err )
       {
-         logerror("Sensor %s not found\n",name);
+         logerror("OWFS: Sensor %s not found at %s\n",sensor_prop->name,configuration->path);
          sensor_var->online = 0;
          return;
       }
@@ -84,6 +89,8 @@ class sensor
          case "DS2502":
             if( configuration->type == "vbus" )
                get_vbus();
+            if ( configuration->type == "slimmemeter" )
+               get_slimmemeter();
             break;
          case "DS1820":
          case "DS18B20":
@@ -101,6 +108,21 @@ class sensor
       sensor_var->boiler = (float) (data[5] + (data[6]<<8)) / 10 ;
       sensor_var->pump = (int) data[11] ;
       //sensor_var->state = (int) data[25] ;
+   }
+
+   void get_slimmemeter()
+   {
+      string data = OWFS->read(configuration->path+"memory");
+      if(!sizeof(data) )
+         return;
+      sensor_var->T1_in = data[4]*10000+data[5]*1000+data[6]*100+data[7]*10+data[8];
+      sensor_var->T2_in = data[20]*10000+data[21]*1000+data[22]*100+data[23]*10+data[24];
+      sensor_var->T1_out = data[36]*10000+data[37]*1000+data[38]*100+data[39]*10+data[40];
+      sensor_var->T2_out = data[52]*10000+data[53]*1000+data[54]*100+data[55]*10+data[56];
+      sensor_var->power_in = (float) (data[68]*1000+data[69]*100+data[70]*10+data[71] + (float) data[73]/10 + (float) data[74]/100 + (float) data[75]/1000);
+      sensor_var->power_out = (float) (data[84]*1000+data[85]*100+data[86]*10+data[87] + (float) data[89]/10 + (float) data[90]/100 + (float) data[91]/1000);
+      sensor_var->power = sensor_var->power_in-sensor_var->power_out;
+      sensor_var->gas = (float) (data[100]*10000+data[101]*1000+data[102]*100+data[103]*10+data[104] + (float) data[106]/10 + (float) data[107]/100 + (float) data[108]/1000);
    }
  
 }
