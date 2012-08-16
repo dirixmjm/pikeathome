@@ -20,14 +20,13 @@ class sensor()
    void sensor_init( )
    {
       // Check if the GPIO Pin is exported
-      // FIXME Should I check if there are gpio's on the system?
       if( !Stdio.is_dir( "/sys/class/gpio/gpio"+configuration->address ) )
       {
          Stdio.File exp = Stdio.File("/sys/class/gpio/export","w");
-         exp->write(configuration->address);
+         exp->write(address);
          exp->close();
       }
-      Stdio.File dir =  Stdio.File("/sys/class/gpio/gpio"+configuration->address+"/direction","w");
+      Stdio.File dir =  Stdio.File("/sys/class/gpio/gpio"+address+"/direction","w");
       dir->write(configuration->direction);
       dir->close();
    }
@@ -35,13 +34,12 @@ class sensor()
    void getnew()
    {
          Stdio.File sensor = Stdio.File("/sys/class/gpio/gpio"+configuration->address+"/value","R");
-         sscanf(sensor->read(),"%d\n",sensor_var->state);
+         sscanf(sensor->read(),"%d\n",a->state);
          sensor->close();
    }
 
-   void write( string variable, mixed value )
+   midex write ( string variable, mixed value )
    {
-      //FIXME Check direction?
       Stdio.File sensor = Stdio.File("/sys/class/gpio/gpio"+configuration->address+"/value","W");
       if( variable=="state")
          sensor->write( "%d\n",(int) value );

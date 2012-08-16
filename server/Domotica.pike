@@ -17,7 +17,6 @@ void create( mapping rconfig)
    config = Config( run_config->database );
    server_configuration = config->Configuration(name);
 
-//   xmlrpc = .XMLRPC( run_config->xmlrpcserver, this );
    //FIXME, should this be here?
    server_configuration->listenaddress = run_config->listenaddress;
    ICom = .InterCom( this,server_configuration ); 
@@ -67,7 +66,6 @@ void logout(int log_level, mixed ... args )
 array split_server_module_sensor_value(string what)
 {
    array ret = ({});
-   string parse = what;
    int i=search(what,".");
    while(i>0)
    {
@@ -82,6 +80,32 @@ array split_server_module_sensor_value(string what)
    }
    if(sizeof(what))
       ret+= ({ what });
+   return ret;
+}
+
+/* Split a sensor or module pointer into an array.
+ * The array contains ({ server, server.module, server.module.sensor,etc });
+*/
+array cumulative_split_server_module_sensor_value(string what)
+{
+   array ret = ({});
+   string store = "";
+   int i=search(what,".");
+   if( (i < 0) && sizeof(what) )
+      return ({ what });
+
+   while(i>0)
+   {
+      if( what[++i] != '.' )
+      {
+         ret += ({ store + what[..i-2] });
+         store = store + what[..i-2]+"." ;
+         what = what[i..];
+         i=0;
+      }
+      i++;
+      i=search(what,".",i);
+   }
    return ret;
 }
 
@@ -215,8 +239,7 @@ void switchboard( string sender, string receiver, int command, mixed parameters 
       log(LOG_EVENT,LOG_ERR,"Switchboard called without any receiver\n");
    }
 
-   array split = split_server_module_sensor_value(receiver);
-   //FIXME Remove concatenating by preventing it in split_server_module_sensor.
+   array split = cumulative_split_server_module_sensor_value(receiver);
    // ({ server, server.module,server.module.sensor,server.module.sensor.value})
    //Something went wrong and the switchboard is called
    //Switchboard message for the current server
@@ -226,15 +249,15 @@ void switchboard( string sender, string receiver, int command, mixed parameters 
       //Propagate to a module
       if( sizeof( split) > 1)
       {
-         if ( ! has_index(modules,split[0]+"."+split[1]) )
+         if ( ! has_index(modules,split[1]) )
          {
-            call_out(switchboard, 0, "switchboard", sender, 30, ([ "error":sprintf("Module %s not found",split[0])+"."+split[1] ]) );
-            log(LOG_EVENT,LOG_ERR,"Switchboard called with unknown module %s\n",split[0]+"."+split[0] );
+            call_out(switchboard, 0, "switchboard", sender, 30, ([ "error":sprintf("Module %s not found",split[1]) ]) );
+            log(LOG_EVENT,LOG_ERR,"Switchboard called with unknown module %s\n",split[1]);
          }
          else
          {
          //Call the requested module
-            call_out(modules[split[0]+"."+split[1]]->rpc_command, 0, sender, receiver, command, parameters );
+            call_out(modules[split[1]]->rpc_command, 0, sender, receiver, command, parameters );
          }
       }
       //Command for the server

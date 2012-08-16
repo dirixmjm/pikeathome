@@ -62,8 +62,6 @@ class sensor
  
    void compare(float|int|string|mapping input)
    {
-      //FIXME Error handling
-
       int lastlevel = sensor_var->level;
       int newlevel = (float) input > (float) configuration->highlevel;
       if( newlevel !=  lastlevel )

@@ -36,11 +36,9 @@ class sensor
 
    void sensor_init()
    {
-      //FIXME Load Schedule from database.
       theschedule = configuration->schedule;
       sort_schedule();
       find_last_schedule();
-      // FIXME Why? if ( has_index(configuration, "scheduletime") )
       if( theschedule && sizeof(theschedule) )
          call_out(run_schedule,0);
    }

@@ -119,11 +119,8 @@ void close()
 
 void rpc_command( string sender, string receiver, int command, mapping parameters)
 {
-   //This module is the receiver.
-   //FIXME Check if the request is for this module.
    array split = split_server_module_sensor_value(receiver);
  
-
    //Check if the request is for a sensor.
    if( sizeof(split) > 2 )
    {
@@ -137,6 +134,7 @@ void rpc_command( string sender, string receiver, int command, mapping parameter
          call_out(sensors[split[0]+"."+split[1]+"."+split[2]]->rpc_command, 0, sender, receiver, command, parameters );
       }
    }
+   //This module is the receiver.
    else
    {
       if( command < 0 )
@@ -170,7 +168,6 @@ void rpc_command( string sender, string receiver, int command, mapping parameter
          break;
          case COM_ADD: //Add Sensor
          {
-            //FIXME Should I add module_name at this point?
             //What if this isn't a sensor-type module?
             string sensor_name = name + "." + parameters->name;
             m_delete(parameters,"name");
@@ -204,7 +201,6 @@ void rpc_command( string sender, string receiver, int command, mapping parameter
             sensors[sensor_name]->close();
             m_delete(sensors,sensor_name);
             configuration->sensor -= ({ sensor_name });
-            //FIXME Is this the correct way to do this?
             m_delete(domotica->config, sensor_name ); 
             switchboard( receiver,sender,-command,UNDEFINED); 
          }

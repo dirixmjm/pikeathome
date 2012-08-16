@@ -73,26 +73,18 @@ class sensor
 
    mapping write( mapping what )
    {
-      //FIXME Check if the plug exists in the network
       object plug = module->PlugWise->Plugs[configuration->sensor];
       if( !plug )
       {
+         logerror("Plug %s Not Found in the PlugWise Network",configuration->sensor);
          return ([]);
       }
-      //FIXME The plug should handle this!
-      plug->info();
       if (has_index(what,"state") )
       {
          if ( (int) what->state )
-         {
-            if ( !plug->powerstate )
                plug->on();
-         }
          else
-         {
-            if ( plug->powerstate )
                plug->off();
-         }
          sensor_var->state = plug->powerstate;
          return ([ "state": sensor_var->state]);
       }
@@ -136,7 +128,6 @@ class sensor
       //Now do the logging
       foreach( data, mapping log_item )
       {
-         //FIXME Correct plug time here?
          if( log_item->hour - time(1) > 60 )
             logerror("Loghour %d is larger then current timestamp %d\n",log_item->hour, time(1)); 
          logdata(sensor_prop->name+".power",log_item->kwh,log_item->hour);
@@ -148,14 +139,14 @@ class sensor
    {
       call_out(log,3600 );
       object plug = module->PlugWise->Plugs[configuration->sensor]; 
-      //FIXME Log error?
       if( ! plug )
       { 
-         logdebug("Can't log unknown plug? %s\n",sensor_prop->name);
+         logerror("Plug %s Not Found in the PlugWise Network",configuration->sensor);
          return;
       }
       if( ! plug->online)
       {
+         //Send a query to the plug, maybe it's online now.
          plug->info();
          return;
       }

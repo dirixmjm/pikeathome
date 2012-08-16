@@ -60,8 +60,6 @@ class sensor
                                    ]);
    void sensor_init()
    {
-      //FIXME create find_device function in OneWire.
-
       array devices = module->OW->devices(1);
       foreach(devices, object dev )
       {

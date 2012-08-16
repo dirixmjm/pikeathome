@@ -24,7 +24,6 @@ protected mapping sensor_prop = ([
 
 void create( string name, object _module, object _configuration )
 {
-   //FIXME Dynamically set module name? Should this be a create argument?
    module = _module;
    configuration = _configuration;
    sensor_name = name;
@@ -54,7 +53,6 @@ mapping info( )
 {
 
    getnew();
-   //FIXME send old values here?
    return  sensor_var;
 }
 
@@ -82,6 +80,19 @@ array getvar()
    return ret;
 }
 
+void setvar( mapping params )
+{
+   int mod_options = 0;
+   foreach(module->sensvar, array option)
+   {
+      //Find the parameter, and always set it
+      if( has_index( params, option[0] ) )
+      {
+         configuration[option[0]]=params[option[0]];
+      }
+   }
+}
+
 void close()
 {
    destruct(this);
@@ -104,17 +115,6 @@ void logdata(mixed ... args )
 void got_answer(mixed params )
 {
 
-}
-
-array setvar( mapping params )
-{
-   int mod_options = 0;
-   //FIXME check if the parameter is defined?
-   //FIXME parameter options, like reload?
-   foreach( indices(params), string param )
-   {
-      configuration[param]=params[param];
-   }
 }
 
 void rpc_command( string sender, string receiver, int command, mapping parameters )

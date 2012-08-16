@@ -81,14 +81,12 @@ void rpc_command( string sender, string receiver, int command, mapping parameter
       case COM_LOGDATA:
       {
          log_data ( sender, parameters->data, has_index(parameters,"stamp")?parameters->stamp:UNDEFINED); 
-         //FIXME return command necessary?
-         //switchboard( receiver,sender, -command, UNDEFINED );
       }
       break;
       case COM_RETRLOGDATA:
       {
          mapping ret = retr_data( parameters->name, parameters->start, parameters->end);
-         //switchboard( receiver,sender, -command, ret );
+         switchboard( receiver,sender, -command, ret );
       }
       break;
       case COM_PARAM:
