@@ -11,18 +11,6 @@
  <div class="menu" ><include file="menu.dml" />
  </div>
  <div class="head" >Pike At Home Configuration </div>
- <div class="modules">
-  &nbsp;<h3>Modules</h3>
-  <a href="/configuration/index.dml">Webserver</a><br />
-  <a href="/configuration/module.dml?name=server">Server</a><br />
-  <emit source="modules">
-  &nbsp;<a href="/configuration/module.dml?name=&_.name;">&_.name;</a><br />
-  </emit> 
-  <a href="/configuration/newmodule.dml">Add Module</a>
- </div>
- <div class="main">
-   <configuration name='webserver' />
- </div>
-</div>
+   <configuration  />
 </body>
 </html>
