@@ -3,7 +3,8 @@
 
 protected mapping modules = ([]);
 protected array loggers = ({});
-object config,xmlrpc;
+//object xmlrpc;
+object config,ICom;
 protected object server_configuration;
 protected mapping run_config;
 protected string name ="";
@@ -16,7 +17,10 @@ void create( mapping rconfig)
    config = Config( run_config->database );
    server_configuration = config->Configuration(name);
 
-   xmlrpc = .XMLRPC( run_config->xmlrpcserver, this ); 
+//   xmlrpc = .XMLRPC( run_config->xmlrpcserver, this );
+   //FIXME, should this be here?
+   server_configuration->listenaddress = run_config->listenaddress;
+   ICom = .InterCom( this,server_configuration ); 
    if ( server_configuration->module )
       moduleinit( server_configuration->module );
 }
@@ -83,51 +87,61 @@ array split_server_module_sensor_value(string what)
 
 void rpc_command( string sender, string receiver, int command, mapping parameters )
 {
+   array split = split_server_module_sensor_value(receiver);
    switch( command )
    {
-      //FIXME Runtime parameters
       case COM_PARAM:
+      {
+        if ( parameters && mappingp(parameters) )
+        {
+            foreach(defvar, array var)
+            {
+               if( has_index( parameters, var[0] ) )
+                  server_configuration[var[0]] = parameters[var[0]];
+            }
+         }
          array ret = ({});
          foreach(defvar, array var)
             ret+= ({ var + ({ server_configuration[var[0]] }) });
-         switchboard(name, sender, COM_ANSWER, ret );
+         switchboard(name, sender, -command, ret );
+      }
       break;
-      case COM_LIST:
+      case COM_FIND:
       {
-         if( parameters && has_index(parameters,"new") )
-         {
-            array failed_modules=({});
-            array compiled_modules = ({});
-            object moddir = Filesystem.Traversion(run_config->installpath + "/modules" );
-            foreach( moddir; string dirname; string filename )
-            { 
-               string name="";
-               if( !has_suffix(filename,".pike")) continue;
-               sscanf(filename,"%s\.pike",name);
-               object themodule;
-               mixed catch_result = catch { 
-                  themodule =compile_file(dirname+filename)(name,this);
-               };
-               if(catch_result)
-               {
-                  failed_modules += ({ ([  "module":name,
-                               "error": "Compilation Failed" ]) });
+         array failed_modules=({});
+         array compiled_modules = ({});
+         object moddir = Filesystem.Traversion(run_config->installpath + "/modules" );
+         foreach( moddir; string dirname; string filename )
+         { 
+            string name="";
+            if( !has_suffix(filename,".pike")) continue;
+            sscanf(filename,"%s\.pike",name);
+            object themodule;
+            mixed catch_result = catch { 
+               themodule =compile_file(dirname+filename)(name,this);
+            };
+            if(catch_result)
+            {
+               failed_modules += ({ ([  "module":name,
+                            "error": "Compilation Failed" ]) });
 #ifdef DEBUG
          log(LOG_EVENT,LOG_ERR,"Error:%O\n",catch_result);
 #endif
-               }
-               else
-               {
-                  compiled_modules += ({ ([ "module":name,
-                                "parameters":themodule->defvar +
-                                ({ ({ "name",PARAM_STRING,"default","Name"}) })
-                                 ]) });
-               }
             }
-            switchboard(name, sender,COM_ANSWER, compiled_modules + failed_modules );
+            else
+            {
+               compiled_modules += ({ ([ "module":name,
+                             "parameters":themodule->defvar +
+                             ({ ({ "name",PARAM_STRING,"default","Name"}) })
+                              ]) });
+            }
          }
-         else
-            switchboard(name, sender, COM_ANSWER, indices(modules) );
+         switchboard(name, sender, -command, compiled_modules + failed_modules );
+      }
+      break;
+      case COM_LIST:
+      {
+         switchboard(name, sender, -command, indices(modules) );
       }
       break;
       case COM_ALLSENSOR:
@@ -140,7 +154,7 @@ void rpc_command( string sender, string receiver, int command, mapping parameter
            foreach( values(modules[module]->sensors), object sensor )
               sensors+=({ sensor->sensor_name });
          }
-         switchboard(name, sender ,COM_ANSWER, sensors);
+         switchboard(name, sender , -command, sensors);
       }
       break;
       case COM_ADD:
@@ -158,7 +172,7 @@ void rpc_command( string sender, string receiver, int command, mapping parameter
          foreach ( parameters; string index; mixed value )
            cfg[index]=value;
          moduleinit(({ module_name } ) );
-         switchboard(name, sender, COM_ANSWER, UNDEFINED );
+         switchboard(name, sender, -command, UNDEFINED );
       }
       break;
       case COM_DROP:
@@ -209,12 +223,8 @@ void switchboard( string sender, string receiver, int command, mixed parameters 
    if ( split[0] == name)
    {
       //Message for the server
-      if( sizeof( split) == 1 )
-      {
-         call_out(rpc_command, 0, sender, receiver, command, parameters );
-      }
       //Propagate to a module
-      else
+      if( sizeof( split) > 1)
       {
          if ( ! has_index(modules,split[0]+"."+split[1]) )
          {
@@ -227,6 +237,10 @@ void switchboard( string sender, string receiver, int command, mixed parameters 
             call_out(modules[split[0]+"."+split[1]]->rpc_command, 0, sender, receiver, command, parameters );
          }
       }
+      //Command for the server
+      else
+         call_out(rpc_command, 0, sender, receiver, command, parameters );
+      
    }
    else if( split[0] == "switchboard" )
    {
@@ -239,7 +253,7 @@ void switchboard( string sender, string receiver, int command, mixed parameters 
    else
    {
       //Message is for a different server
-      call_out(xmlrpc->rpc_command, 0, sender, receiver, command, parameters );
+      call_out(ICom->rpc_command, 0, sender, receiver, command, parameters );
    }
 
 

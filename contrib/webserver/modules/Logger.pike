@@ -29,7 +29,7 @@ array EmitLog( mapping args, mapping query )
    int start = (int) args->start | 0;
    int end = (int) args->end | time(1);
 
-   mapping values = webserver->xmlrpc( args->logger,
+   mapping values = webserver->rpc( args->logger,
                        COM_LOGDATA, ([ "name":args->sensor, "start":start,
                                        "end":end ]) );
    werror("%O\n",values);

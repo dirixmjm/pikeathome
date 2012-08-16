@@ -113,10 +113,18 @@ class sensor
    void log_callback( array data, int logaddress )
    {
       object plug = module->PlugWise->Plugs[configuration->sensor];
+#ifdef DEBUG
+   logdebug("Plug %s logaddress %d\n",sensor_prop->name,logaddress);
+#endif
       configuration->nextaddress=logaddress+1;
       //Check for roundtrip
+      //Seems to be a bug
       if( logaddress > plug->powerlogpointer )
-         configuration->nextaddress=1;
+      {
+           logerror("logaddress: %d > powerlogpoint %d\n",logaddress, plug->powerlogpointer);
+           configuration->nextaddress=plug->powerlogpointer;
+           return;
+      }
       //Get next log if we lag behind  
       if( logaddress+1 < plug->powerlogpointer )
       {
@@ -167,11 +175,6 @@ class sensor
 #ifdef PLUGWISEDEBUG
             logdebug("Retrieving address %d for plug %s with current address %d\n",(int) configuration->nextaddress,sensor_prop->name,(int) plug->powerlogpointer);
 #endif
-         plug->powerlog( (int) configuration->nextaddress );
-      }
-      else if ( (int) configuration->nextaddress > plug->powerlogpointer )
-      {
-         //Round trip. Log the last higher log
          plug->powerlog( (int) configuration->nextaddress );
       }
   }

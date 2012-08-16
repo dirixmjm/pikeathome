@@ -63,9 +63,11 @@ class sensor
          case "DS2502":
          case "DS1820":
          case "DS18B20":
+            sensor_var->temperature = 0.0;
             sensor_prop->sensor_type=SENSOR_INPUT;
          break;
       }
+      getnew();
    }
 
    void getnew()

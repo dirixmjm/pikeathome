@@ -46,7 +46,7 @@ class sensor
    protected void sensor_timer()
    {
       call_out(sensor_timer, (int) configuration->timer);
-      switchboard(sensor_prop->name,configuration->input, COM_INFO, (["new":1]), compare);
+      switchboard(sensor_prop->name,configuration->input, COM_READ, (["new":1]), compare);
    }
 
    void written(mixed returnvalue )

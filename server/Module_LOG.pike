@@ -2,6 +2,8 @@
 #include <parameters.h>
 #include <command.h>
 
+inherit Base_func;
+
 protected object configuration;
 object domotica;
 
@@ -22,11 +24,6 @@ void create( string _name, object domo )
 
 void init()
 {
-}
-
-array split_server_module_sensor_value(string what)
-{
-   return domotica->split_server_module_sensor_value(what);
 }
 
 void log_data( string name, string|int data, int|void tstamp )
@@ -78,25 +75,27 @@ void close()
 
 void rpc_command( string sender, string receiver, int command, mapping parameters )
 {
+   array split = split_server_module_sensor_value(receiver);
    switch(command)
    {
       case COM_LOGDATA:
       {
          log_data ( sender, parameters->data, has_index(parameters,"stamp")?parameters->stamp:UNDEFINED); 
-         switchboard( receiver,sender, COM_ANSWER, UNDEFINED );
+         //FIXME return command necessary?
+         //switchboard( receiver,sender, -command, UNDEFINED );
       }
       break;
       case COM_RETRLOGDATA:
       {
          mapping ret = retr_data( parameters->name, parameters->start, parameters->end);
-         switchboard( receiver,sender, COM_ANSWER, ret );
+         //switchboard( receiver,sender, -command, ret );
       }
       break;
       case COM_PARAM:
       {
-         if( parameters && sizeof( parameters ) > 0 )
+         if ( sizeof(parameters ) && mappingp(parameters) )
             setvar(parameters);
-            switchboard( receiver,sender, COM_ANSWER, getvar() );
+         switchboard( receiver,sender, -command, getvar() );
       }
       break;
       case COM_ERROR:

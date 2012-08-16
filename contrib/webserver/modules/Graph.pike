@@ -43,8 +43,8 @@ content = replace(content, ({"\r\n","\r"}),({"\n","\n"}) );
 
 
 mapping data = ([]);
-data->xsize = args->xsize || 640;
-data->ysize = args->ysize || 480;
+data->xsize = (int) args->xsize || 640;
+data->ysize = (int) args->ysize || 480;
 data->type = "graph";
 data->subtype = "line";
 data->format = "jpg";
@@ -60,7 +60,6 @@ if( !data->data || ! sizeof(data->data) )
 
 string filename = args->img;
 if( data->orientation ) data->orient = data->orientation;
-werror("%O\n",data);
 string img = Image.JPEG.encode(Graphics.Graph.line(data));
 
 Stdio.write_file(sprintf("/home/marc/storage/pikeathome/www/img/%s.jpg",filename),img,0664);

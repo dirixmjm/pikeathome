@@ -49,19 +49,15 @@ mixed write( mapping what )
 /* 
  * Info returns the last seen sensor input and output values 
  * in a mapping.
- * If "new" is given, the sensor must be queried for new values.
  */
 mapping info( )
 {
 
    getnew();
+   //FIXME send old values here?
    return  sensor_var;
 }
 
-mapping property()
-{
-   return sensor_prop;
-}
 
 /* Each sensor should implement this function. 
  * getnew() queries the sensor for new values, and 
@@ -70,6 +66,11 @@ mapping property()
 
 void getnew()
 {
+}
+
+mapping property()
+{
+   return sensor_prop;
 }
 
 
@@ -116,56 +117,62 @@ array setvar( mapping params )
    }
 }
 
-void rpc_command( string sender, string receiver, int command, mapping parameters, function callback, mixed ... callback_args)
+void rpc_command( string sender, string receiver, int command, mapping parameters )
 {
+   if( command < 0 )
+   {
+      got_answer(parameters);
+      return;
+   }
    array split = module->split_server_module_sensor_value(receiver);
    switch(command)
    {
-      case COM_ANSWER:
-        got_answer(parameters);
-      break;
-      case COM_INFO:
+      case COM_READ:
       {
-      //FIXME This should also be a callback (and backends callback driven)
-      //And create a buffer of callers, in order to de-multiplex?
-      if( sizeof(split) == 4 )
-         //FIXME Error if variable does not exist?
-         switchboard(receiver, sender, COM_ANSWER, info( )[split[3]]);
-      else
-         switchboard(receiver, sender, COM_ANSWER, info( ) );
+         if ( sizeof(split) == 3 )
+            switchboard(receiver, sender, -command, info( ) );
+         else if ( sizeof(split) == 4 && has_index( sensor_var, split[3] ) )
+            switchboard(receiver, sender, -command, info( )[split[3]]);
+         else
+            switchboard(receiver, sender, COM_ERROR, ([ "error":
+                             sprintf( "Variable not found %s",receiver) ]) );
+      }
+      break;
+      case COM_PARAM:
+      {
+         if( parameters && mappingp(parameters) )
+            setvar(parameters);
+         switchboard( receiver,sender, -command, getvar() );
       }
       break;
       case COM_PROP:
       {
-      //FIXME This should also be a callback (and backends callback driven)
-      //And create a buffer of callers, in order to de-multiplex?
-      if( sizeof(split) == 4 )
-         //FIXME Error if variable does not exist?
-         switchboard(receiver, sender, COM_ANSWER, property( )[split[3]]);
-      else
-         switchboard(receiver, sender, COM_ANSWER, property( ) );
+         switchboard(receiver, sender, -command, property( ) );
       }
       break;
       case COM_WRITE:
       {
-         if( sizeof( split ) == 4  )
-            switchboard(receiver, sender, COM_ANSWER, write( ([ split[3]:parameters->value ]) ), @callback_args );
-         else if ( mappingp(parameters->values ) )
-            switchboard(receiver, sender, COM_ANSWER,write( parameters->values ), @callback_args );
+         if ( ! parameters || !mappingp(parameters) )
+         {
+            switchboard(receiver, sender, COM_ERROR, ([ "error":
+                             sprintf( "Bad parameters for %s",receiver) ]) );
+            return;
+         }
+         if ( sizeof(split) == 3 && parameters && mappingp(parameters) )
+            switchboard(receiver, sender, -command,write( parameters ));
+         else if ( sizeof(split) == 4 && has_index( sensor_var, split[3] ) )
+             switchboard(receiver, sender, -command, write( ([ split[3]:parameters->value ]) ));
          else
-            switchboard(receiver, sender, COM_ERROR, (["error": sprintf("Unknown values format %O\n",parameters->values)]), @callback_args );
+            switchboard(receiver, sender, COM_ERROR, ([ "error":
+                             sprintf( "Variable not found %s",receiver) ]) );
+
       }
-      break;
-      case COM_PARAM:
-      if( parameters && sizeof( parameters ) > 0 )
-         setvar(parameters);
-         switchboard( receiver,sender, COM_ANSWER, getvar() );
       break;
       case COM_ERROR:
          logerror("%s received error %O\n",receiver,parameters->error);
       break;
       default:
-         switchboard(receiver, sender, COM_ERROR, (["error":"Unknown Command"]),@callback_args );
+         switchboard(receiver, sender, COM_ERROR, (["error":"Unknown Command"]));
    }
 }
 

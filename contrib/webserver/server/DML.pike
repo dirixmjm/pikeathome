@@ -1,6 +1,7 @@
 #include <module.h>
 #include <command.h>
 
+inherit Base_func;
 
 //FIXME Protect with Mutex?
 protected Sql.Sql db;
@@ -14,6 +15,7 @@ protected object configuration;
 mapping run_config;
 //The Configuration Module
 protected object Configuration_Interface;
+protected object ICom;
 
 string servername;
 Parser.HTML parser;
@@ -48,6 +50,8 @@ void create( string server_name, object webserver_ , mapping run_config_, object
    run_config = run_config_;
    Config = Config_;
    configuration = Config->Configuration(servername);
+   configuration->listenaddress=run_config->listenaddress;
+   ICom = master()->resolv("InterCom")(this, configuration);
 
    parser = DMLParser();
    parser->add_tags(tags);
@@ -58,7 +62,7 @@ void create( string server_name, object webserver_ , mapping run_config_, object
    parser->_set_entity_callback( entity_callback );
    parser->lazy_entity_end(1);
 
-   Configuration_Interface = master()->resolv("Configuration")(webserver, configuration);
+   Configuration_Interface = master()->resolv("Configuration")(this, configuration);
    parser->add_tags(Configuration_Interface->tags);
    parser->add_containers(Configuration_Interface->containers);
    emit += Configuration_Interface->emit; 
@@ -78,7 +82,7 @@ void init_modules( array names )
       };
       if(catch_result)
       {
-         webserver->log(LOG_ERR,"Error Module INIT %O\n%s\t\t%s\n%O\n",catch_result,name,describe_error(catch_result),backtrace());
+         logerror("Error Module INIT %O\n%s\t\t%s\n%O\n",catch_result,name,describe_error(catch_result),backtrace());
          continue;
       }
       parser->add_tags(mod->tags);
@@ -91,7 +95,7 @@ void init_modules( array names )
 array entity_callback(Parser.HTML p, 
                string entity, mapping query )
 {
-   
+   //FIXME split_module_sensor?   
    string scope,variable,sensor;
    int scan = sscanf(entity,"&%s.%s;",scope,variable);
    if( scan < 2 )
@@ -99,8 +103,8 @@ array entity_callback(Parser.HTML p,
    //Must be a module.variable of module.sensor.variable key:
    if ( sscanf(variable,"%s.%s",sensor,variable) == 2 )
    {
-      string val = (string) xmlrpc( sprintf("%s.%s.%s",scope,sensor,variable),
-                       COM_INFO);
+      string val = (string) rpc( sprintf("%s.%s.%s",scope,sensor,variable),
+                       COM_READ);
       return ({ val || entity });
    }
    if( has_index( query->entities, scope ) && has_index(query->entities[scope],variable) )
@@ -141,7 +145,7 @@ int exists_entity(string entity, mapping query )
 array EmitModules( mapping args, mapping query )
 {
   array ret=({});
-  array modules = xmlrpc( "xiserver", COM_LIST, 0 );
+  array modules = rpc( "xiserver", COM_LIST, 0 );
   foreach( modules, string name)
      ret+= ({  ([ "name":name ]) });
   return ret;
@@ -160,11 +164,11 @@ array EmitSensors( mapping args, mapping query )
                    !has_index(args,"output") && !has_index(args,"schedule") ) )
        sensor_type = 0xFF;
    array ret = ({});
-   array sensors = xmlrpc( args->name, COM_ALLSENSOR ); 
+   array sensors = rpc( args->name, COM_ALLSENSOR ) + ({}); 
    foreach( sensors , string sensor )
    {
-      mapping prop = xmlrpc( sensor, COM_PROP );
-      if( has_index(prop,"sensor_type") && (prop->sensor_type & sensor_type) )
+      mapping prop = rpc( sensor, COM_PROP );
+      if( prop && has_index(prop,"sensor_type") && (prop->sensor_type & sensor_type) )
       {
          ret += ({ prop  });
       }
@@ -177,7 +181,7 @@ array EmitSensor( mapping args, mapping query )
    if( has_index(args,"name" ) )
    {
       array res = ({});
-      mapping data = xmlrpc( args->name, COM_INFO );
+      mapping data = rpc( args->name, COM_READ );
       if( !data )
          return ({});
       foreach( indices(data), string index )
@@ -233,7 +237,7 @@ string DMLWrite(Parser.HTML p,
    
    if( !has_index( args, "name" ))
       return "";
-   array sensors = xmlrpc( args->name, COM_WRITE, ([ "value":args->value]) ); 
+   array sensors = rpc( args->name, COM_WRITE, ([ "value":args->value]) ); 
    return "";
 }
 
@@ -412,11 +416,73 @@ class DMLParser
 
 }
 
-mixed xmlrpc( mixed ... args )
+void switchboard( string sender, string receiver, int command, mixed|void parameters)
 {
-   return webserver->xmlrpc(@args);
+   if ( command == COM_ERROR ) 
+   {
+     logerror("Server returned an error %O\n",parameters->error );
+     return;
+   }
+   if( command > 0  )
+   {
+     logerror("Switchboard can only handle answers to requests\n" );
+     return;
+   }
+   else if ( parameters ) 
+   {
+     rpc_cache[sender]+=([ abs(command):parameters]);
+   }
 }
 
+mapping rpc_cache=([]);
+
+mixed rpc( string receiver, int command, mapping|void parameters )
+{
+    //Check if the receiver is internal
+   if ( receiver == servername || has_prefix( receiver, servername ) )
+   {
+      return internal_command(receiver, command,parameters );
+   }
+
+#ifdef DEBUG
+   logdebug("RPC: Send Request %s %d\n",receiver, command );
+   logdebug("RPC: %O\n",parameters );
+#endif
+   call_out(ICom->rpc_command,0, receiver, command, parameters);
+   
+   // always return the cached value
+   // do split caching
+   if ( has_index( rpc_cache, receiver ) && has_index( rpc_cache[receiver],command))
+     return rpc_cache[receiver][command];
+  else
+     return UNDEFINED;
+ 
+}
+
+mixed internal_command( string receiver, int command, mapping parameters )
+{
+   array split =  split_server_module_sensor_value( receiver );
+   //Check if the command is voor DML and it's sibblings, or for
+   //the WebServer
+   if ( sizeof (split) > 1 && split[1] == "DML" ) 
+   {
+     //TODO
+   }
+   else
+     return webserver->internal_command( receiver, command, parameters);
+}
+
+
+
+void logerror( mixed ... args )
+{
+   webserver->log(LOG_ERR,@args);
+}
+
+void logdebug( mixed ... args )
+{
+   webserver->log(LOG_DEBUG,@args);
+}
 
 string parse_dml(string content, mixed ... args )
 {

@@ -30,7 +30,7 @@ class sensor
    void log_timer()
    {
       call_out(log_timer,(int) configuration->logtime );
-      switchboard(sensor_prop->name,configuration->input, COM_INFO, (["new":1]));
+      switchboard(sensor_prop->name,configuration->input, COM_READ);
    }
   
    void got_answer(int|float|string params )

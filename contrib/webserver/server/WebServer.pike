@@ -10,9 +10,11 @@
 #include <parameters.h>
 #include <command.h>
 
+inherit Base_func;
+
 object configuration;
 object HTTPServer;
-object dmlparser;
+object dml;
 object Configparser;
 mapping run_config;
 protected object Config;
@@ -37,25 +39,33 @@ void create( mapping rconfig )
    //Open Webserver configuration
    configuration = Config->Configuration(name);
 
+   //Webpath and port are the static values leading, so changes
+   // to both take effect after restart. Maybe they shouldn't even
+   // be in the dynamic configuration
    if ( !has_index(run_config, "webpath" ))
    {
       log(LOG_ERR,"No webpath undefined in config file, exiting\n");
       exit(11);
    }
+
+   configuration->webpath=run_config->webpath;
+
    if ( !has_index(configuration, "port" ))
    {
       log(LOG_ERR,"No Port defined, using default port 8080\n");
       configuration["port"]="8080";
    }
+
+   //The dynamic values here can be newer then the static ones.
    if( !has_index(configuration,"username") && has_index(run_config,"username" ) )
       configuration["username"]=run_config->username;
    if( !has_index(configuration,"password") && has_index(run_config,"password" ) )
       configuration["password"]=run_config->password;
-   if( !has_index(configuration,"xmlrpcserver" ))
-      configuration->xmlrpcserver=run_config->xmlrpcserver;
+
+   //Open the dml parser
+   dml = master()->resolv("DML")( name, this , run_config, Config );
 
    //Start webserver.
-   dmlparser = master()->resolv("DML")( name, this , run_config, Config );
    log(LOG_DEBUG,"Create Web Interface Port %d\n",(int) configuration->port );
    HTTPServer = Protocols.HTTP.Server.Port( http_callback, (int) configuration->port);
 
@@ -116,7 +126,7 @@ Stdio.File find_file(object request)
        if ( sizeof(v) >= 2 && v[-1]=="dml" )
        {
           string data = Stdio.read_file(run_config->webpath + request->not_query );
-          return dmlparser->parse(request,data);
+          return dml->parse(request,data);
        }
        else
           return Stdio.File(run_config->webpath + request->not_query,"R");
@@ -125,37 +135,29 @@ Stdio.File find_file(object request)
        return 0;
 }
 
-/* Split a sensor or module pointer into an array.
- * The array contains ({ module, sensor, attribute });
-*/
-array split_module_sensor_value(string what)
+mixed internal_command( string receiver, int command, mapping parameters )
 {
-   array ret = ({});
-   string parse = what;
-   int i=search(what,".");
-   while(i>0)
-   {
-      if( what[++i] != '.' )
-      {
-         ret += ({ what[..i-2] });
-         what = what[i..];
-         i=0;
-      }
-      i++;
-      i=search(what,".",i);
-   }
-   if(sizeof(what))
-      ret+= ({ what });
-   return ret;
-}
-
-mixed internal_command( string method, int command, mapping parameters )
-{
+   array split = split_server_module_sensor_value(receiver);
    switch(command)
    {
       case COM_PARAM:
-      array server_module_split =  split_module_sensor_value( method );
-      if( sizeof(server_module_split) == 1  )
+      {
+        if ( parameters && mappingp(parameters) )
+        {
+            foreach(defvar, array var)
+            {
+               if( has_index( parameters, var[0] ) )
+                  configuration[var[0]] = parameters[var[0]];
+            }
+         }
+         array ret = ({});
+         foreach(defvar, array var)
+            ret+= ({ var + ({ configuration[var[0]] }) });
+         return ret;
+      }
+      break;
+      case COM_WRITE:
+      if( sizeof(split) > 1 && split[1] == "parameters" && parameters)
       {
          array var = ({});
          foreach( defvar, array thisvar )
@@ -169,15 +171,11 @@ mixed internal_command( string method, int command, mapping parameters )
             else
                var += ({ thisvar });
          }
-      return var;
+         return var;
       }
-      else
-      {
-         //FIXME make interface for module variables
-         return ({});
-      }
-      break;
       case COM_LIST:
+      return ({ name + ".DML" });
+      /*
       if( parameters && has_index(parameters, "new" ) )
       {
          array compiled_modules = ({});
@@ -214,7 +212,9 @@ mixed internal_command( string method, int command, mapping parameters )
       {
          return configuration->module +({});
       }
+      */
       break;
+      
       case COM_ADD:
       {
          string module_name = name+"."+parameters->name;
@@ -229,7 +229,7 @@ mixed internal_command( string method, int command, mapping parameters )
          object cfg = Config->Configuration(module_name);
          foreach( parameters; string index; mixed value )
             cfg[index]=value;
-         dmlparser->init_modules( ({ module_name }));
+         dml->init_modules( ({ module_name }));
          return UNDEFINED;
       }
       break;
@@ -237,44 +237,6 @@ mixed internal_command( string method, int command, mapping parameters )
          log(LOG_ERR,"Unknown Command %d\n",command);
          return ([ "error":sprintf("Unknown Command %d\n",command) ]);
    }
-}
-
-mixed xmlrpc( string method, int command, mapping|void parameters )
-{
-   //Check if the method is internal
-   if ( method == name || has_prefix( method, name ) )
-   {
-      return internal_command(method, command,parameters );
-   }
-
-   //FIXME, maybe have multiple servers, with different names?
-
-#ifdef DEBUG
-   log(LOG_DEBUG,"XMLRPC: Send Request %s %d\n",method, command );
-   log(LOG_DEBUG,"XMLRPC: %O\n",parameters );
-#endif
-   string data = Protocols.XMLRPC.encode_call(method,({command,parameters}) );
-   object req = Protocols.HTTP.do_method("POST",
-                                           run_config->xmlrpcserver,0,
-                                           (["Content-Type":"text/xml"]),
-                                           0,data);
-   if(!req)
-   {
-      log(LOG_ERR,"XMLRPC: Lost Connection\n" );
-      return UNDEFINED;
-   }
-   if(req->status != 200 )
-   {
-      log(LOG_ERR,"XMLRPC: Server returned with \"%d\"\n",req->status );
-      return UNDEFINED;
-   }
-#ifdef DEBUG
-   log(LOG_DEBUG,"XMLRPC: %O\n",Protocols.XMLRPC.decode_response(req->data() ));
-#endif
-   array res = Protocols.XMLRPC.decode_response(req->data());
-   if( mappingp( res[0] ) && has_index(res[0],"error") )
-      log(LOG_ERR,"XMLRPC: Server returned with \"%s\"\n",res[0]->error );
-   return res[0];
 }
 
 void log( int log_level, string format, mixed ... args )

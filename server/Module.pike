@@ -59,6 +59,7 @@ void init_sensors( array load_sensors )
 // in the sensornetwork.
 array find_sensors( )
 {
+   werror("FIND\n");
    //Default return manual sensor entry
    array var = sensvar;
    var+= ({ ({ "name",PARAM_STRING,"default","Name"}) }) ;
@@ -124,7 +125,7 @@ void rpc_command( string sender, string receiver, int command, mapping parameter
  
 
    //Check if the request is for a sensor.
-   if( sizeof(split) > 2)
+   if( sizeof(split) > 2 )
    {
       if ( ! has_index(sensors,split[0]+"."+split[1]+"."+split[2]) )
       {
@@ -138,30 +139,33 @@ void rpc_command( string sender, string receiver, int command, mapping parameter
    }
    else
    {
+      if( command < 0 )
+      {
+         got_answer(parameters);
+         return;
+      }
       switch(command)
       {
-         case COM_ANSWER:
-            got_answer(parameters);
-         break;
-         case COM_INFO:
-         {
-            switchboard( receiver,sender, COM_ANSWER, module_var );
-         }
-         break;
          case COM_PARAM:
          {
-         if( parameters && sizeof( parameters ) > 0 )
-            setvar(parameters);
-            switchboard( receiver,sender, COM_ANSWER, getvar() );
+            if ( parameters && mappingp(parameters) )
+               setvar(parameters);
+            switchboard( receiver,sender, -command, getvar() );
+         }
+         break;
+         case COM_PROP:
+         {
+            switchboard( receiver,sender, -command, module_var );
          }
          break;
          case COM_LIST:
          {
-         //FIXME This should probably callbacks too.
-         if( parameters && parameters->new )
-            switchboard( receiver,sender, COM_ANSWER, find_sensors());
-         else
-            switchboard( receiver,sender, COM_ANSWER, indices(sensors)  );
+            switchboard( receiver,sender, -command, indices(sensors)  );
+         }
+         break;
+         case COM_FIND:
+         {
+            switchboard( receiver,sender, -command, find_sensors());
          }
          break;
          case COM_ADD: //Add Sensor
@@ -185,7 +189,7 @@ void rpc_command( string sender, string receiver, int command, mapping parameter
                cfg[index]=value;
             }
             init_sensors( ({ sensor_name }) );
-            switchboard(receiver,sender, COM_ANSWER, 0 );
+            switchboard(receiver,sender, -command, 0 );
          }
          break;
          case COM_DROP: //drop sensor
@@ -202,7 +206,7 @@ void rpc_command( string sender, string receiver, int command, mapping parameter
             configuration->sensor -= ({ sensor_name });
             //FIXME Is this the correct way to do this?
             m_delete(domotica->config, sensor_name ); 
-            switchboard( receiver,sender,COM_ANSWER,UNDEFINED); 
+            switchboard( receiver,sender,-command,UNDEFINED); 
          }
          break;
          case COM_ERROR:

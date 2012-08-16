@@ -1,3 +1,14 @@
+protected object dml;
+protected object configuration;
+inherit Base_func;
+
+void create( object dml_ , object Config)
+{
+   dml = dml_;
+   configuration = Config;
+}
+
+
 class DMLParser
 {
    inherit Parser.HTML;
@@ -20,4 +31,9 @@ string parse_html ( string data, mapping(string:function|string) tags,
                     mixed ... extra )
 {
    return DMLParser( tags, containers, @extra )->finish(data)->read();
+}
+
+void logerror( mixed ... args )
+{
+   dml->logerror(@args);
 }

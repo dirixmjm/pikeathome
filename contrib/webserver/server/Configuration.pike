@@ -1,9 +1,8 @@
 #include <module.h>
 #include <parameters.h>
-string abc="wa-wa-wa-waaaa\n";
 
-protected object webserver;
-protected object configuration;
+inherit Module;
+
 
 
 mapping tags = ([
@@ -17,27 +16,61 @@ mapping containers = ([
 ]);
 
 
-void create( object webserver_ , object Config)
-{
-   webserver= webserver_;
-   configuration = Config;
-}
 
 array DMLConfiguration(Parser.HTML p, mapping args, mapping query )
 {
+   array ret = ({});
+   ret+= ({ "<div class=\"modules\">",
+            "&nbsp;Modules<br />"});
+   //First start with the webserver 
+   ret+= ({ sprintf("<a href=\"/configuration/index.dml?name=%s\">%s</a><br />",dml->servername,dml->servername) });
+   array|mapping module_sensors = dml->rpc( dml->servername, COM_LIST );
+   if( mappingp(module_sensors) && has_index(module_sensors,"error") )
+      ret+=({ module_sensors->error });
+   else if ( arrayp(module_sensors) ) 
+   {
+      foreach( module_sensors , string module_sensor )
+      {
+         ret+= ({ sprintf("&nbsp;<a href=\"/configuration/index.dml?name=%s\">%s</a><br />",module_sensor,module_sensor) });
+      }
+   }
+   // Next list all peers
+   foreach( indices(configuration->peers || ([])), string peername )
+   {
+      ret+= ({ sprintf("<a href=\"/configuration/index.dml?name=%s\">%s</a><br />",peername,peername) });
+      array|mapping module_sensors = dml->rpc( peername, COM_LIST );
+      if( mappingp(module_sensors) && has_index(module_sensors,"error") )
+         ret+=({ module_sensors->error });
+      else if ( arrayp(module_sensors) ) 
+      {
+         foreach( module_sensors , string module_sensor )
+         {
+            ret+= ({ sprintf("&nbsp;<a href=\"/configuration/index.dml?name=%s\">%s</a><br />",module_sensor,module_sensor) });
+         }
+      }
+   }
+   ret+= ({ "</div>"});
+   ret += ({ "<div class=\"main\">" });
+   ret += get_main_configuration(p,args,query);
+   ret += ({ "</div>" });
+   return ret;
+}
 
-   string name = args->name || "webserver";
+
+array get_main_configuration( Parser.HTML p, mapping args, mapping query )
+{
+   string name = query->entities ->form->name || dml->servername;
 
    if(!name || !sizeof(name) )
       return ({});
-   array name_split = webserver->split_module_sensor_value(name);
+   array name_split = split_server_module_sensor_value(name);
 
    //Name should be module or module.sensor
    if( sizeof(name_split) > 2 )
       return ({ "<H1>Error</H1><p>Configuration not available for values" });
 
    //Find Parameters of the module or sensor.
-   array|mapping params = webserver->xmlrpc( args->name, COM_PARAM );
+   array|mapping params = dml->rpc( name , COM_PARAM );
 
    if( mappingp(params) && has_index(params,"error"))
       return ({ sprintf("<H1>Server Return An Error</H1><p>%O",params->error) });
@@ -53,12 +86,12 @@ array DMLConfiguration(Parser.HTML p, mapping args, mapping query )
       mapping tosave=form_to_save(params,query,name);
 
       if(sizeof(tosave))
-          params = webserver->xmlrpc( args->name, COM_PARAM, tosave );
+          params = dml->rpc( name , COM_PARAM, tosave );
    }
   
    if( has_index( query->entities->form, "add_mod_sensor" ) )
    {
-      array|mapping module_sensors = webserver->xmlrpc( name, COM_LIST, ([ "new":1]) );
+      array|mapping module_sensors = dml->rpc( name, COM_FIND );
       if( mappingp(module_sensors) && has_index(module_sensors,"error"))
          return ({ sprintf("<H1>Server Return An Error</H1><p>%s",module_sensors->error) });
       foreach(module_sensors, mapping module_sensor)
@@ -69,7 +102,7 @@ array DMLConfiguration(Parser.HTML p, mapping args, mapping query )
             if(sizeof(tosave))
             {
                tosave+= ([ "sensor":module_sensor->sensor ]);
-               mapping serv = webserver->xmlrpc( args->name, COM_ADD, tosave );
+               mapping serv = dml->rpc( name, COM_ADD, tosave );
                if( serv && has_index( serv, "error" ) )
                   return ({ "<H1>Error<H1><p>Module or Sensor add failed with:",
                             sprintf("%O\n",serv) });
@@ -81,7 +114,7 @@ array DMLConfiguration(Parser.HTML p, mapping args, mapping query )
             if(sizeof(tosave))
             {
                tosave+= ([ "module":module_sensor->module ]);
-               mapping serv = webserver->xmlrpc( args->name, COM_ADD, tosave );
+               mapping serv = dml->rpc( name, COM_ADD, tosave );
                if( serv && has_index( serv, "error" ) )
                   return ({ "<H1>Error<H1><p>Module or Sensor add failed with:",
                             sprintf("%O\n",serv) });
@@ -93,7 +126,7 @@ array DMLConfiguration(Parser.HTML p, mapping args, mapping query )
    if( has_index( query->entities->form, "Delete" ) )
    {
       mapping tosave = (["name":query->entities->form->Delete]);
-      mapping serv = webserver->xmlrpc( args->name, COM_DROP, tosave);
+      mapping serv = dml->rpc( name, COM_DROP, tosave);
       //Check that I'm deleting one of my own (server->module, module->sensor)
    } 
    
@@ -129,26 +162,28 @@ array DMLConfiguration(Parser.HTML p, mapping args, mapping query )
    //then list them
    if( sizeof(name_split) <= 2 ) 
    {
-      array|mapping module_sensors = webserver->xmlrpc( name, COM_LIST, 0 );
+      array|mapping module_sensors = dml->rpc( name, COM_LIST );
+      //FIXME A caching problem?
       if( mappingp(module_sensors) && has_index(module_sensors,"error"))
          return ({ sprintf("<H1>Server Return An Error</H1><p>%s",module_sensors->error) });
       ret+=({ "<FORM method=\"POST\" > " });
       ret+=({ "<input type=\"hidden\" name=\"update_mod_sensor\" value=\"1\"/>" });
       ret+=({ "<table border=\"1\">" });
-      foreach( module_sensors, string sensor )
+      werror("%O\n",module_sensors);
+      foreach( module_sensors || ({}), string sensor )
       {
-         array module_sensor_split = webserver->split_module_sensor_value(sensor);
+         array module_sensor_split = split_server_module_sensor_value(sensor);
          string module_sensor_name = "";
          if( sizeof(module_sensor_split) == 3 )
             module_sensor_name = module_sensor_split[2];
          else 
-            module_sensor_name = sensor;
+            module_sensor_name = sensor; 
 
          ret+=({ "<tr><td align=\"left\" >"});
          ret+=({ sprintf("<a href=\"module.dml?name=%s\">%s</a>",sensor,module_sensor_name ) });
          ret+=({ "</td>" });
-         array params = webserver->xmlrpc( sensor, COM_PARAM, 0  );
-         foreach( params, array param )
+         array params = dml->rpc( sensor , COM_PARAM );
+         foreach( params|| ({}), array param )
          {
             ret+=({ sprintf( "<td align=\"lef\">%s&nbsp;",(string) param[0]) });
             ret+= make_form_input(param,query,sensor);
@@ -167,13 +202,14 @@ array DMLConfiguration(Parser.HTML p, mapping args, mapping query )
       //List sensors That can be added
       if( has_index( query->entities->form, "find_sensor" ) )
       {
-         array|mapping module_sensors = webserver->xmlrpc( name, COM_LIST, (["new":1 ]) );
+         array|mapping module_sensors = dml->rpc( name, COM_FIND );
          if( mappingp(module_sensors) && has_index(module_sensors,"error"))
             return ({ sprintf("<H1>Server Return An Error</H1><p>%s",module_sensors->error) });
          ret+=({ "<FORM method=\"POST\">" });
          ret+=({ "<input type=\"hidden\" name=\"add_mod_sensor\" value=\"1\"/>" });
          ret+=({ "<table border=\"1\">" });
-         foreach(module_sensors, mapping module_sensor)
+         werror("%O\n",module_sensors);
+         foreach(module_sensors+({}), mapping module_sensor)
          {
             ret+=({ "<tr><td align=\"left\" >"});
              //FIXME else? 
@@ -181,12 +217,13 @@ array DMLConfiguration(Parser.HTML p, mapping args, mapping query )
                ret+=({ sprintf("%s",module_sensor->sensor ) });
             else if( has_index( module_sensor, "module" ) )
                ret+=({ sprintf("%s",module_sensor->module ) });
-            if( has_index( module_sensor, "error" ) )
+            if( mappingp(module_sensor) && has_index( module_sensor, "error" ) )
             {
                ret+=({ sprintf( "<td align=\"lef\" colspan=\"10\">%s</td>",(string) module_sensor->error) });
             }
             else
             {
+               werror("%O\n",module_sensor);
                foreach( module_sensor->parameters, array param )
                {
                   ret+=({ sprintf( "<td align=\"lef\">%s&nbsp;",(string) param[0]) });
@@ -264,7 +301,7 @@ mapping form_to_save(array params, mapping query, string name)
             tosave+=([ param[0]:theschedule ]);
          break;
          default:
-            webserver->log(LOG_ERR,"Can't save unknown paramter type\n");
+            logerror("Can't save unknown paramter type\n");
       }
    }
    return tosave;
@@ -301,17 +338,17 @@ array make_form_input(array param, mapping query, string name)
       string value= sizeof(param)>5?(string)param[5]:(string)param[2];
       ret+= ({ sprintf("<select name=\"%s\">",inname), });
       //FIXME xiserver
-      array|mapping sensors = webserver->xmlrpc( "xiserver", COM_ALLSENSOR, 0 );
+      array|mapping sensors = dml->rpc( "xiserver", COM_ALLSENSOR, 0 );
       if( mappingp(sensors) && has_index(sensors,"error"))
          return ({ sprintf("<H1>Server Return An Error</H1><p>%s",sensors->error) });
-      sensors = sort(sensors);
+      sensors = sort(sensors + ({}) );
       foreach( sensors, string sensor )
       {
          //FIXME I should be able to designate output variables from input values
-         mapping prop = webserver->xmlrpc(sensor,COM_PROP);
-         if( prop->sensor_type &  (param[1]==PARAM_SENSOROUTPUT?SENSOR_OUTPUT:SENSOR_INPUT) )
+         mapping prop = dml->rpc(sensor,COM_PROP);
+         if( mappingp(prop) && prop->sensor_type &  (param[1]==PARAM_SENSOROUTPUT?SENSOR_OUTPUT:SENSOR_INPUT) )
          {
-            mapping vars = webserver->xmlrpc(sensor,COM_INFO);
+            mapping vars = dml->rpc(sensor,COM_READ) +([]);
             //vars = sort(vars);
             foreach( indices(vars), string key )
             {

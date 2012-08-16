@@ -22,13 +22,15 @@ void log_data( string name, float|int data, int|void tstamp )
  
    int stamp;
    if ( zero_type(tstamp) )
+   {
       stamp = time();
+      werror("%O\n",stamp);
+   }
    else
       stamp = tstamp;
+
    //Check wether int or float (and upscale to int if float).
    int value = (int) ((float) data*(int) configuration->precision);
-/*  DB->query( "INSERT INTO oldlog (server,module,sensor,variable,stamp,value) " +
-                " VALUES (:server,:module,:sensor,:variable,to_timestamp(:timestamp),:value );", */
    mixed error = catch {
    DB->query( "INSERT INTO log (source_id,stamp,value) " +
                  " VALUES ((SELECT id FROM source WHERE server=:server "+
