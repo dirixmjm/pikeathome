@@ -47,6 +47,7 @@ data->xsize = (int) args->xsize || 640;
 data->ysize = (int) args->ysize || 480;
 data->type = "graph";
 data->subtype = "line";
+data->ymin = (int) args->ymin || 0;
 data->format = "jpg";
 
 //FIXME Error if filename is not given?
@@ -62,7 +63,7 @@ string filename = args->img;
 if( data->orientation ) data->orient = data->orientation;
 string img = Image.JPEG.encode(Graphics.Graph.line(data));
 
-Stdio.write_file(sprintf("/home/marc/storage/pikeathome/www/img/%s.jpg",filename),img,0664);
+Stdio.write_file(sprintf("/var/pikeathome/www/img/%s.jpg",filename),img,0664);
 return ({ sprintf( "<img src=\"/img/%s.jpg\" />",filename) });
 
 }

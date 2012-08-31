@@ -66,7 +66,7 @@ array get_main_configuration( Parser.HTML p, mapping args, mapping query )
    array name_split = split_server_module_sensor_value(name);
 
    //Name should be module or module.sensor
-   if( sizeof(name_split) > 2 )
+   if( sizeof(name_split) > 3 )
       return ({ "<H1>Error</H1><p>Configuration not available for values" });
 
    //Find Parameters of the module or sensor.
@@ -163,13 +163,11 @@ array get_main_configuration( Parser.HTML p, mapping args, mapping query )
    if( sizeof(name_split) <= 2 ) 
    {
       array|mapping module_sensors = dml->rpc( name, COM_LIST );
-      //FIXME A caching problem?
       if( mappingp(module_sensors) && has_index(module_sensors,"error"))
          return ({ sprintf("<H1>Server Return An Error</H1><p>%s",module_sensors->error) });
       ret+=({ "<FORM method=\"POST\" > " });
       ret+=({ "<input type=\"hidden\" name=\"update_mod_sensor\" value=\"1\"/>" });
       ret+=({ "<table border=\"1\">" });
-      werror("%O\n",module_sensors);
       foreach( module_sensors || ({}), string sensor )
       {
          array module_sensor_split = split_server_module_sensor_value(sensor);
@@ -178,11 +176,20 @@ array get_main_configuration( Parser.HTML p, mapping args, mapping query )
             module_sensor_name = module_sensor_split[2];
          else 
             module_sensor_name = sensor; 
+         array params = dml->rpc( sensor , COM_PARAM );
+         //Check if there was an update for this sensor
+         if( has_index( query->entities->form, "update_mod_sensor" ) &&
+             has_index( query->entities->form, sensor ) &&
+             query->entities->form[sensor] == "Update" && params)
+         {
+            mapping tosave=form_to_save(params,query,sensor);
+            if(sizeof(tosave))
+               dml->rpc( sensor , COM_PARAM, tosave );
+         }
 
          ret+=({ "<tr><td align=\"left\" >"});
          ret+=({ sprintf("<a href=\"module.dml?name=%s\">%s</a>",sensor,module_sensor_name ) });
          ret+=({ "</td>" });
-         array params = dml->rpc( sensor , COM_PARAM );
          foreach( params|| ({}), array param )
          {
             ret+=({ sprintf( "<td align=\"lef\">%s&nbsp;",(string) param[0]) });
@@ -208,7 +215,6 @@ array get_main_configuration( Parser.HTML p, mapping args, mapping query )
          ret+=({ "<FORM method=\"POST\">" });
          ret+=({ "<input type=\"hidden\" name=\"add_mod_sensor\" value=\"1\"/>" });
          ret+=({ "<table border=\"1\">" });
-         werror("%O\n",module_sensors);
          foreach(module_sensors+({}), mapping module_sensor)
          {
             ret+=({ "<tr><td align=\"left\" >"});
@@ -223,7 +229,6 @@ array get_main_configuration( Parser.HTML p, mapping args, mapping query )
             }
             else
             {
-               werror("%O\n",module_sensor);
                foreach( module_sensor->parameters, array param )
                {
                   ret+=({ sprintf( "<td align=\"lef\">%s&nbsp;",(string) param[0]) });

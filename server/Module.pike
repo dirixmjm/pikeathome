@@ -39,7 +39,7 @@ void create( string _name, object _domotica )
 void init()
 {
 #ifdef DEBUG
-   domotica->log(LOG_EVENT,LOG_DEBUG,"Init Module %s\n",name);
+   logdebug("Init Module %s\n",module_var->name);
 #endif
    if( (module_type & MODULE_SENSOR) && has_index(configuration,"sensor") )
    {
@@ -59,7 +59,6 @@ void init_sensors( array load_sensors )
 // in the sensornetwork.
 array find_sensors( )
 {
-   werror("FIND\n");
    //Default return manual sensor entry
    array var = sensvar;
    var+= ({ ({ "name",PARAM_STRING,"default","Name"}) }) ;
@@ -191,7 +190,6 @@ void rpc_command( string sender, string receiver, int command, mapping parameter
          break;
          case COM_DROP: //drop sensor
          {
-            logerror("Dropping %s\n", parameters->name); 
             string sensor_name = parameters->name;
             if(!has_index ( sensors, sensor_name ) )
             {
@@ -206,7 +204,7 @@ void rpc_command( string sender, string receiver, int command, mapping parameter
          }
          break;
          case COM_ERROR:
-            logerror("%s received error %O\n",receiver,parameters->error);
+            logerror(parameters->error);
          break;
          default:
          switchboard( receiver,sender, COM_ERROR, ([ "error":sprintf("Module %s unknown command %d",split[0],command) ]) );
@@ -228,17 +226,23 @@ void switchboard ( mixed ... args )
 
 void logdebug(mixed ... args)
 {
-   domotica->log(LOG_EVENT,LOG_DEBUG,@args);
+   call_out(switchboard, 0, module_var->name, domotica->name, COM_LOGEVENT, ([ "level":LOG_DEBUG, "error":sprintf(@args) ]) );
 }
 
 void logerror(mixed ... args)
 {
-   call_out(domotica->log(LOG_EVENT,LOG_ERR,@args),0);
+   call_out(switchboard, 0, module_var->name, domotica->name, COM_LOGEVENT, ([ "level":LOG_ERR, "error":sprintf(@args) ]) );
+
 }
 
-void logdata(mixed ... args)
+void logdata(string name, string|int|float data, int|void tstamp)
 {
-   call_out(domotica->log(LOG_DATA,@args),0);
+   mapping params = ([ "name":name,"data":data ]);
+   if ( intp(tstamp) )
+     params+= ([ "stamp":tstamp ]);
+
+   call_out(switchboard, 0, module_var->name, domotica->name, COM_LOGDATA,
+                     params );
 }
 
 array split_server_module_sensor_value(string module_sensor_value)

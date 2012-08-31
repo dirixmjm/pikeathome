@@ -99,18 +99,6 @@ void close()
 }
 
 
-void logdebug(mixed ... args )
-{
-   module->logdebug(@args);
-}
-void logerror(mixed ... args )
-{
-   module->logerror(@args);
-}
-void logdata(mixed ... args )
-{
-   module->logdata(@args);
-}
 
 void got_answer(mixed params )
 {
@@ -169,7 +157,7 @@ void rpc_command( string sender, string receiver, int command, mapping parameter
       }
       break;
       case COM_ERROR:
-         logerror("%s received error %O\n",receiver,parameters->error);
+         logerror(parameters->error);
       break;
       default:
          switchboard(receiver, sender, COM_ERROR, (["error":"Unknown Command"]));
@@ -184,3 +172,17 @@ void switchboard ( mixed ... args )
    module->switchboard( @args );
 }
 
+void logdebug(string receiver, mixed ... args)
+{
+   module->logdebug(@args);
+}
+
+void logerror(mixed ... args)
+{
+   module->logerror(@args);
+}
+
+void logdata(mixed ... args )
+{
+   module->logdata(@args);
+}

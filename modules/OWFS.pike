@@ -20,7 +20,7 @@ constant sensvar = ({
 void init() 
 {
 #ifdef DEBUG
-   domotica->log(LOG_EVENT,LOG_DEBUG,"Init Module %s\n",name);
+   logdebug("Init Module %s\n",name);
 #endif
    OWFS = Public.IO.OWFS( configuration->port );
    init_sensors(configuration->sensor + ({}) );
@@ -58,6 +58,7 @@ class sensor
       switch ( low_type )
       {
          case "DS2413":
+         case "DS2450":
             sensor_prop->sensor_type=SENSOR_INPUT|SENSOR_OUTPUT;
          break; 
          case "DS2502":
@@ -84,9 +85,21 @@ class sensor
       }
       switch ( low_type )
       {
-         case "DS2413":
+         case "DS2450":
             sensor_var->PIOA = (int)  OWFS->read(configuration->path+"PIO.A");
             sensor_var->PIOB = (int)  OWFS->read(configuration->path+"PIO.B");
+            sensor_var->PIOC = (int)  OWFS->read(configuration->path+"PIO.C");
+            sensor_var->PIOD = (int)  OWFS->read(configuration->path+"PIO.D");
+            sensor_var->VOLTA = (float)  OWFS->read(configuration->path+"volt.A");
+            sensor_var->VOLTB = (float)  OWFS->read(configuration->path+"volt.B");
+            sensor_var->VOLTC = (float)  OWFS->read(configuration->path+"volt.C");
+            sensor_var->VOLTD = (float)  OWFS->read(configuration->path+"volt.D");
+         break;
+         case "DS2413":
+         catch {
+            sensor_var->PIOA = (int)  OWFS->read(configuration->path+"PIO.A");
+            sensor_var->PIOB = (int)  OWFS->read(configuration->path+"PIO.B");
+         };
          break; 
          case "DS2502":
             if( configuration->type == "vbus" )
@@ -125,6 +138,8 @@ class sensor
       sensor_var->power_out = (float) (data[84]*1000+data[85]*100+data[86]*10+data[87] + (float) data[89]/10 + (float) data[90]/100 + (float) data[91]/1000);
       sensor_var->power = sensor_var->power_in-sensor_var->power_out;
       sensor_var->gas = (float) (data[100]*10000+data[101]*1000+data[102]*100+data[103]*10+data[104] + (float) data[106]/10 + (float) data[107]/100 + (float) data[108]/1000);
+      sensor_var->kWh_in = (int) (sensor_var->T1_in + sensor_var->T2_in);
+      sensor_var->kWh_out = (int) (sensor_var->T1_out + sensor_var->T2_out);
    }
  
 }

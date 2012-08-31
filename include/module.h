@@ -6,7 +6,8 @@
 #define MODULE_SENSOR		 (1<<0)
 #define MODULE_SCHEDULE	 (1<<1)
 #define MODULE_INTERFACE	 (1<<2)
-#define MODULE_LOG	 (1<<3)
+#define MODULE_LOGDATA	 (1<<3)
+#define MODULE_LOGEVENT	 (1<<4)
 
 //Sensor Types
 #define SENSOR_INPUT		(1<<0)

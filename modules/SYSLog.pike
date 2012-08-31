@@ -3,7 +3,7 @@
 
 inherit Module_LOG;
 
-int module_type = MODULE_LOG;
+int module_type = MODULE_LOGEVENT;
 
 string module_name = "SYSLog";
 void init()

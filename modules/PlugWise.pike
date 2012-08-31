@@ -56,7 +56,7 @@ class sensor
    mapping sensor_var = ([
                            "state": 0,
                            "online": 0,
-                           "value": 0.0,
+                           "power": 0.0,
                         ]);
 
    void create( string name, object _module, object _configuration)
@@ -76,7 +76,7 @@ class sensor
       object plug = module->PlugWise->Plugs[configuration->sensor];
       if( !plug )
       {
-         logerror("Plug %s Not Found in the PlugWise Network",configuration->sensor);
+         logerror("Plug %s Not Found in the PlugWise Network\n",configuration->sensor);
          return ([]);
       }
       if (has_index(what,"state") )
@@ -98,7 +98,7 @@ class sensor
          object plug = module->PlugWise->Plugs[configuration->sensor]; 
          plug->info();
          sensor_var->state = plug->powerstate;
-         sensor_var->value = (float) plug->power();
+         sensor_var->power = (float) plug->power();
          sensor_var->online = plug->online;
    }
 
@@ -130,7 +130,7 @@ class sensor
       {
          if( log_item->hour - time(1) > 60 )
             logerror("Loghour %d is larger then current timestamp %d\n",log_item->hour, time(1)); 
-         logdata(sensor_prop->name+".power",log_item->kwh,log_item->hour);
+         logdata(sensor_prop->name+".Wh",log_item->kwh,log_item->hour);
       }
    }
 
@@ -141,7 +141,7 @@ class sensor
       object plug = module->PlugWise->Plugs[configuration->sensor]; 
       if( ! plug )
       { 
-         logerror("Plug %s Not Found in the PlugWise Network",configuration->sensor);
+         logerror("Plug %s Not Found in the PlugWise Network\n",configuration->sensor);
          return;
       }
       if( ! plug->online)

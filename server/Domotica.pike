@@ -3,11 +3,12 @@
 
 protected mapping modules = ([]);
 protected array loggers = ({});
+protected array dataloggers = ({});
 //object xmlrpc;
 object config,ICom;
 protected object server_configuration;
 protected mapping run_config;
-protected string name ="";
+string name ="";
 
 
 void create( mapping rconfig)
@@ -32,28 +33,6 @@ object configuration(string name )
 //Array with server configuration parameters
 //Goal is to keep it to a minimum and let modules worry about operation.
 array defvar = ({});
-
-
-void log( int log_type, mixed ... args )
-{
-    switch( log_type)
-    {
-       case 1:
-          foreach(loggers, string logger)
-          {
-             modules[logger]->log_data( @args );
-          }
-          break;
-       case 2: 
-          foreach(loggers, string logger)
-          {
-             modules[logger]->log_event( @args );
-          }
-#ifdef DEBUG
-       logout(@args);
-#endif
-    }
-}
 
 void logout(int log_level, mixed ... args )
 {
@@ -106,6 +85,9 @@ array cumulative_split_server_module_sensor_value(string what)
       i++;
       i=search(what,".",i);
    }
+   if(sizeof(what))
+      ret+= ({ store + what });
+
    return ret;
 }
 
@@ -149,7 +131,7 @@ void rpc_command( string sender, string receiver, int command, mapping parameter
                failed_modules += ({ ([  "module":name,
                             "error": "Compilation Failed" ]) });
 #ifdef DEBUG
-         log(LOG_EVENT,LOG_ERR,"Error:%O\n",catch_result);
+         logerror("Error:%O\n",catch_result);
 #endif
             }
             else
@@ -188,7 +170,7 @@ void rpc_command( string sender, string receiver, int command, mapping parameter
          if ( has_value(server_configuration->module, module_name ) )
          {
             string error=sprintf("There already exists a module instance with name %s\n",module_name);
-            log(LOG_EVENT,LOG_ERR,error);
+            logerror(error);
          switchboard(module_name, sender, 30, ([ "error":error ]));
          }
          server_configuration->module+=({module_name});
@@ -209,8 +191,26 @@ void rpc_command( string sender, string receiver, int command, mapping parameter
          m_delete(config, parameters->name );
       }
       break;
+      case COM_ERROR:
+         call_out(switchboard, 0, name, name, COM_LOGEVENT, ([ "level":LOG_ERR, "error":parameters->error ]) );
+      break;
+      case COM_LOGEVENT:
+      foreach(loggers, string logger)
+      {
+         modules[logger]->log_event( parameters->level, parameters->error );
+#ifdef DEBUG
+       logout(parameters->level,parameters->error);
+#endif
+      }
+      break;
+      case COM_LOGDATA:
+      foreach(dataloggers, string logger)
+      {
+         modules[logger]->log_data( parameters->name, parameters->data,has_index(parameters,"stamp")?parameters->stamp:UNDEFINED );
+      }
+      break;
       default:
-      switchboard(name, sender, 30, ([ "error":sprintf("Unknown Command %d for server",command) ]) );
+      switchboard(name, sender, COM_ERROR, ([ "error":sprintf("Unknown Command %d for server",command) ]) );
    }
 }
 
@@ -221,22 +221,17 @@ void rpc_command( string sender, string receiver, int command, mapping parameter
 * the variable enters the switchboard
 */
 
-mapping follow = ([]);
-
-//void add_hook ( string module_sensor_value
-
 void switchboard( string sender, string receiver, int command, mixed parameters )
 {
 
 #ifdef DEBUG
-         log(LOG_EVENT,LOG_DEBUG,"Switchboard received command %d for %s from %s \n",command,receiver, sender);
+         logout(LOG_DEBUG,"Switchboard received command %d for %s from %s \n",command,receiver, sender );
 #endif
 
    //A receiver should always be given
    if( !receiver || !sizeof(receiver ))
    {
-      call_out(switchboard, 0, "switchboard", sender, 30, ([ "error":"No module,sensor or value is requested" ]) );
-      log(LOG_EVENT,LOG_ERR,"Switchboard called without any receiver\n");
+      call_out(switchboard, 0, name, sender, COM_ERROR, ([ "error":"No module,sensor or value is requested" ]) );
    }
 
    array split = cumulative_split_server_module_sensor_value(receiver);
@@ -246,13 +241,14 @@ void switchboard( string sender, string receiver, int command, mixed parameters 
    if ( split[0] == name)
    {
       //Message for the server
+
       //Propagate to a module
       if( sizeof( split) > 1)
       {
          if ( ! has_index(modules,split[1]) )
          {
-            call_out(switchboard, 0, "switchboard", sender, 30, ([ "error":sprintf("Module %s not found",split[1]) ]) );
-            log(LOG_EVENT,LOG_ERR,"Switchboard called with unknown module %s\n",split[1]);
+            call_out(switchboard, 0, name, sender, 30, ([ "error":sprintf("Module %s not found",split[1]) ]) );
+            logerror("Switchboard called with unknown module %s\n",split[1]);
          }
          else
          {
@@ -264,14 +260,6 @@ void switchboard( string sender, string receiver, int command, mixed parameters 
       else
          call_out(rpc_command, 0, sender, receiver, command, parameters );
       
-   }
-   else if( split[0] == "switchboard" )
-   {
-      if( command = COM_ERROR )
-         log(LOG_EVENT,LOG_ERR,"Switchboard received error %O\n",parameters->error);
-      else
-         log(LOG_EVENT,LOG_ERR,"Switchboard received unknown command %d\n",command);
-      return;
    }
    else
    {
@@ -301,7 +289,7 @@ void moduleinit( array names )
       };
       if(catch_result)
       {
-         log(LOG_EVENT,LOG_ERR, "Error Module %s Compilation Failed\n",name);
+         logerror("Error Module %s Compilation Failed\n",name);
          continue;
       }
       else
@@ -310,8 +298,10 @@ void moduleinit( array names )
          modules+= ( [name: themodule ]);
       } 
       //Cache loggers, so they don't have to be search for every log.
-      if( modules[name]->module_type & MODULE_LOG )
+      if( modules[name]->module_type & MODULE_LOGEVENT )
          loggers+= ({ name });
+      if( modules[name]->module_type & MODULE_LOGDATA )
+         dataloggers+= ({ name });
    }
 
 }
@@ -323,4 +313,19 @@ void close()
       module->close();
       destruct(module);
    }
+}
+
+/*
+* Helper / Short functions for Modules
+*/
+
+void logdebug(mixed ... args)
+{
+   switchboard(name, name, COM_LOGEVENT, ([ "level":LOG_DEBUG, "error":sprintf(@args) ]) );
+}
+
+void logerror(mixed ... args)
+{
+   switchboard(name, name, COM_LOGEVENT, ([ "level":LOG_ERR, "error":sprintf(@args) ]) );
+
 }

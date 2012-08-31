@@ -11,6 +11,7 @@ string name;
 void create( object domotica_, object configuration_ )
 {
    domotica = domotica_;
+   name = domotica->name + ".ICom";
    configuration = configuration_;
 #ifdef DEBUG
    logdebug("Init InterCom Interface\n");
@@ -81,7 +82,6 @@ class Communicator
          icom->sockets += ([ sender_split[0]: this ]);
          peername=sender_split[0];
       }
- 
       icom->switchboard( call->sender,call->receiver,call->command,call->parameters);
    }
    
@@ -145,12 +145,13 @@ void switchboard ( mixed ... args )
 
 void logdebug(mixed ... args)
 {
-   domotica->log(LOG_EVENT,LOG_DEBUG,@args);
+   call_out(switchboard, 0, name, domotica->name, COM_LOGEVENT, ([ "level":LOG_DEBUG, "error":sprintf(@args) ]) );
 }
 
 void logerror(mixed ... args)
 {
-   call_out(domotica->log(LOG_EVENT,LOG_ERR,@args),0);
+   call_out(switchboard, 0, name, domotica->name, COM_LOGEVENT, ([ "level":LOG_ERR, "error":sprintf(@args) ]) );
+
 }
 
 

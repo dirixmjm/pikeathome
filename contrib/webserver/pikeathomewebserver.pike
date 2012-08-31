@@ -37,7 +37,6 @@ array options = ({
                });
 
 mapping run_config= ([]);
-object configuration;
 object HTTPServer;
 object dmlparser;
 

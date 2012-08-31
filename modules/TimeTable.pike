@@ -181,12 +181,12 @@ class sensor
       }
       sensor_var->current_schedule = sensor_var->next_schedule;
       sensor_var->next_schedule = schedule_start;
-      sensor_var->next_schedule_time = next_schedule; 
+      sensor_var->next_schedule_time = next_schedule->unix_time();
       //Schedule next run when the next schedule starts.
 #ifdef TIMETABLEDEBUG
       module->log(LOG_EVENT,LOG_DEBUG,"Current %d Next %O %d\n", sensor_var->current_schedule, next_schedule, schedule_start );
 #endif
-      return sensor_var->next_schedule_time->unix_time()-time();
+      return sensor_var->next_schedule_time-time();
    }
  
    mapping write( mapping what )

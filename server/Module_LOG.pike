@@ -7,7 +7,8 @@ inherit Base_func;
 protected object configuration;
 object domotica;
 
-int module_type = MODULE_LOG;
+int module_type = 0;
+
 string name = "module";
 array defvar = ({});
 
@@ -18,7 +19,7 @@ void create( string _name, object domo )
 
    configuration = domotica->configuration(name);
 #ifdef DEBUG
-   domotica->log(LOG_EVENT,LOG_DEBUG,"Init Module %s\n",name);
+   logdebug("Init Module %s\n",name);
 #endif
 }
 
@@ -50,17 +51,18 @@ array getvar()
 
 void setvar( mapping params )
 {
-   int mod_reload = 0;
+   int mod_options = 0;
    foreach(defvar, array option)
    {
-      if( has_value( params, option[0] ))
+      //Find the parameter, and always set it
+      if( has_index( params, option[0] ) )
       {
          configuration[option[0]]=params[option[0]];
-         if( option[4] == POPT_MODRELOAD )
-            mod_reload = 1;
+         mod_options |= option[4];
       }
    }
-   reload();
+   if( mod_options & POPT_RELOAD )
+      reload();
 }
 
 
@@ -91,30 +93,31 @@ void rpc_command( string sender, string receiver, int command, mapping parameter
       break;
       case COM_PARAM:
       {
-         if ( sizeof(parameters ) && mappingp(parameters) )
+         if ( parameters && mappingp(parameters) )
             setvar(parameters);
          switchboard( receiver,sender, -command, getvar() );
       }
       break;
       case COM_ERROR:
-         logerror("%s received error %O\n",receiver,parameters->error);
+         logerror(parameters->error);
       break;
       default:
          switchboard( receiver,sender, COM_ERROR, ([ "error":sprintf("Module %s unknown command %d",receiver,command) ]) );
    }
 }
 
-void logerror(mixed ... args)
-{
-   call_out(domotica->log(LOG_EVENT,LOG_ERR,@args),0);
-}
-
-void switchboard ( mixed ... args )
+void switchboard (mixed ... args )
 {
    call_out( domotica->switchboard,0, @args );
 }
 
 void logdebug(mixed ... args)
 {
-   domotica->log(LOG_EVENT,LOG_DEBUG,@args);
+   call_out(switchboard, 0, name, domotica->name, COM_LOGEVENT, ([ "level":LOG_DEBUG, "error":sprintf(@args) ]) );
+}
+
+void logerror(mixed ... args)
+{
+   call_out(switchboard, 0, name, domotica->name, COM_LOGEVENT, ([ "level":LOG_ERR, "error":sprintf(@args) ]) );
+
 }
