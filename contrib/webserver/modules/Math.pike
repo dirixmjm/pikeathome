@@ -71,6 +71,6 @@ array DMLMath(Parser.HTML p,
       value = ceil(value);
    }
 
-   return ({ value }); 
+   return ({ (string) value }); 
 }
 
