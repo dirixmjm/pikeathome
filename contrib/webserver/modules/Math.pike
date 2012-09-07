@@ -60,7 +60,8 @@ array DMLMath(Parser.HTML p,
    }
    if( has_index( args, "round" ) )
    {
-      value = round(value);
+      int rnd = pow(10, (int) args->round||0);
+      value = round(value*rnd)/rnd;
    }
    if( has_index( args, "floor" ) )
    {
