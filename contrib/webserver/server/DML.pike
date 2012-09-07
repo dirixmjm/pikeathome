@@ -82,7 +82,7 @@ void init_modules( array names )
       };
       if(catch_result)
       {
-         logerror("Error Module INIT %O\n%s\t\t%s\n%O\n",catch_result,name,describe_error(catch_result),backtrace());
+         logerror("Error Module INIT\n %O\n%s\t\t%s\n%O\n",catch_result,name,describe_error(catch_result),backtrace());
          continue;
       }
       parser->add_tags(mod->tags);
@@ -95,31 +95,33 @@ void init_modules( array names )
 array entity_callback(Parser.HTML p, 
                string entity, mapping query )
 {
-   //FIXME split_module_sensor?   
-   string scope,variable,sensor;
-   int scan = sscanf(entity,"&%s.%s;",scope,variable);
-   if( scan < 2 )
-      return ({ entity });
-   //Must be a module.variable of module.sensor.variable key:
-   if ( sscanf(variable,"%s.%s",sensor,variable) == 2 )
-   {
-      string val = (string) rpc( sprintf("%s.%s.%s",scope,sensor,variable),
-                       COM_READ);
-      return ({ val || entity });
-   }
-   if( has_index( query->entities, scope ) && has_index(query->entities[scope],variable) )
-      return ({ query->entities[scope][variable] });
-   return ({entity});
+   string variable;
+   sscanf(entity,"&%s;",variable);
+   return ({ (string) (resolve_entity(variable,query)|| entity) });
 }
 
-string resolve_entity(string entity, mapping query )
+mixed resolve_entity(string entity, mapping query )
 {
-   string scope="",variable="";
-   int scan = sscanf(entity,"%s.%s",scope,variable);
-   if( scan < 2 || !has_index( query->entities, scope ) || 
-       !has_index(query->entities[scope],variable) )
-      return entity;
-   return (string) query->entities[scope][variable];
+   array split = split_server_module_sensor_value(entity);
+   //FIXME should this not also search for server-values?
+   if( !split || sizeof(split) < 2 )
+      return UNDEFINED;
+   //First check if the value fits in the webserver dynamic scope.
+   if( sizeof(split) == 2 && has_index( query->entities, split[0] ) )
+   {
+      if( has_index( query->entities[split[0]],split[1] ))
+         return  query->entities[split[0]][split[1]];
+      else
+         return UNDEFINED;
+   }
+   //Only server.module.variable or server.sensor.variable allowed.
+   //So local scope (sizeof(split) ==2) doesn't get mixed
+   else if ( sizeof(split) >= 3 )
+   {
+      return rpc( entity, COM_READ);
+   }
+   else
+      return UNDEFINED;
 }
 
 void set_entity(int|float|string value, string entity, mapping query )
@@ -256,6 +258,7 @@ string DMLIf(Parser.HTML p,
 {
    if ( has_index( args, "variable" ) )
    {
+      //FIXME this should be made independant of spaces.
       array arr = args->variable/" ";
       if( !exists_entity(arr[0],query ) )
          return "";
