@@ -66,4 +66,25 @@ CREATE TABLE primarydata (
    CHECK ( source_id IS NOT NULL OR archive_id IS NOT NULL);
 ) WITHOUT OIDS;
 
+CREATE TABLE event (
+   stamp TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT current_timestamp,
+   event TEXT
+)WITHOUT OIDS;
+
 --Constraint Unique source_id,rrs_id,stamp!
+
+COPY source_type (id,name) FROM stdin;
+1  Gauge
+2  Absolute
+3  Counter
+\.
+
+
+COPY aggregate (id,aggregatefun,name) FROM stdin;
+1  sum	 SUM
+2  avg	 AVERAGE
+3  max	 MAXIMUM
+4  min	 MINIMUM
+5  sum	 CUMULATIVE
+\.
+

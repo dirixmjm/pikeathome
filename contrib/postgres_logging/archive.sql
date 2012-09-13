@@ -20,8 +20,10 @@ BEGIN
   SELECT id INTO v_aggregate_id FROM aggregate WHERE name ilike i_aggregate;
 
   SELECT b.id INTO v_archive_id FROM rrs AS a JOIN archive AS b 
-    ON a.id=b.rrs_id AND b.aggregate_id=v_aggregate_id 
-    AND b.source_id = v_source.id AND a.keep >= (current_timestamp - i_start);
+    ON a.id=b.rrs_id WHERE b.aggregate_id=v_aggregate_id 
+    AND b.source_id = v_source.id AND a.keep >= (current_timestamp - i_start)
+    ORDER by keep ASC LIMIT 1;
+
     -- Update the archives
   PERFORM archive_update( v_archive_id );
   FOR v_logout IN SELECT stamp,value FROM primarydata 
@@ -30,6 +32,70 @@ BEGIN
     RETURN NEXT v_logout;
   END LOOP;
   RETURN; 
+END;
+  $retrieve_archive$ LANGUAGE PLPGSQL;
+
+CREATE OR REPLACE FUNCTION retrieve_archive ( i_server VARCHAR, 
+i_module VARCHAR, i_sensor VARCHAR, i_variable VARCHAR, i_aggregate VARCHAR,
+i_start TIMESTAMP WITH TIME ZONE,
+i_end TIMESTAMP WITH TIME ZONE, i_precision interval )
+RETURNS setof  logoutput AS $retrieve_archive$
+DECLARE
+  v_source source%ROWTYPE;
+  v_primarydata primarydata%ROWTYPE;
+  v_logout logoutput;
+  v_archive_id INT;
+  v_aggregate aggregate%ROWTYPE;
+  v_archivestamp timestamp with time zone;
+  v_max_archivestamp timestamp with time zone;
+  v_loopquery TEXT;
+BEGIN
+  SELECT * INTO v_source FROM source WHERE server=i_server AND 
+   module=i_module AND sensor = i_sensor AND variable = i_variable;
+
+  SELECT * INTO v_aggregate FROM aggregate WHERE name ilike i_aggregate;
+
+  IF  v_aggregate IS NULL THEN
+    RETURN;
+  END IF;
+
+  SELECT b.id INTO v_archive_id FROM rrs AS a JOIN archive AS b 
+    ON a.id=b.rrs_id WHERE b.aggregate_id=v_aggregate.id 
+    AND b.source_id = v_source.id AND a.keep >= (current_timestamp - i_start)
+    AND a.precision <= i_precision ORDER by keep DESC LIMIT 1;
+
+  IF v_archive_id IS NULL THEN
+    RETURN;
+  END IF;
+
+    -- Update the archives
+  PERFORM archive_update( v_archive_id );
+
+  -- Get start-date
+  SELECT stamp INTO v_archivestamp FROM primarydata 
+    WHERE archive_id=v_archive_id   AND stamp >= i_start 
+    ORDER BY stamp ASC LIMIT 1;
+
+  SELECT max(stamp) INTO v_max_archivestamp FROM primarydata WHERE
+    archive_id=v_archive_id;
+  IF v_max_archivestamp IS NULL THEN
+    RETURN;
+  END IF;
+  IF v_max_archivestamp > i_end THEN
+    v_max_archivestamp = i_end;
+  END IF;
+
+  v_loopquery = ' SELECT ' || 
+                 ' stamp AS stamp, ' ||
+                  '(value)::INT AS value' ||
+                  ' FROM primarydata WHERE ' ||
+                  ' stamp >= ' || quote_literal(v_archivestamp) || ' AND '||
+                  ' stamp <= ' || quote_literal(v_max_archivestamp ) ||
+                  ' AND ' || ' archive_id=' || 
+                  quote_literal(v_archive_id);
+    FOR v_logout IN EXECUTE v_loopquery LOOP
+      RETURN NEXT v_logout;  
+  END LOOP;
 END;
   $retrieve_archive$ LANGUAGE PLPGSQL;
 
@@ -88,8 +154,8 @@ BEGIN
   LOOP
     --Get next bucket
     v_max_archivestamp = v_max_archivestamp + v_rrs.precision;
-    --No more data is available
-    EXIT bucketloop WHEN v_max_archivestamp > v_max_primarystamp;
+    --No more dataset for the next timespan is incomplete
+    EXIT bucketloop WHEN (v_max_archivestamp + v_rrs.precision) > v_max_primarystamp;
     v_loopquery = ' INSERT INTO primarydata (archive_id,stamp,value) ' || 
                   ' SELECT ' || 
                   quote_literal(i_archive_id) || ' AS archive_id, ' || 

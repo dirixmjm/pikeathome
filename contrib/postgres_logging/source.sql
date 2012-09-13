@@ -1,7 +1,6 @@
 -- Copyright (c) 2012, Marc Dirix (marc@dirix.nu)
 
 
-
 CREATE OR REPLACE FUNCTION log_before_insert()
 RETURNS TRIGGER AS $log_insert$ 
 DECLARE
@@ -31,6 +30,7 @@ DECLARE
   v_first_logdata TIMESTAMP WITH TIME ZONE;
   v_source RECORD;
   v_value INT;
+  v_value_old INT;
 BEGIN
   --Get Source Parameters
   SELECT * INTO v_source  FROM source WHERE id=NEW.source_id;
@@ -57,15 +57,25 @@ BEGIN
     EXIT bucketloop WHEN v_last_primarydata > NEW.stamp;
 
     IF v_source.stype=1 THEN
-      RAISE NOTICE 'averaging';
       SELECT avg(value)::INT INTO v_value FROM log WHERE source_id=NEW.source_id AND 
         stamp >= v_last_primarydata AND 
         stamp < v_last_primarydata+v_source.precision;
     ELSEIF v_source.stype=2 THEN
-      RAISE NOTICE 'sum';
       SELECT sum(value) INTO v_value FROM log WHERE source_id=NEW.source_id AND 
         stamp >= v_last_primarydata AND 
         stamp < v_last_primarydata+v_source.precision;
+    ELSEIF v_source.stype=3 THEN
+      SELECT max(value) INTO v_value_old FROM log 
+           WHERE source_id=NEW.source_id AND stamp <= v_last_primarydata;
+      SELECT COALESCE(max(value),v_value_old) INTO v_value FROM log 
+        WHERE source_id=NEW.source_id AND 
+        stamp >= v_last_primarydata AND 
+        stamp < v_last_primarydata+v_source.precision;
+      IF v_value_old IS NULL THEN
+        v_value = 0;
+      ELSE
+        v_value:= v_value - v_value_old; 
+      END IF;
     ELSE
       RAISE EXCEPTION 'Unknown source_type %',v_source.stype;
     END IF;
