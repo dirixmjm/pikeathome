@@ -61,7 +61,7 @@ if( !data->data || ! sizeof(data->data) )
 
 string filename = args->img;
 if( data->orientation ) data->orient = data->orientation;
-string img = Image.JPEG.encode(Graphics.Graph.line(data));
+string img = Image.JPEG.encode(Graphics.Graph.graph(data));
 
 Stdio.write_file(sprintf("/var/pikeathome/www/img/%s.jpg",filename),img,0664);
 return ({ sprintf( "<img src=\"/img/%s.jpg\" />",filename) });
