@@ -46,7 +46,7 @@ mapping data = ([]);
 data->xsize = (int) args->xsize || 640;
 data->ysize = (int) args->ysize || 480;
 data->type = "graph";
-data->subtype = "line";
+data->subtype = args->type || "line";
 data->ymin = (int) args->ymin || 0;
 data->format = "jpg";
 
