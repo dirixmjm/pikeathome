@@ -94,6 +94,10 @@ class sensor
             sensor_var->VOLTB = (float)  OWFS->read(configuration->path+"volt.B");
             sensor_var->VOLTC = (float)  OWFS->read(configuration->path+"volt.C");
             sensor_var->VOLTD = (float)  OWFS->read(configuration->path+"volt.D");
+            sensor_var->VOLT2A = (float)  OWFS->read(configuration->path+"volt2.A");
+            sensor_var->VOLT2B = (float)  OWFS->read(configuration->path+"volt2.B");
+            sensor_var->VOLT2C = (float)  OWFS->read(configuration->path+"volt2.C");
+            sensor_var->VOLT2D = (float)  OWFS->read(configuration->path+"volt2.D");
          break;
          case "DS2413":
          catch {
