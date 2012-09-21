@@ -86,6 +86,24 @@ class sensor
       switch ( low_type )
       {
          case "DS2450":
+         if ( configuration->type = "currentcost" )
+         {
+            sensor_var->VOLTA = (float)  OWFS->read(configuration->path+"volt.A");
+
+            sensor_var->VOLTB = (float)  OWFS->read(configuration->path+"volt.B");
+            sensor_var->VOLTC = (float)  OWFS->read(configuration->path+"volt.C");
+            sensor_var->VOLTD = (float)  OWFS->read(configuration->path+"volt.D");
+            sensor_var->powerA= (sensor_var->VOLTA-0.14) / 2E-4;
+            sensor_var->powerB= (sensor_var->VOLTB-0.14) / 2E-4;
+            sensor_var->powerC= (sensor_var->VOLTC-0.14) / 2E-4;
+            sensor_var->powerD= (sensor_var->VOLTD-0.14) / 2E-4;
+            sensor_var->VOLT2A = (float)  OWFS->read(configuration->path+"volt2.A");
+            sensor_var->VOLT2B = (float)  OWFS->read(configuration->path+"volt2.B");
+            sensor_var->VOLT2C = (float)  OWFS->read(configuration->path+"volt2.C");
+            sensor_var->VOLT2D = (float)  OWFS->read(configuration->path+"volt2.D");
+         }
+         else
+         {
             sensor_var->PIOA = (int)  OWFS->read(configuration->path+"PIO.A");
             sensor_var->PIOB = (int)  OWFS->read(configuration->path+"PIO.B");
             sensor_var->PIOC = (int)  OWFS->read(configuration->path+"PIO.C");
@@ -98,6 +116,7 @@ class sensor
             sensor_var->VOLT2B = (float)  OWFS->read(configuration->path+"volt2.B");
             sensor_var->VOLT2C = (float)  OWFS->read(configuration->path+"volt2.C");
             sensor_var->VOLT2D = (float)  OWFS->read(configuration->path+"volt2.D");
+         }
          break;
          case "DS2413":
          catch {
