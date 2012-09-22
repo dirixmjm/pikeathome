@@ -11,7 +11,6 @@ constant defvar = ({
 
 /* Sensor Specific Variable */
 constant sensvar = ({
-                   ({ "path",PARAM_STRING,"","OWFS Path to sensor", 0 }),
                    ({ "type",PARAM_STRING,"","Special Type Definition", 0 }),
                     });
 
@@ -26,7 +25,43 @@ void init()
    init_sensors(configuration->sensor + ({}) );
 }
 
+array find_sensors()
+{
+   array ret = ({});
+   array device_path = get_device_path("/");
+   werror("%O\n",device_path);
+   foreach( device_path, string path )
+   {
+      array var = sensvar;
+      var+= ({ ({ "name",PARAM_STRING,"default","Name"})});
+      ret += ({ ([ "sensor":path,"module":name,"parameters":var ]) });
+   }
+   return ret;
+}
 
+array get_device_path(string path)
+{
+   array ret = ({});
+   object traversion = OWFS->Traversion( path );
+   array files = traversion->files;
+   werror("%O\n",files);
+   foreach(files, string filename )
+   {
+      int a=0;
+      //Check if this is a device.
+      if ( sscanf(filename,"%2x.%*s",a) && has_value ( OWFS->Traversion(filename)->files, "type" ))
+      {
+         ret+=({ path + filename });
+         //Device is a swich
+         if ( a == 31 )
+         {
+            ret += get_device_path(path+filename+"main/" );
+            ret += get_device_path(path+filename+"aux/" );
+         } 
+      } 
+   }
+   return ret; 
+}
 class sensor
 {
 
@@ -44,14 +79,14 @@ class sensor
    void sensor_init()
    {
       string low_type = "";
-      if( !has_suffix( configuration->path, "/" ) )
-         configuration->path = configuration->path+"/";
+      if( !has_suffix( configuration->sensor, "/" ) )
+         configuration->sensor = configuration->sensor+"/";
       string catch_err = catch {
-         low_type = OWFS->read(configuration->path+"type") ;
+         low_type = OWFS->read(configuration->sensor+"type") ;
       };
       if( catch_err )
       {
-         logerror("OWFS: Sensor %s not found at %s\n",sensor_prop->name,configuration->path);
+         logerror("OWFS: Sensor %s not found at %s\n",sensor_prop->name,configuration->sensor);
          sensor_var->online = 0;
          return;
       }
@@ -75,7 +110,7 @@ class sensor
    {
       string low_type = "";
       string catch_err = catch {
-         low_type = OWFS->read(configuration->path+"type") ;
+         low_type = OWFS->read(configuration->sensor+"type") ;
       };
       if( catch_err )
       {
@@ -88,40 +123,40 @@ class sensor
          case "DS2450":
          if ( configuration->type = "currentcost" )
          {
-            sensor_var->VOLTA = (float)  OWFS->read(configuration->path+"volt.A");
+            sensor_var->VOLTA = (float)  OWFS->read(configuration->sensor+"volt.A");
 
-            sensor_var->VOLTB = (float)  OWFS->read(configuration->path+"volt.B");
-            sensor_var->VOLTC = (float)  OWFS->read(configuration->path+"volt.C");
-            sensor_var->VOLTD = (float)  OWFS->read(configuration->path+"volt.D");
+            sensor_var->VOLTB = (float)  OWFS->read(configuration->sensor+"volt.B");
+            sensor_var->VOLTC = (float)  OWFS->read(configuration->sensor+"volt.C");
+            sensor_var->VOLTD = (float)  OWFS->read(configuration->sensor+"volt.D");
             sensor_var->powerA= (sensor_var->VOLTA-0.14) / 2E-4;
             sensor_var->powerB= (sensor_var->VOLTB-0.14) / 2E-4;
             sensor_var->powerC= (sensor_var->VOLTC-0.14) / 2E-4;
             sensor_var->powerD= (sensor_var->VOLTD-0.14) / 2E-4;
-            sensor_var->VOLT2A = (float)  OWFS->read(configuration->path+"volt2.A");
-            sensor_var->VOLT2B = (float)  OWFS->read(configuration->path+"volt2.B");
-            sensor_var->VOLT2C = (float)  OWFS->read(configuration->path+"volt2.C");
-            sensor_var->VOLT2D = (float)  OWFS->read(configuration->path+"volt2.D");
+            sensor_var->VOLT2A = (float)  OWFS->read(configuration->sensor+"volt2.A");
+            sensor_var->VOLT2B = (float)  OWFS->read(configuration->sensor+"volt2.B");
+            sensor_var->VOLT2C = (float)  OWFS->read(configuration->sensor+"volt2.C");
+            sensor_var->VOLT2D = (float)  OWFS->read(configuration->sensor+"volt2.D");
          }
          else
          {
-            sensor_var->PIOA = (int)  OWFS->read(configuration->path+"PIO.A");
-            sensor_var->PIOB = (int)  OWFS->read(configuration->path+"PIO.B");
-            sensor_var->PIOC = (int)  OWFS->read(configuration->path+"PIO.C");
-            sensor_var->PIOD = (int)  OWFS->read(configuration->path+"PIO.D");
-            sensor_var->VOLTA = (float)  OWFS->read(configuration->path+"volt.A");
-            sensor_var->VOLTB = (float)  OWFS->read(configuration->path+"volt.B");
-            sensor_var->VOLTC = (float)  OWFS->read(configuration->path+"volt.C");
-            sensor_var->VOLTD = (float)  OWFS->read(configuration->path+"volt.D");
-            sensor_var->VOLT2A = (float)  OWFS->read(configuration->path+"volt2.A");
-            sensor_var->VOLT2B = (float)  OWFS->read(configuration->path+"volt2.B");
-            sensor_var->VOLT2C = (float)  OWFS->read(configuration->path+"volt2.C");
-            sensor_var->VOLT2D = (float)  OWFS->read(configuration->path+"volt2.D");
+            sensor_var->PIOA = (int)  OWFS->read(configuration->sensor+"PIO.A");
+            sensor_var->PIOB = (int)  OWFS->read(configuration->sensor+"PIO.B");
+            sensor_var->PIOC = (int)  OWFS->read(configuration->sensor+"PIO.C");
+            sensor_var->PIOD = (int)  OWFS->read(configuration->sensor+"PIO.D");
+            sensor_var->VOLTA = (float)  OWFS->read(configuration->sensor+"volt.A");
+            sensor_var->VOLTB = (float)  OWFS->read(configuration->sensor+"volt.B");
+            sensor_var->VOLTC = (float)  OWFS->read(configuration->sensor+"volt.C");
+            sensor_var->VOLTD = (float)  OWFS->read(configuration->sensor+"volt.D");
+            sensor_var->VOLT2A = (float)  OWFS->read(configuration->sensor+"volt2.A");
+            sensor_var->VOLT2B = (float)  OWFS->read(configuration->sensor+"volt2.B");
+            sensor_var->VOLT2C = (float)  OWFS->read(configuration->sensor+"volt2.C");
+            sensor_var->VOLT2D = (float)  OWFS->read(configuration->sensor+"volt2.D");
          }
          break;
          case "DS2413":
          catch {
-            sensor_var->PIOA = (int)  OWFS->read(configuration->path+"PIO.A");
-            sensor_var->PIOB = (int)  OWFS->read(configuration->path+"PIO.B");
+            sensor_var->PIOA = (int)  OWFS->read(configuration->sensor+"PIO.A");
+            sensor_var->PIOB = (int)  OWFS->read(configuration->sensor+"PIO.B");
          };
          break; 
          case "DS2502":
@@ -132,14 +167,14 @@ class sensor
             break;
          case "DS1820":
          case "DS18B20":
-            sensor_var->temperature = (float) OWFS->read(configuration->path+"temperature") + (float) configuration->bias;
+            sensor_var->temperature = (float) OWFS->read(configuration->sensor+"temperature") + (float) configuration->bias;
             break;
       }
    } 
   
    void get_vbus()
    {
-      string data = OWFS->read(configuration->path+"memory");
+      string data = OWFS->read(configuration->sensor+"memory");
       if(!sizeof(data) )
          return;
       sensor_var->collector = (float) (data[3] + (data[4]<<8)) / 10;
@@ -150,7 +185,7 @@ class sensor
 
    void get_slimmemeter()
    {
-      string data = OWFS->read(configuration->path+"memory");
+      string data = OWFS->read(configuration->sensor+"memory");
       if(!sizeof(data) )
          return;
       sensor_var->T1_in = data[4]*10000+data[5]*1000+data[6]*100+data[7]*10+data[8];
