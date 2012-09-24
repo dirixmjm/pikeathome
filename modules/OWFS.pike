@@ -29,7 +29,6 @@ array find_sensors()
 {
    array ret = ({});
    array device_path = get_device_path("/");
-   werror("%O\n",device_path);
    foreach( device_path, string path )
    {
       array var = sensvar;
@@ -44,7 +43,6 @@ array get_device_path(string path)
    array ret = ({});
    object traversion = OWFS->Traversion( path );
    array files = traversion->files;
-   werror("%O\n",files);
    foreach(files, string filename )
    {
       int a=0;
@@ -94,6 +92,8 @@ class sensor
       {
          case "DS2413":
          case "DS2450":
+         case "DS2408":
+         case "DS2438":
             sensor_prop->sensor_type=SENSOR_INPUT|SENSOR_OUTPUT;
          break; 
          case "DS2502":
@@ -128,10 +128,10 @@ class sensor
             sensor_var->VOLTB = (float)  OWFS->read(configuration->sensor+"volt.B");
             sensor_var->VOLTC = (float)  OWFS->read(configuration->sensor+"volt.C");
             sensor_var->VOLTD = (float)  OWFS->read(configuration->sensor+"volt.D");
-            sensor_var->powerA= (sensor_var->VOLTA-0.14) / 2E-4;
-            sensor_var->powerB= (sensor_var->VOLTB-0.14) / 2E-4;
-            sensor_var->powerC= (sensor_var->VOLTC-0.14) / 2E-4;
-            sensor_var->powerD= (sensor_var->VOLTD-0.14) / 2E-4;
+            sensor_var->powerA= (sensor_var->VOLTA-0.14) / 3E-4;
+            sensor_var->powerB= (sensor_var->VOLTB-0.14) / 3E-4;
+            sensor_var->powerC= (sensor_var->VOLTC-0.14) / 3E-4;
+            sensor_var->powerD= (sensor_var->VOLTD-0.14) / 3E-4;
             sensor_var->VOLT2A = (float)  OWFS->read(configuration->sensor+"volt2.A");
             sensor_var->VOLT2B = (float)  OWFS->read(configuration->sensor+"volt2.B");
             sensor_var->VOLT2C = (float)  OWFS->read(configuration->sensor+"volt2.C");
@@ -153,6 +153,24 @@ class sensor
             sensor_var->VOLT2D = (float)  OWFS->read(configuration->sensor+"volt2.D");
          }
          break;
+         case "DS2408":
+         catch {
+            sensor_var->PIOA = (int)  OWFS->read(configuration->sensor+"PIO.0");
+            sensor_var->PIOB = (int)  OWFS->read(configuration->sensor+"PIO.1");
+            sensor_var->PIOC = (int)  OWFS->read(configuration->sensor+"PIO.2");
+            sensor_var->PIOD = (int)  OWFS->read(configuration->sensor+"PIO.3");
+            sensor_var->PIOE = (int)  OWFS->read(configuration->sensor+"PIO.4");
+            sensor_var->PIOF = (int)  OWFS->read(configuration->sensor+"PIO.5");
+            sensor_var->PIOG = (int)  OWFS->read(configuration->sensor+"PIO.6");
+            sensor_var->PIOH = (int)  OWFS->read(configuration->sensor+"PIO.7");
+            sensor_var->SENSEDA = (int)  OWFS->read(configuration->sensor+"SENSED.0");
+            sensor_var->SENSEDB = (int)  OWFS->read(configuration->sensor+"SENSED.1");
+            sensor_var->SENSEDC = (int)  OWFS->read(configuration->sensor+"SENSED.2");
+            sensor_var->SENSEDD = (int)  OWFS->read(configuration->sensor+"SENSED.3");
+            sensor_var->SENSEDE = (int)  OWFS->read(configuration->sensor+"SENSED.4");
+            sensor_var->SENSEDF = (int)  OWFS->read(configuration->sensor+"SENSED.5");
+         };
+         break;
          case "DS2413":
          catch {
             sensor_var->PIOA = (int)  OWFS->read(configuration->sensor+"PIO.A");
@@ -169,6 +187,11 @@ class sensor
          case "DS18B20":
             sensor_var->temperature = (float) OWFS->read(configuration->sensor+"temperature") + (float) configuration->bias;
             break;
+         case "DS2438":
+            sensor_var->VDD = (float)  OWFS->read(configuration->sensor+"VDD");
+            sensor_var->VAD = (float)  OWFS->read(configuration->sensor+"VAD");
+            sensor_var->vis = (float)  OWFS->read(configuration->sensor+"vis");
+         break;
       }
    } 
   
