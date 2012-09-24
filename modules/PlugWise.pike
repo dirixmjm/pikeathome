@@ -71,12 +71,33 @@ class sensor
          call_out(log,30);
    }
 
-   mapping write( mapping what )
+   object getplug( string mac )
    {
-      object plug = module->PlugWise->Plugs[configuration->sensor];
+      if( has_index( module->PlugWise->Plugs, mac ))
+         return module->PlugWise->Plugs[mac];
+      else
+      {
+         logerror("Plug %s Not Found in the PlugWise Network start search\n",mac);
+         if( objectp( module->PlugWise->CirclePlus) )
+            module->PlugWise->CirclePlus->find_plugs();
+         return UNDEFINED;
+      }
+   }
+
+   mapping write( mapping what, int|void retry )
+   {
+      object plug = getplug(configuration->sensor);
       if( !plug )
       {
-         logerror("Plug %s Not Found in the PlugWise Network\n",configuration->sensor);
+         if( !retry )
+         {
+            logerror("Plug %s Not Found in the PlugWise Network retry in 30 seconds\n",configuration->sensor);
+            call_out(write,30,what,1);
+         }
+         else
+         {
+            logerror("Plug %s Not Found in the PlugWise Network retry in 30 seconds\n",configuration->sensor);
+         }
          return ([]);
       }
       if (has_index(what,"state") )
@@ -95,7 +116,9 @@ class sensor
 #ifdef PLUGWISEDEBUG
    logdebug("Retrieving new values for plug %s\n",sensor_prop->name);
 #endif
-         object plug = module->PlugWise->Plugs[configuration->sensor]; 
+         object plug = getplug(configuration->sensor); 
+         if(! plug ) 
+            return;
          plug->info();
          sensor_var->state = plug->powerstate;
          sensor_var->power = (float) plug->power();

@@ -329,10 +329,14 @@ string DMLDec(Parser.HTML p,
 string DMLSet(Parser.HTML p, 
                mapping args, mapping query )
 {
+   if ( has_index( args, "variable" ) && has_index( args, "from" ) )
+   {
+      string value = (string) resolve_entity(args->from,query);
+      set_entity( value, args->variable, query);
+   }
    if ( has_index( args, "variable" ) && has_index( args, "value" ) )
    {
-      string value = resolve_entity(args->value,query);
-      set_entity( value, args->variable, query);
+      set_entity( args->value, args->variable, query);
    }
    else
       return "variable argument missing";
