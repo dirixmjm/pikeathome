@@ -260,11 +260,12 @@ string DMLIf(Parser.HTML p,
    {
       //FIXME this should be made independant of spaces.
       array arr = args->variable/" ";
-      if( !exists_entity(arr[0],query ) )
-         return "";
-      else if ( sizeof(arr) == 1 )
+      if ( sizeof(arr) == 1 )
       {
-            return content;
+            if( resolve_entity(arr[0],query)) 
+               return content;
+            else
+               return "";
       }
       else if ( sizeof(arr) == 2 )
       {
@@ -272,8 +273,9 @@ string DMLIf(Parser.HTML p,
       }
       else if ( arr[1] == "=" || arr[1] == "==" || arr[1] == "is" )
       {
-         string var = resolve_entity(arr[0],query);
+         string var = (string) resolve_entity(arr[0],query);
          string is = arr[2..]*" ";
+         werror("%O == %O\n",var,is);
          if ( var == is )
             return content;
          else 
@@ -281,7 +283,7 @@ string DMLIf(Parser.HTML p,
       } 
       else if ( arr[1] == "!=" ) 
       {
-         string var = resolve_entity(arr[0],query);
+         string var = (string) resolve_entity(arr[0],query);
          string is = arr[2..]*" ";
          if ( var != is )
             return content;
@@ -298,8 +300,6 @@ string DMLInc(Parser.HTML p,
    if ( has_index( args, "variable" ) )
    {
       float value = 1.0;
-      if( !exists_entity(args->variable,query ) )
-         return "";
       float var = (float) resolve_entity(args->variable,query);
       
       if ( has_index( args, "value" ) )
@@ -316,8 +316,6 @@ string DMLDec(Parser.HTML p,
    if ( has_index( args, "variable" ) )
    {
       float value = 1.0;
-      if( !exists_entity(args->variable,query ) )
-         return "";
       float var = (float) resolve_entity(args->variable,query);
       
       if ( has_index( args, "value" ) )
@@ -421,6 +419,10 @@ class DMLParser
 
 void switchboard( string sender, string receiver, int command, mixed|void parameters)
 {
+#ifdef DEBUG
+   logdebug("RPC: Receive Request %s %d\n",sender, command );
+   logdebug("RPC: %O\n",parameters );
+#endif
    if ( command == COM_ERROR ) 
    {
      logerror("Server returned an error %O\n",parameters->error );
