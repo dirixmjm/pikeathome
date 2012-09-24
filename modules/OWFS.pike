@@ -93,7 +93,6 @@ class sensor
          case "DS2413":
          case "DS2450":
          case "DS2408":
-         case "DS2438":
             sensor_prop->sensor_type=SENSOR_INPUT|SENSOR_OUTPUT;
          break; 
          case "DS2502":
@@ -102,8 +101,51 @@ class sensor
             sensor_var->temperature = 0.0;
             sensor_prop->sensor_type=SENSOR_INPUT;
          break;
+         case "DS2438":
+            sensor_prop->sensor_type=SENSOR_INPUT;
+         break;
       }
       getnew();
+   }
+
+   mapping write( mapping what )
+   {
+      string low_type = "";
+      if( !has_suffix( configuration->sensor, "/" ) )
+         configuration->sensor = configuration->sensor+"/";
+      string catch_err = catch {
+         low_type = OWFS->read(configuration->sensor+"type") ;
+      };
+      switch ( low_type )
+      {
+
+         case "DS2413":
+            if( has_index( what, "PIOA" ) )
+               OWFS->write(configuration->sensor+"PIO.A", (int) what->PIOA);
+            if( has_index( what, "PIOB" ) )
+               OWFS->write(configuration->sensor+"PIO.B",(int) what->PIOB );
+         break;
+         case "DS2408":
+            if( has_index( what, "PIOA" ) )
+               OWFS->write(configuration->sensor+"PIO.0", (int) what->PIOA);
+            if( has_index( what, "PIOB" ) )
+               OWFS->write(configuration->sensor+"PIO.1",(int) what->PIOB );
+            if( has_index( what, "PIOC" ) )
+               OWFS->write(configuration->sensor+"PIO.2",(int) what->PIOC );
+            if( has_index( what, "PIOD" ) )
+               OWFS->write(configuration->sensor+"PIO.3",(int) what->PIOD );
+            if( has_index( what, "PIOE" ) )
+               OWFS->write(configuration->sensor+"PIO.4",(int) what->PIOE );
+            if( has_index( what, "PIOF" ) )
+               OWFS->write(configuration->sensor+"PIO.5",(int) what->PIOF );
+            if( has_index( what, "PIOG" ) )
+               OWFS->write(configuration->sensor+"PIO.6",(int) what->PIOG );
+            if( has_index( what, "PIOH" ) )
+               OWFS->write(configuration->sensor+"PIO.7",(int) what->PIOH );
+         break;
+      }
+      getnew();
+      return sensor_var;   
    }
 
    void getnew()
@@ -188,9 +230,18 @@ class sensor
             sensor_var->temperature = (float) OWFS->read(configuration->sensor+"temperature") + (float) configuration->bias;
             break;
          case "DS2438":
-            sensor_var->VDD = (float)  OWFS->read(configuration->sensor+"VDD");
-            sensor_var->VAD = (float)  OWFS->read(configuration->sensor+"VAD");
-            sensor_var->vis = (float)  OWFS->read(configuration->sensor+"vis");
+            if( configuration->type == "CO2" )
+            {
+               sensor_var->concentration = (int)  ((float) OWFS->read(configuration->sensor+"VAD")*1000.00);
+               sensor_var->vis = (float)  OWFS->read(configuration->sensor+"vis");
+            }
+            else
+            {
+               sensor_var->VDD = (float)  OWFS->read(configuration->sensor+"VDD");
+               sensor_var->VAD = (float)  OWFS->read(configuration->sensor+"VAD");
+               sensor_var->vis = (float)  OWFS->read(configuration->sensor+"vis");
+             }
+         
          break;
       }
    } 
