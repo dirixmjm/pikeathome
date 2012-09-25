@@ -97,7 +97,11 @@ array entity_callback(Parser.HTML p,
 {
    string variable;
    sscanf(entity,"&%s;",variable);
-   return ({ (string) (resolve_entity(variable,query)|| entity) });
+   mixed val = resolve_entity(variable,query);
+   if ( zero_type(val) )
+      return ({ entity });
+   else 
+      return ({ (string) val });
 }
 
 mixed resolve_entity(string entity, mapping query )
@@ -275,7 +279,6 @@ string DMLIf(Parser.HTML p,
       {
          string var = (string) resolve_entity(arr[0],query);
          string is = arr[2..]*" ";
-         werror("%O == %O\n",var,is);
          if ( var == is )
             return content;
          else 
@@ -437,7 +440,7 @@ void switchboard( string sender, string receiver, int command, mixed|void parame
      logerror("Switchboard can only handle answers to requests\n" );
      return;
    }
-   else if ( parameters ) 
+   else if ( parameters || zero_type(parameters)==0 ) 
    {
      rpc_cache[sender]+=([ abs(command):parameters]);
    }
