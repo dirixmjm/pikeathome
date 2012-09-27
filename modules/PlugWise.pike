@@ -77,7 +77,7 @@ class sensor
          return module->PlugWise->Plugs[mac];
       else
       {
-         logerror("Plug %s Not Found in the PlugWise Network start search\n",mac);
+         logerror("Plug %s with mac %s Not Found, search started\n",configuration->name,mac);
          if( objectp( module->PlugWise->CirclePlus) )
             module->PlugWise->CirclePlus->find_plugs();
          return UNDEFINED;
