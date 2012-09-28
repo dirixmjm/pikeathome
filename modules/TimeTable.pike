@@ -66,9 +66,9 @@ class sensor
 
      int seconds  = schedule();
       //Set output sensor to current setting to the newly scheduled.
-      switchboard(sensor_prop->name,configuration->output,COM_WRITE,(["values":theschedule[sensor_var->current_schedule]->value]));
+      switchboard(sensor_prop->name,configuration->output,COM_WRITE,(["value": (int) theschedule[sensor_var->current_schedule]->value]));
 
-      logdebug("Done schedule, output %d\n", theschedule[sensor_var->current_schedule]->value);
+      logdebug("Done schedule, output %d\n", (int) theschedule[sensor_var->current_schedule]->value);
 
      if ( seconds >= 0 )
      {

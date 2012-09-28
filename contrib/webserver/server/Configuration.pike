@@ -71,6 +71,8 @@ array get_main_configuration( Parser.HTML p, mapping args, mapping query )
 
    //Find Parameters of the module or sensor.
    array|mapping params = dml->rpc( name , COM_PARAM );
+   //Find Runtime Properties of the module or sensor.
+   array|mapping prop = dml->rpc( name , COM_PROP );
 
    if( mappingp(params) && has_index(params,"error"))
       return ({ sprintf("<H1>Server Return An Error</H1><p>%O",params->error) });
@@ -148,7 +150,8 @@ array get_main_configuration( Parser.HTML p, mapping args, mapping query )
       //FIXME this should be configurable
       if( sizeof(name_split) == 1 )
          ret+=({ "<input type=\"submit\" name=\"find_sensor\" value=\"Add Module\" /></td></tr>" }); 
-      else if ( sizeof(name_split) == 2 )
+      else if ( sizeof(name_split) == 2 && mappingp(prop) && 
+                (prop["module_type"] & (MODULE_SENSOR |MODULE_SCHEDULE)))
          ret+=({ "<input type=\"submit\" name=\"find_sensor\" value=\"Add Sensor\" /></td></tr>" }); 
       ret+=({ "</table>" });
       ret+=({ "</FORM>" });
@@ -164,7 +167,7 @@ array get_main_configuration( Parser.HTML p, mapping args, mapping query )
    {
       array|mapping module_sensors = dml->rpc( name, COM_LIST );
       if( mappingp(module_sensors) && has_index(module_sensors,"error"))
-         return ({ sprintf("<H1>Server Return An Error</H1><p>%s",module_sensors->error) });
+         return ({ sprintf("<H1>Server Returned An Error</H1><p>%s",module_sensors->error) });
       ret+=({ "<FORM method=\"POST\" > " });
       ret+=({ "<input type=\"hidden\" name=\"update_mod_sensor\" value=\"1\"/>" });
       ret+=({ "<table border=\"1\">" });
@@ -188,7 +191,7 @@ array get_main_configuration( Parser.HTML p, mapping args, mapping query )
          }
 
          ret+=({ "<tr><td align=\"left\" >"});
-         ret+=({ sprintf("<a href=\"module.dml?name=%s\">%s</a>",sensor,module_sensor_name ) });
+         ret+=({ sprintf("<a href=\"index.dml?name=%s\">%s</a>",sensor,module_sensor_name ) });
          ret+=({ "</td>" });
          foreach( params|| ({}), array param )
          {
@@ -373,7 +376,7 @@ array make_form_input(array param, mapping query, string name)
       //If there was no form-post fill the form with database variables.
       if ( ! has_index( query->entities->form,"schedule_"+inname ) )
       {
-         array theschedule= sizeof(param)>5?param[5]:([]);
+         array theschedule= sizeof(param)>5?param[5]:({});
          foreach( theschedule, mapping schedule )
          {
             count++;

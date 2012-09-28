@@ -10,7 +10,14 @@ object domotica;
 int module_type = 0;
 
 string name = "module";
+
+//defvar contains al configuration variables
 array defvar = ({});
+
+//The module_var mapping should contain all runtime variables
+mapping module_var = ([
+                      ]);
+
 
 void create( string _name, object domo )
 {
@@ -19,6 +26,10 @@ void create( string _name, object domo )
 
    configuration = domotica->configuration(name);
    logdebug("Init Module %s\n",name);
+   module_var->name=_name;
+   //Maybe decrepate direct "module_type" variable?
+   module_var->module_type=module_type;
+
 }
 
 void init()
@@ -87,6 +98,11 @@ void rpc_command( string sender, string receiver, int command, mapping parameter
       {
          mapping ret = retr_data( parameters );
          switchboard( receiver,sender, -command, ret );
+      }
+      break;
+      case COM_PROP:
+      {
+         switchboard( receiver,sender, -command, module_var );
       }
       break;
       case COM_PARAM:

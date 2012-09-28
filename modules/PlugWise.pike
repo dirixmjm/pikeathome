@@ -122,14 +122,22 @@ class sensor
    {
       object plug = module->PlugWise->Plugs[configuration->sensor];
       logdebug("Plug %s logaddress %d\n",sensor_prop->name,logaddress);
-      configuration->nextaddress=logaddress+1;
       //Check for roundtrip
       //Seems to be a bug
-      if( logaddress > plug->powerlogpointer )
+      if( logaddress >= plug->powerlogpointer )
       {
-           logerror("logaddress: %d > powerlogpoint %d\n",logaddress, plug->powerlogpointer);
+           logerror("logaddress: %d => powerlogpoint %d\n",logaddress, plug->powerlogpointer);
            configuration->nextaddress=plug->powerlogpointer;
            return;
+      }
+      //Set the next address that needs te be queried
+      configuration->nextaddress=logaddress+1;
+      //Now do the logging
+      foreach( data, mapping log_item )
+      {
+         if( log_item->hour - time(1) > 60 )
+            logerror("Loghour %d is larger then current timestamp %d\n",log_item->hour, time(1)); 
+         logdata(sensor_prop->name+".Wh",log_item->kwh,log_item->hour);
       }
       //Get next log if we lag behind  
       if( logaddress+1 < plug->powerlogpointer )
@@ -137,13 +145,6 @@ class sensor
          plug->powerlog(logaddress+1);
          if( configuration->debug )
             logdebug("Retrieving address %d for plug %s with current address %d\n",(int) logaddress+1,sensor_prop->name,(int) plug->powerlogpointer);
-      }
-      //Now do the logging
-      foreach( data, mapping log_item )
-      {
-         if( log_item->hour - time(1) > 60 )
-            logerror("Loghour %d is larger then current timestamp %d\n",log_item->hour, time(1)); 
-         logdata(sensor_prop->name+".Wh",log_item->kwh,log_item->hour);
       }
    }
 
