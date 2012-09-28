@@ -172,7 +172,7 @@ void switchboard ( mixed ... args )
    module->switchboard( @args );
 }
 
-void logdebug(string receiver, mixed ... args)
+void logdebug(mixed ... args)
 {
    module->logdebug(@args);
 }

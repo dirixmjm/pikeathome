@@ -47,7 +47,7 @@ class sensor
    {
       if(!theschedule || !sizeof(theschedule) )
       {
-         module->log(LOG_EVENT,LOG_ERR,"No Schedule defined for TimePlan %s",sensor_prop->name);
+         logerror("No Schedule defined for TimePlan %s",sensor_prop->name);
          return;
       }
       array to_sort = ({});
@@ -69,7 +69,7 @@ class sensor
       switchboard(sensor_prop->name,configuration->output,COM_WRITE,(["values":theschedule[sensor_var->current_schedule]->value]));
 
 #ifdef TIMETABLEDEBUG
-      module->log(LOG_EVENT,LOG_DEBUG,"Done schedule, output %d\n", theschedule[sensor_var->current_schedule]->value);
+      logdebug("Done schedule, output %d\n", theschedule[sensor_var->current_schedule]->value);
 #endif
 
      if ( seconds >= 0 )
@@ -110,7 +110,7 @@ class sensor
       {
          if(loopcount++ > 16 )
          {
-            module->log(LOG_EVENT,LOG_ERR,"TimePlan Loop Safety Gauch Applied");
+            logerror("TimePlan Loop Safety Gauch Applied");
             return;
          }
          schedule_start--;
@@ -132,7 +132,7 @@ class sensor
       }
 
 #ifdef TIMETABLEDEBUG
-      module->log(LOG_EVENT,LOG_DEBUG,"Current %O %d\n", last_schedule, schedule_start );
+      logdebug("Current %O %d\n", last_schedule->format_nice(), schedule_start );
 #endif
       //Set the current (and next, schedule sets current = next)
       sensor_var->current_schedule=schedule_start;
@@ -142,7 +142,7 @@ class sensor
    int schedule()
    {
 #ifdef TIMETABLEDEBUG
-      module->log(LOG_EVENT,LOG_DEBUG,"Next %d\n",sensor_var->next_schedule );
+      logdebug("Next %d\n", (int) sensor_var->next_schedule );
 #endif
       if(!theschedule || !sizeof(theschedule))
          return -1;
@@ -159,7 +159,7 @@ class sensor
       {
          if(loopcount++ > 16 )
          {
-            module->log(LOG_EVENT,LOG_ERR,"TimePlan Loop Safety Gauch Applied");
+            logerror("TimePlan Loop Safety Gauch Applied");
             return -1;
          }
          //Go to next schedule in theschedule table.
@@ -184,7 +184,7 @@ class sensor
       sensor_var->next_schedule_time = next_schedule->unix_time();
       //Schedule next run when the next schedule starts.
 #ifdef TIMETABLEDEBUG
-      module->log(LOG_EVENT,LOG_DEBUG,"Current %d Next %O %d\n", sensor_var->current_schedule, next_schedule, schedule_start );
+      logdebug("Current %d Next %s %d\n", sensor_var->current_schedule, next_schedule->format_nice(), schedule_start );
 #endif
       return sensor_var->next_schedule_time-time();
    }
@@ -192,7 +192,7 @@ class sensor
    mapping write( mapping what )
    {
 #ifdef TIMETABLEDEBUG
-      module->log(LOG_EVENT,LOG_DEBUG,"Write %O\n",what );
+      logdebug("Write %O\n",what );
 #endif
    }
   

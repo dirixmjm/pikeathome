@@ -232,7 +232,15 @@ class sensor
          case "DS2438":
             if( configuration->type == "CO2" )
             {
-               sensor_var->concentration = (int)  ((float) OWFS->read(configuration->sensor+"VAD")*1000.00);
+               int concentration = (int)  ((float) OWFS->read(configuration->sensor+"VAD")*1000.00);
+               //Check if the sensor needs a reset?
+               if ( concentration >= 4400 )
+               {
+                  logdebug("CO2 Sensor %s Needs reset\n",sensor_prop->name);
+                  switchboard(sensor_prop->name, configuration->reset, COM_WRITE, 1 );
+                  call_out( switchboard, 20, sensor_prop->name,configuration->reset, COM_WRITE, 0 );
+               }
+               sensor_var->concentration = concentration; 
                sensor_var->vis = (float)  OWFS->read(configuration->sensor+"vis");
             }
             else
