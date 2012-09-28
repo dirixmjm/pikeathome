@@ -45,7 +45,7 @@ void log_data( string name, float|int data, int|void tstamp )
                     ":value":(int) value]) );
    };
    if( error )
-     logerror("Data Insert Failed %s with %O\n",name, error);
+     logerror("Data Insert Failed %s with %O\n",name, DB->error());
      
 }
 
