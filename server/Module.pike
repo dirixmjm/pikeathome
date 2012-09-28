@@ -38,9 +38,7 @@ void create( string _name, object _domotica )
 
 void init()
 {
-#ifdef DEBUG
    logdebug("Init Module %s\n",module_var->name);
-#endif
    if( (module_type & MODULE_SENSOR) && has_index(configuration,"sensor") )
    {
       init_sensors( configuration->sensor +({}) );

@@ -8,7 +8,7 @@ object PlugWise;
 
 constant defvar = ({
                    ({ "port",PARAM_STRING,"/dev/ttyUSB0","TTY Port of the USB Stick", POPT_RELOAD }),
-                   ({ "debug",PARAM_BOOLEAN,0,"Turn On / Off Debugging (Requires Reload)", POPT_RELOAD }),
+                   ({ "debug",PARAM_BOOLEAN,0,"Turn On / Off Debugging" }),
                    });
 
 /* Sensor Specific Variables */
@@ -19,13 +19,9 @@ constant sensvar = ({
 
 void init() 
 {
-#ifdef DEBUG
    logdebug("Init Module %s\n",name);
-#endif
-
-     PlugWise = Public.IO.PlugWise(configuration->port,1);
-     
-     init_sensors( configuration->sensor+({}) );
+   PlugWise = Public.IO.PlugWise(configuration->port,1);
+   init_sensors( configuration->sensor+({}) );
 }
 
 void init_sensors( array load_sensors )
@@ -113,9 +109,6 @@ class sensor
 
    protected void getnew( )
    {
-#ifdef PLUGWISEDEBUG
-   logdebug("Retrieving new values for plug %s\n",sensor_prop->name);
-#endif
          object plug = getplug(configuration->sensor); 
          if(! plug ) 
             return;
@@ -128,9 +121,7 @@ class sensor
    void log_callback( array data, int logaddress )
    {
       object plug = module->PlugWise->Plugs[configuration->sensor];
-#ifdef DEBUG
-   logdebug("Plug %s logaddress %d\n",sensor_prop->name,logaddress);
-#endif
+      logdebug("Plug %s logaddress %d\n",sensor_prop->name,logaddress);
       configuration->nextaddress=logaddress+1;
       //Check for roundtrip
       //Seems to be a bug
@@ -144,9 +135,8 @@ class sensor
       if( logaddress+1 < plug->powerlogpointer )
       {
          plug->powerlog(logaddress+1);
-#ifdef PLUGWISEDEBUG
+         if( configuration->debug )
             logdebug("Retrieving address %d for plug %s with current address %d\n",(int) logaddress+1,sensor_prop->name,(int) plug->powerlogpointer);
-#endif
       }
       //Now do the logging
       foreach( data, mapping log_item )
@@ -186,9 +176,8 @@ class sensor
 
       if( (int) configuration->nextaddress < plug->powerlogpointer )
       {
-#ifdef PLUGWISEDEBUG
+         if( configuration->debug )
             logdebug("Retrieving address %d for plug %s with current address %d\n",(int) configuration->nextaddress,sensor_prop->name,(int) plug->powerlogpointer);
-#endif
          plug->powerlog( (int) configuration->nextaddress );
       }
   }

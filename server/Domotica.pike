@@ -130,9 +130,7 @@ void rpc_command( string sender, string receiver, int command, mapping parameter
             {
                failed_modules += ({ ([  "module":name,
                             "error": "Compilation Failed" ]) });
-#ifdef DEBUG
-         logerror("Error:%O\n",catch_result);
-#endif
+               logerror("Error:%O\n",catch_result);
             }
             else
             {
@@ -170,8 +168,7 @@ void rpc_command( string sender, string receiver, int command, mapping parameter
          if ( has_value(server_configuration->module, module_name ) )
          {
             string error=sprintf("There already exists a module instance with name %s\n",module_name);
-            logerror(error);
-         switchboard(module_name, sender, 30, ([ "error":error ]));
+            switchboard(module_name, sender, 30, ([ "error":error ]));
          }
          server_configuration->module+=({module_name});
          object cfg = config->Configuration( module_name );
@@ -197,7 +194,8 @@ void rpc_command( string sender, string receiver, int command, mapping parameter
       case COM_LOGEVENT:
       foreach(loggers, string logger)
       {
-         modules[logger]->log_event( parameters->level, parameters->error );
+         //Fixme Switchboard?
+         modules[logger]->log_event( parameters->level, sender, parameters->error );
 #ifdef DEBUG
        logout(parameters->level,parameters->error);
 #endif
@@ -248,7 +246,6 @@ void switchboard( string sender, string receiver, int command, mixed parameters 
          if ( ! has_index(modules,split[1]) )
          {
             call_out(switchboard, 0, name, sender, 30, ([ "error":sprintf("Module %s not found",split[1]) ]) );
-            logerror("Switchboard called with unknown module %s\n",split[1]);
          }
          else
          {

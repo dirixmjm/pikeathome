@@ -13,9 +13,7 @@ void create( object domotica_, object configuration_ )
    domotica = domotica_;
    name = domotica->name + ".ICom";
    configuration = configuration_;
-#ifdef DEBUG
    logdebug("Init InterCom Interface\n");
-#endif
    Standards.URI U = Standards.URI(configuration->listenaddress);
    Port = Stdio.Port( U->port?U->port:4090, AcceptCom, U->host?U->host:"127.0.0.1");
    Port->set_id(Port);

@@ -18,9 +18,7 @@ constant sensvar = ({
 
 void init() 
 {
-#ifdef DEBUG
    logdebug("Init Module %s\n",name);
-#endif
    OWFS = Public.IO.OWFS( configuration->port );
    init_sensors(configuration->sensor + ({}) );
 }

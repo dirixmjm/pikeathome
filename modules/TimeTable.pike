@@ -68,9 +68,7 @@ class sensor
       //Set output sensor to current setting to the newly scheduled.
       switchboard(sensor_prop->name,configuration->output,COM_WRITE,(["values":theschedule[sensor_var->current_schedule]->value]));
 
-#ifdef TIMETABLEDEBUG
       logdebug("Done schedule, output %d\n", theschedule[sensor_var->current_schedule]->value);
-#endif
 
      if ( seconds >= 0 )
      {
@@ -131,9 +129,7 @@ class sensor
          }
       }
 
-#ifdef TIMETABLEDEBUG
       logdebug("Current %O %d\n", last_schedule->format_nice(), schedule_start );
-#endif
       //Set the current (and next, schedule sets current = next)
       sensor_var->current_schedule=schedule_start;
       sensor_var->next_schedule=schedule_start;
@@ -141,9 +137,7 @@ class sensor
 
    int schedule()
    {
-#ifdef TIMETABLEDEBUG
       logdebug("Next %d\n", (int) sensor_var->next_schedule );
-#endif
       if(!theschedule || !sizeof(theschedule))
          return -1;
       //A safety gauch, to prevent it from looping forever.
@@ -183,17 +177,13 @@ class sensor
       sensor_var->next_schedule = schedule_start;
       sensor_var->next_schedule_time = next_schedule->unix_time();
       //Schedule next run when the next schedule starts.
-#ifdef TIMETABLEDEBUG
       logdebug("Current %d Next %s %d\n", sensor_var->current_schedule, next_schedule->format_nice(), schedule_start );
-#endif
       return sensor_var->next_schedule_time-time();
    }
  
    mapping write( mapping what )
    {
-#ifdef TIMETABLEDEBUG
       logdebug("Write %O\n",what );
-#endif
    }
   
    void close()

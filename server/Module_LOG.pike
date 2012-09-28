@@ -18,9 +18,7 @@ void create( string _name, object domo )
    name=_name;
 
    configuration = domotica->configuration(name);
-#ifdef DEBUG
    logdebug("Init Module %s\n",name);
-#endif
 }
 
 void init()
