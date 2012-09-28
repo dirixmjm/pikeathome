@@ -49,34 +49,45 @@ void log_data( string name, float|int data, int|void tstamp )
      
 }
 
-mapping retr_data( string name, int|void start, int|void end)
+mapping retr_data( mapping parameters )
 {
    DB = Sql.Sql(configuration->database);
-   array split = split_server_module_sensor_value(name);
-   int stamp_start=0,stamp_end;
-   if ( zero_type(end) )
-      stamp_end = time();
-   else
-      stamp_end = end;
-   if ( !zero_type(start) )
-      stamp_start = start;
-   array res = DB->query( "SELECT stamp,value FROM oldlog "+
-                          "WHERE server=:server AND module=:module AND "+
-                          " sensor=:sensor AND "+
-                          " variable=:variable AND "+
-                          " stamp >= to_timestamp(:stampstart) AND "+
-                          " stamp <= to_timestamp(:stampend);",
-                 ([ ":server":split[0],
+   array split = split_server_module_sensor_value(parameters->name);
+   mapping queryparam = ([ ":server":split[0],
                     ":module":split[1],
                     ":sensor":split[2],
-                    ":variable":split[3],
-                    ":stampstart":stamp_start,
-                    ":stampend":stamp_end]) );
+                    ":variable":split[3]]);
 
-  return ([ "timestamp":res->stamp,"value":res->value ]);
+   if ( has_index( parameters,"end" ) )
+   {
+      queryparam += ([ ":end":sprintf( "to_timestamp(%d)",(int) parameters->end) ]);
+   }
+   else
+      queryparam += ([ ":end":"current_timestamp"]);
+
+   //Just select a default here for compatability with other Logging modules.
+   queryparam[":aggregate"]= parameters->aggregate || "AVERAGE";
+
+   if ( has_index( parameters,"start" ) )
+   {
+      queryparam += ([ ":start":sprintf( "to_timestamp(%d)",(int) parameters->start) ]);
+   }
+      queryparam += ([ ":start":"to_timestamp(0)" ]);
+
+   string query = "SELECT stamp,value FROM retrieve_archive ( :server, "+
+                  " :module, :sensor, :variable, :aggregate, :start, :end ";
+   if( has_index ( parameters, "precision" ) )
+   {
+      query += ",:precision";
+      queryparam[":precision"]=parameters->precision;
+   }
+   query += ");";
+   werror("%s\n%O\n",query,queryparam);
+   array res = DB->query( query, queryparam);
+   return ([ "timestamp":res->stamp,"value":res->value ]);
 }
 
-void log_event( int level, string format, mixed ... args )
+void log_event( int level, string sender, string format, mixed ... args )
 {
    DB = Sql.Sql(configuration->database);
    int stamp = time();
@@ -85,7 +96,8 @@ void log_event( int level, string format, mixed ... args )
                           ([
                              ":level":level,
                              ":timestamp":stamp,
-                             ":event":sprintf( format, @args)
+                             ":event":sprintf( format, @args),
+                             ":sender":sender,
                              ]) );
    };
 }

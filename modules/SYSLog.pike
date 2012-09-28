@@ -10,9 +10,9 @@ void init()
 {
    System.openlog("pikeathome",LOG_PID,LOG_DAEMON);
 }
-void log_event( int level, string format, mixed ... args )
+void log_event( int level, string sender, string format, mixed ... args )
 {
-   System.syslog(level,sprintf(format,@args));
+   System.syslog(level,sprintf(sender+": " + format,@args));
 }
 
 void close()

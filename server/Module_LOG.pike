@@ -31,7 +31,7 @@ void log_data( string name, string|int data, int|void tstamp )
 {
 }
 
-mapping retr_data( string name, int|void start, int|void end)
+mapping retr_data( mapping parameters )
 {
 }
 
@@ -87,7 +87,7 @@ void rpc_command( string sender, string receiver, int command, mapping parameter
       break;
       case COM_RETRLOGDATA:
       {
-         mapping ret = retr_data( parameters->name, parameters->start, parameters->end);
+         mapping ret = retr_data( parameters );
          switchboard( receiver,sender, -command, ret );
       }
       break;
