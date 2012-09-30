@@ -49,6 +49,7 @@ data->type = "graph";
 data->subtype = args->type || "line";
 data->ymin = (int) args->ymin || 0;
 data->format = "jpg";
+data->name = args->name || "";
 
 //FIXME Error if filename is not given?
 
@@ -79,7 +80,16 @@ switch( args->type ||"line" )
 }
 
 Stdio.write_file(sprintf("/var/pikeathome/www/img/%s.jpg",filename),img,0664);
-return ({ sprintf( "<img src=\"/img/%s.jpg\" />",filename) });
+string imgscale="";
+
+if( has_index(args, "scale" ) )
+{
+   imgscale=sprintf( " height=\"%d\" width=\"%d\" ",
+                           (int) ((float) data->ysize* (float) args->scale), 
+                           (int) ((float) data->xsize * (float) args->scale));
+}
+
+return ({ sprintf( "<img src=\"/img/%s.jpg\" %s />",filename,imgscale) });
 
 }
 
