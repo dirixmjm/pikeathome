@@ -160,6 +160,7 @@ class sensor
       }
       if( ! plug->online)
       {
+         logdebug("Plug %s Not Online Sleeping\n",configuration->sensor);
          //Send a query to the plug, maybe it's online now.
          plug->info();
          return;
