@@ -132,6 +132,8 @@ class sensor
       }
       //Set the next address that needs te be queried
       configuration->nextaddress=logaddress+1;
+      //Sort the array
+      sort(data->hour,data);
       //Now do the logging
       foreach( data, mapping log_item )
       {
@@ -177,12 +179,12 @@ class sensor
          return;
       }
       
-      plug->set_powerlog_callback( log_callback );
 
       if( (int) configuration->nextaddress < plug->powerlogpointer )
       {
          if( configuration->debug )
             logdebug("Retrieving address %d for plug %s with current address %d\n",(int) configuration->nextaddress,sensor_prop->name,(int) plug->powerlogpointer);
+         plug->set_powerlog_callback( log_callback );
          plug->powerlog( (int) configuration->nextaddress );
       }
   }
