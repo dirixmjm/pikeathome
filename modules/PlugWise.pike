@@ -135,16 +135,19 @@ class sensor
       //Sort the array
       sort(data->hour,data);
       //Now do the logging
+      int logcount = 0;
       foreach( data, mapping log_item )
       {
          if( log_item->hour - time(1) > 60 )
             logerror("Loghour %d is larger then current timestamp %d\n",log_item->hour, time(1)); 
-         logdata(sensor_prop->name+".Wh",log_item->kwh,log_item->hour);
+         //Make sure logging occurs timesynchronised.
+         call_out(logdata,0.1*logcount++,sensor_prop->name+".Wh",log_item->kwh,log_item->hour);
       }
       //Get next log if we lag behind  
       if( logaddress+1 < plug->powerlogpointer )
       {
-         plug->powerlog(logaddress+1);
+         //Add a delay to make sure logging occurs chronologically
+         call_out(plug->powerlog,1,logaddress+1);
          if( configuration->debug )
             logdebug("Retrieving address %d for plug %s with current address %d\n",(int) logaddress+1,sensor_prop->name,(int) plug->powerlogpointer);
       }
