@@ -156,7 +156,7 @@ class sensor
    protected void log()
    {
       call_out(log,3600 );
-      logdebug("Checking Log for Plug %s\n",configuration->sensor);
+      logdebug("Checking Log for Plug %s\n",sensor_prop->name);
       object plug = module->PlugWise->Plugs[configuration->sensor]; 
       if( ! plug )
       { 
@@ -165,7 +165,7 @@ class sensor
       }
       if( ! plug->online)
       {
-         logdebug("Plug %s Not Online Sleeping\n",configuration->sensor);
+         logdebug("Plug %s Not Online Sleeping\n",sensor_prop->name);
          //Send a query to the plug, maybe it's online now.
          plug->info();
          return;
