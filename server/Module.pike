@@ -224,7 +224,8 @@ void switchboard ( mixed ... args )
 
 void logdebug(mixed ... args)
 {
-   call_out(switchboard, 0, module_var->name, domotica->name, COM_LOGEVENT, ([ "level":LOG_DEBUG, "error":sprintf(@args) ]) );
+   if( (int) configuration->debug == 1 )
+      call_out(switchboard, 0, module_var->name, domotica->name, COM_LOGEVENT, ([ "level":LOG_DEBUG, "error":sprintf(@args) ]) );
 }
 
 void logerror(mixed ... args)

@@ -118,7 +118,7 @@ class sensor
          sensor_var->online = plug->online;
    }
 
-   void log_callback( array data, int logaddress )
+   protected void log_callback( array data, int logaddress )
    {
       object plug = module->PlugWise->Plugs[configuration->sensor];
       logdebug("Plug %s logaddress %d\n",sensor_prop->name,logaddress);
@@ -148,17 +148,15 @@ class sensor
       {
          //Add a delay to make sure logging occurs chronologically
          call_out(plug->powerlog,1,logaddress+1);
-         if( configuration->debug )
-            logdebug("Retrieving address %d for plug %s with current address %d\n",(int) logaddress+1,sensor_prop->name,(int) plug->powerlogpointer);
+         logdebug("Retrieving address %d for plug %s with current address %d\n",(int) logaddress+1,sensor_prop->name,(int) plug->powerlogpointer);
       }
    }
 
 
-   void log()
+   protected void log()
    {
       call_out(log,3600 );
-      if( configuration->debug )
-         logdebug("Checking Log for Plug %s\n",configuration->sensor);
+      logdebug("Checking Log for Plug %s\n",configuration->sensor);
       object plug = module->PlugWise->Plugs[configuration->sensor]; 
       if( ! plug )
       { 
@@ -167,8 +165,7 @@ class sensor
       }
       if( ! plug->online)
       {
-         if( configuration->debug )
-            logdebug("Plug %s Not Online Sleeping\n",configuration->sensor);
+         logdebug("Plug %s Not Online Sleeping\n",configuration->sensor);
          //Send a query to the plug, maybe it's online now.
          plug->info();
          return;
@@ -185,8 +182,7 @@ class sensor
 
       if( (int) configuration->nextaddress < plug->powerlogpointer )
       {
-         if( configuration->debug )
-            logdebug("Retrieving address %d for plug %s with current address %d\n",(int) configuration->nextaddress,sensor_prop->name,(int) plug->powerlogpointer);
+         logdebug("Retrieving address %d for plug %s with current address %d\n",(int) configuration->nextaddress,sensor_prop->name,(int) plug->powerlogpointer);
          plug->set_powerlog_callback( log_callback );
          plug->powerlog( (int) configuration->nextaddress );
       }
@@ -196,7 +192,7 @@ class sensor
 
 void reload()
 {
-   remove_call_out(log);
+   //remove_call_out(log);
    sensors = ([]);
    PlugWise->close();
    init(); 
@@ -204,7 +200,7 @@ void reload()
 
 void close()
 {
-   remove_call_out(log);
+   //remove_call_out(log);
    //Stdio.stdout("Closing PlugWise\n");
    sensors = ([]);
    PlugWise->close();
