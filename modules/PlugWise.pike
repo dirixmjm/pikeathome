@@ -124,10 +124,11 @@ class sensor
       logdebug("Plug %s logaddress %d\n",sensor_prop->name,logaddress);
       //Check for roundtrip
       //Seems to be a bug
-      if( logaddress >= plug->powerlogpointer )
+      int logpointer = plug->powerlogpointer();
+      if( logaddress >= logpointer )
       {
-           logerror("logaddress: %d => powerlogpoint %d\n",logaddress, plug->powerlogpointer);
-           configuration->nextaddress=plug->powerlogpointer;
+           logerror("logaddress: %d => powerlogpoint %d\n",logaddress, logpointer);
+           configuration->nextaddress=logpointer;
            return;
       }
       //Set the next address that needs te be queried
@@ -144,11 +145,11 @@ class sensor
          call_out(logdata,0.1*logcount++,sensor_prop->name+".Wh",log_item->kwh,log_item->hour);
       }
       //Get next log if we lag behind  
-      if( logaddress+1 < plug->powerlogpointer )
+      if( logaddress+1 < logpointer )
       {
          //Add a delay to make sure logging occurs chronologically
          call_out(plug->powerlog,1,logaddress+1);
-         logdebug("Retrieving address %d for plug %s with current address %d\n",(int) logaddress+1,sensor_prop->name,(int) plug->powerlogpointer);
+         logdebug("Retrieving address %d for plug %s with current address %d\n",(int) logaddress+1,sensor_prop->name,(int) logpointer);
       }
    }
 
@@ -171,18 +172,20 @@ class sensor
          return;
       }
 
+      int logpointer = plug->powerlogpointer();
+
       //If no nextaddress is know, initialize it with the log head.
       if( !has_index(configuration, "nextaddress" ) || 
                       (int) configuration->nextaddress== -1 )
       {
-         configuration->nextaddress = (int) plug->powerlogpointer;
+         configuration->nextaddress = (int) logpointer;
          return;
       }
       
 
-      if( (int) configuration->nextaddress < plug->powerlogpointer )
+      if( (int) configuration->nextaddress < logpointer )
       {
-         logdebug("Retrieving address %d for plug %s with current address %d\n",(int) configuration->nextaddress,sensor_prop->name,(int) plug->powerlogpointer);
+         logdebug("Retrieving address %d for plug %s with current address %d\n",(int) configuration->nextaddress,sensor_prop->name,logpointer);
          plug->set_powerlog_callback( log_callback );
          plug->powerlog( (int) configuration->nextaddress );
       }
