@@ -47,24 +47,21 @@ class sensor
    protected void sensor_timer()
    {
       call_out(sensor_timer, (int) configuration->timer);
-      switchboard(sensor_prop->name,configuration->input, COM_READ, (["new":1]), compare);
+      switchboard(sensor_prop->name,configuration->input, COM_READ, (["new":1]));
    }
 
-   void written(mixed returnvalue )
+   void got_answer(int command, mixed params)
    {
-     return;
- 
-   }
-
-   void got_answer( mixed params)
-   {
-      compare(params);
+      if ( command  == -COM_READ)
+      {
+            compare(params);
+      }
    }
  
-   void compare(float|int|string input)
+   void compare(float|int input)
    {
+      sensor_var->lastinput = input;
       int lastlevel = sensor_var->level;
-
       switch( configuration->grace )
       {
          case "last":
@@ -84,6 +81,7 @@ class sensor
          }
          else
             counter = (int) configuration->gracecount;
+         sensor_var->counter = counter;
          break;
          case "avg":
          gracevalues += ({ (float) input });
@@ -94,6 +92,7 @@ class sensor
            sensor_var->level = (float) avgvalue > (float) configuration->highlevel;
          else
            sensor_var->level = (float) avgvalue > (float) configuration->lowlevel;
+         sensor_var->avg = avgvalue;
          break;
          case "off":
          default:
@@ -117,11 +116,11 @@ class sensor
           switch( (int) configuration->function )
           {
              case 0:
-                switchboard(sensor_prop->name,configuration->output,COM_WRITE,(["value":0]),written);
+                switchboard(sensor_prop->name,configuration->output,COM_WRITE,(["value":0]));
                 break;
              case 1:
              case 2:
-                switchboard(sensor_prop->name,configuration->output,COM_WRITE,(["value":1]),written);
+                switchboard(sensor_prop->name,configuration->output,COM_WRITE,(["value":1]));
                 break;
           }
        }
@@ -130,11 +129,11 @@ class sensor
           switch( (int) configuration->function )
           {
              case 1:
-                switchboard(sensor_prop->name,configuration->output,COM_WRITE,(["value":0]),written);
+                switchboard(sensor_prop->name,configuration->output,COM_WRITE,(["value":0]));
                 break;
              case 0:
              case 3:
-                switchboard(sensor_prop->name,configuration->output,COM_WRITE,(["value":1]),written);
+                switchboard(sensor_prop->name,configuration->output,COM_WRITE,(["value":1]));
                 break;
           }
        }

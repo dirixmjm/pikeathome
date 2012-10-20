@@ -33,9 +33,12 @@ class sensor
       switchboard(sensor_prop->name,configuration->input, COM_READ);
    }
   
-   void got_answer(int|float|string params )
+   void got_answer(int command, mixed params )
    {
-      logdata(configuration->input,params,time(1));
+      if ( command == -COM_READ )
+         logdata(configuration->input,params,time(1));
+      else
+         logdebug("Logger can't handle return data for command %d\n",command);
    } 
 
  

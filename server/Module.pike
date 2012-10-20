@@ -87,7 +87,7 @@ void setvar( mapping params )
       reload();
 }
 
-void got_answer(mixed parameters)
+void got_answer(int command, mixed parameters)
 {
 
 }
@@ -136,7 +136,7 @@ void rpc_command( string sender, string receiver, int command, mapping parameter
    {
       if( command < 0 )
       {
-         got_answer(parameters);
+         got_answer(command,parameters);
          return;
       }
       switch(command)
