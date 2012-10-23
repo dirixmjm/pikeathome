@@ -295,7 +295,7 @@ mapping form_to_save(array params, mapping query, string name)
             array(mapping) theschedule = ({});
             for( int i = 1; i<=count; i++ )
             {
-               string findit = param[0]+"_"+(string) i;
+               string findit = inname+"_"+(string) i;
                //remove empty lines.
                if( !query->entities->form["start_"+findit] || 
                   query->entities->form["start_"+findit]=="" )
