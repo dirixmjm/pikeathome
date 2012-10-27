@@ -44,6 +44,10 @@ mapping retr_data( mapping parameters )
 {
 }
 
+mapping retr_event( mapping parameters )
+{
+}
+
 void log_event( int level, string name, string format, mixed ... args )
 {
 
@@ -97,6 +101,11 @@ void rpc_command( string sender, string receiver, int command, mapping parameter
       case COM_RETRLOGDATA:
       {
          mapping ret = retr_data( parameters );
+         switchboard( receiver,sender, -command, ret );
+      }
+      case COM_RETRLOGEVENT:
+      {
+         mapping ret = retr_event( parameters );
          switchboard( receiver,sender, -command, ret );
       }
       break;

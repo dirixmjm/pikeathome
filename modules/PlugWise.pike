@@ -8,13 +8,13 @@ object PlugWise;
 
 constant defvar = ({
                    ({ "port",PARAM_STRING,"/dev/ttyUSB0","TTY Port of the USB Stick", POPT_RELOAD }),
-                   ({ "debug",PARAM_BOOLEAN,0,"Turn On / Off Debugging" }),
+                   ({ "debug",PARAM_BOOLEAN,0,"Turn On / Off Debugging",POPT_NONE }),
                    });
 
 /* Sensor Specific Variables */
 constant sensvar = ({
-                   ({ "nextaddress",PARAM_INT,-1,"Current Log Pointer (-1 use plug headpointer)",0   }),
-                   ({ "log",PARAM_BOOLEAN,0,"Turn On / Off Logging",0   }),
+                   ({ "nextaddress",PARAM_INT,-1,"Current Log Pointer (-1 use plug headpointer)",POPT_NONE   }),
+                   ({ "log",PARAM_BOOLEAN,0,"Turn On / Off Logging",POPT_NONE   }),
                 });
 
 void init() 

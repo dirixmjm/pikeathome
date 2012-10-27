@@ -7,5 +7,6 @@
 #define PARAM_SCHEDULE 6
 
 //Parameter Options
-#define POPT_RELOAD   (1<<0)
+#define POPT_NONE        0
+#define POPT_RELOAD      (1<<0)
 #define POPT_MODRELOAD   (1<<0)

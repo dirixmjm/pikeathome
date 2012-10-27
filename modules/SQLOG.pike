@@ -20,9 +20,18 @@ void init()
 {
 }
 
+Sql.Sql getdb()
+{
+   if ( !DB )
+   {
+      DB = Sql.Sql(configuration->database);
+   }
+   return DB;
+}
+
 void log_data( string name, float|int data, int|void tstamp )
 {
-   DB = Sql.Sql(configuration->database);
+   DB = getdb();
    array split = split_server_module_sensor_value(name);
  
    int stamp;
@@ -36,7 +45,7 @@ void log_data( string name, float|int data, int|void tstamp )
    //Check wether int or float (and upscale to int if float).
    int value = (int) ((float) data*(int) configuration->precision);
    mixed error = catch {
-   DB->query( configuration->logdataquery,
+      DB->query( configuration->logdataquery,
                  ([ ":server":split[0],
                     ":module":split[1],
                     ":sensor":split[2],
@@ -46,12 +55,11 @@ void log_data( string name, float|int data, int|void tstamp )
    };
    if( error )
      logerror("Data Insert Failed %s with %O\n",name, DB->error());
-     
 }
 
 mapping retr_data( mapping parameters )
 {
-   DB = Sql.Sql(configuration->database);
+   DB = getdb();
    array split = split_server_module_sensor_value(parameters->name);
    mapping queryparam = ([ ":server":split[0],
                     ":module":split[1],
@@ -60,36 +68,42 @@ mapping retr_data( mapping parameters )
 
    if ( has_index( parameters,"end" ) )
    {
-      queryparam += ([ ":end":sprintf( "to_timestamp(%d)",(int) parameters->end) ]);
+      queryparam += ([ ":end":Calendar.Second("unix",(int) parameters->end)->format_time() ]);
    }
    else
-      queryparam += ([ ":end":"current_timestamp"]);
+      queryparam += ([ ":end":Calendar.now()->format_time() ]);
 
    //Just select a default here for compatability with other Logging modules.
    queryparam[":aggregate"]= parameters->aggregate || "AVERAGE";
 
    if ( has_index( parameters,"start" ) )
    {
-      queryparam += ([ ":start":sprintf( "to_timestamp(%d)",(int) parameters->start) ]);
+      
+      queryparam += ([ ":start": Calendar.Second("unix",(int) parameters->start)->format_time() ]);
    }
-      queryparam += ([ ":start":"to_timestamp(0)" ]);
+   else
+      queryparam += ([ ":start":"2009-01-01" ]);
 
-   string query = "SELECT stamp,value FROM retrieve_archive ( :server, "+
-                  " :module, :sensor, :variable, :aggregate, :start, :end ";
    if( has_index ( parameters, "precision" ) )
-   {
-      query += ",:precision";
       queryparam[":precision"]=parameters->precision;
-   }
-   query += ");";
-   werror("%s\n%O\n",query,queryparam);
-   array res = DB->query( query, queryparam);
-   return ([ "timestamp":res->stamp,"value":res->value ]);
+
+   werror("%O\n",queryparam);
+   array res=({});
+   mixed error = catch {
+      res = DB->query( configuration->retrdataquery, queryparam);
+   };
+   if( error )
+     logerror("Retrieving Data Failed %s with %O\n",parameters->name, DB->error());
+   werror("%O\n",res);
+   if( res && sizeof(res) )
+      return ([ "data":res ]);
+   else
+      return UNDEFINED;
 }
 
 void log_event( int level, string sender, string format, mixed ... args )
 {
-   DB = Sql.Sql(configuration->database);
+   DB = getdb();
    int stamp = time();
    catch {
    array res = DB->query( configuration->logeventquery,
@@ -100,4 +114,23 @@ void log_event( int level, string sender, string format, mixed ... args )
                              ":sender":sender,
                              ]) );
    };
+}
+
+mapping retr_event( mapping parameters )
+{
+   DB = getdb();
+   mapping queryparam = ([]);
+   if ( has_index ( parameters, "sender" ) )
+      queryparam += ([ ":name":"%"+parameters->sender+"%" ]);
+   else
+      queryparam += ([ ":name":"%%" ]);
+
+   queryparam[":level"] = (int) parameters->level||255;
+   
+   mixed error = catch {
+   array res = DB->query( configuration->retreventquery, queryparam );
+   };
+   if( error )
+     logerror("Retrieving Events Failed with %O\n", DB->error());
+   
 }
