@@ -1,5 +1,7 @@
 #include <module.h>
 inherit Module;
+#include <sensor.h>
+#include <variable.h>
 
 int module_type = MODULE_SENSOR;
 string module_name = "Logger";
@@ -16,11 +18,10 @@ class sensor
    inherit Sensor;
    int sensor_type = SENSOR_FUNCTION;
     
-   protected mapping sensor_var = ([
+   protected mapping sensor_prop = ([
                                   "module":"Logger",
                                   "name":"",
                                   "type":sensor_type,
-                                  "level": 0
                                   ]); 
    void sensor_init(  )
    {
@@ -33,10 +34,10 @@ class sensor
       switchboard(sensor_prop->name,configuration->input, COM_READ);
    }
   
-   void got_answer(int command, mixed params )
+   void got_answer(int command, mapping params )
    {
       if ( command == -COM_READ )
-         logdata(configuration->input,params,time(1));
+         logdata(configuration->input,params->value,time(1));
       else
          logdebug("Logger can't handle return data for command %d\n",command);
    } 

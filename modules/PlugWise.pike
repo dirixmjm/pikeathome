@@ -1,4 +1,6 @@
 #include <module.h>
+#include <sensor.h>
+#include <variable.h>
 inherit Module;
 
 
@@ -49,11 +51,6 @@ class sensor
    inherit Sensor; 
 
    int sensor_type = SENSOR_INPUT | SENSOR_OUTPUT;
-   mapping sensor_var = ([
-                           "state": 0,
-                           "online": 0,
-                           "power": 0.0,
-                        ]);
 
    void create( string name, object _module, object _configuration)
    {
@@ -65,6 +62,10 @@ class sensor
       sensor_prop->sensor_type = sensor_type;
       if( has_index( configuration, "log" ) && (int) configuration->log == 1 )
          call_out(log,30);
+      //Initialise Variables
+      ValueCache->state= ([ "value":0, "mode":DIR_RW, "type":VAR_BOOLEAN ]);
+      ValueCache->online= ([ "value":0, "mode":DIR_RO, "type":VAR_BOOLEAN ]);
+      ValueCache->power= ([ "value":0.0, "mode":DIR_RO, "type":VAR_FLOAT ]);
    }
 
    object getplug( string mac )
@@ -102,8 +103,8 @@ class sensor
                plug->on();
          else
                plug->off();
-         sensor_var->state = plug->powerstate;
-         return ([ "state": sensor_var->state]);
+         ValueCache->state = plug->powerstate;
+         return ([ "state": ValueCache->state]);
       }
    }
 
@@ -113,9 +114,9 @@ class sensor
          if(! plug ) 
             return;
          plug->info();
-         sensor_var->state = plug->powerstate;
-         sensor_var->power = (float) plug->power();
-         sensor_var->online = plug->online;
+         ValueCache->state = plug->powerstate;
+         ValueCache->power = (float) plug->power();
+         ValueCache->online = plug->online;
    }
 
    protected void log_callback( array data, int logaddress )

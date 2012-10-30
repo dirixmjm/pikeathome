@@ -1,4 +1,5 @@
 #include <sensor.h>
+#include <variable.h>
 #include <parameters.h>
 #include <command.h>
 
@@ -10,11 +11,7 @@ array defvar = ({});
 
 
 string sensor_name = "";
-protected mapping sensor_var = ([
-                               "module":"",
-                               "name":"",
-                               "sensor_type":sensor_type
-                               ]);
+object ValueCache = VariableStorage();
 
 protected mapping sensor_prop = ([
                                "module":"",
@@ -53,13 +50,13 @@ mapping info( )
 {
 
    getnew();
-   return  sensor_var;
+   return (mapping) ValueCache;
 }
 
 
 /* Each sensor should implement this function. 
  * getnew() queries the sensor for new values, and 
- * updates sensor_var.
+ * updates ValueCache.
  */
 
 void getnew()
@@ -119,7 +116,7 @@ void rpc_command( string sender, string receiver, int command, mapping parameter
       {
          if ( sizeof(split) == 3 )
             switchboard(receiver, sender, -command, info( ) );
-         else if ( sizeof(split) == 4 && has_index( sensor_var, split[3] ) )
+         else if ( sizeof(split) == 4 && has_index( ValueCache, split[3] ) )
             switchboard(receiver, sender, -command, info( )[split[3]]);
          else
             switchboard(receiver, sender, COM_ERROR, ([ "error":
@@ -148,7 +145,7 @@ void rpc_command( string sender, string receiver, int command, mapping parameter
          }
          if ( sizeof(split) == 3 && parameters && mappingp(parameters) )
             switchboard(receiver, sender, -command,write( parameters ));
-         else if ( sizeof(split) == 4 && has_index( sensor_var, split[3] ) )
+         else if ( sizeof(split) == 4 && has_index( ValueCache, split[3] ) )
              switchboard(receiver, sender, -command, write( ([ split[3]:parameters->value ]) ));
          else
             switchboard(receiver, sender, COM_ERROR, ([ "error":

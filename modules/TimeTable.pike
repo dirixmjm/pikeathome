@@ -1,5 +1,7 @@
 //! TimePlan scheduler
 #include <module.h>
+#include <sensor.h>
+#include <variable.h>
 
 inherit Module;
 
@@ -21,13 +23,6 @@ class sensor
    inherit Sensor;
    int sensor_type = SENSOR_SCHEDULE;
 
-   mapping sensor_var = ([
-      "state": 0,
-      //Variable of the schedule pre-announcer (Necessary for the Heater module)
-       "current_schedule" : 0,
-      "next_schedule" : 0,
-      "next_schedule_time": Calendar.Minute()
-   ]);   
 
    array theschedule = ({ 
    });
@@ -36,6 +31,11 @@ class sensor
 
    void sensor_init()
    {
+      ValueCache->state= ([ "value":0, "mode":DIR_RO, "type":VAR_BOOLEAN ]);
+      ValueCache->current_schedule= ([ "value":0, "mode":DIR_RO, "type":VAR_INT ]);
+      ValueCache->next_schedule= ([ "value":0, "mode":DIR_RO, "type":VAR_INT ]);
+      //Variable of the schedule pre-announcer (Necessary for the Heater module)
+      ValueCache->next_schedule_time= ([ "value":0, "mode":DIR_RO, "type":VAR_INT ]);
       theschedule = configuration->schedule;
       sort_schedule();
       find_last_schedule();
@@ -70,8 +70,8 @@ class sensor
      {
         call_out(run_schedule,seconds);
         //only call pre announcer when there is a valid timespan.
-        if( has_index(theschedule[sensor_var->current_schedule],"pretimer") && (int) theschedule[sensor_var->current_schedule]->pretimer > 0 && seconds-(int) theschedule[sensor_var->current_schedule]->pretimer > 0 )
-           call_out(preannounce,seconds-(int) theschedule[sensor_var->current_schedule]->pretimer);
+        if( has_index(theschedule[ValueCache->current_schedule],"pretimer") && (int) theschedule[ValueCache->current_schedule]->pretimer > 0 && seconds-(int) theschedule[ValueCache->current_schedule]->pretimer > 0 )
+           call_out(preannounce,seconds-(int) theschedule[ValueCache->current_schedule]->pretimer);
  
      }
      else if ( has_index(configuration, "scheduletime") )
@@ -79,15 +79,15 @@ class sensor
      else 
         call_out(run_schedule,600);
       //Set output sensor to current setting to the newly scheduled.
-      switchboard(sensor_prop->name,configuration->output,COM_WRITE,(["value": (int) theschedule[sensor_var->current_schedule]->value]));
-      logdebug("Done schedule, output %d\n", (int) theschedule[sensor_var->current_schedule]->value);
+      switchboard(sensor_prop->name,configuration->output,COM_WRITE,(["value": (int) theschedule[ValueCache->current_schedule]->value]));
+      logdebug("Done schedule, output %d\n", (int) theschedule[ValueCache->current_schedule]->value);
    }
 
 
    void preannounce()
    {
       if ( has_index(configuration, "preoutput" ) && configuration->preoutput==1 )
-         switchboard(sensor_prop->name,configuration->output,COM_WRITE,(["values":theschedule[sensor_var->current_schedule]->value]));
+         switchboard(sensor_prop->name,configuration->output,COM_WRITE,(["values":theschedule[ValueCache->current_schedule]->value]));
 
    }
 
@@ -130,13 +130,13 @@ class sensor
 
       logdebug("Current %O %d\n", last_schedule->format_nice(), schedule_start );
       //Set the current (and next, schedule sets current = next)
-      sensor_var->current_schedule=schedule_start;
-      sensor_var->next_schedule=schedule_start;
+      ValueCache->current_schedule=schedule_start;
+      ValueCache->next_schedule=schedule_start;
    }
 
    int schedule()
    {
-      logdebug("Next %d\n", (int) sensor_var->next_schedule );
+      logdebug("Next %d\n", (int) ValueCache->next_schedule );
       if(!theschedule || !sizeof(theschedule))
          return -1;
       //A safety gauch, to prevent it from looping forever.
@@ -172,12 +172,12 @@ class sensor
             next_schedule = next_schedule->beginning();
          }
       }
-      sensor_var->current_schedule = sensor_var->next_schedule;
-      sensor_var->next_schedule = schedule_start;
-      sensor_var->next_schedule_time = next_schedule->unix_time();
+      ValueCache->current_schedule = ValueCache->next_schedule;
+      ValueCache->next_schedule = schedule_start;
+      ValueCache->next_schedule_time = next_schedule->unix_time();
       //Schedule next run when the next schedule starts.
-      logdebug("Current %d Next %s %d\n", sensor_var->current_schedule, next_schedule->format_nice(), schedule_start );
-      return sensor_var->next_schedule_time-time();
+      logdebug("Current %d Next %s %d\n", ValueCache->current_schedule, next_schedule->format_nice(), schedule_start );
+      return ValueCache->next_schedule_time-time();
    }
  
    mapping write( mapping what )
