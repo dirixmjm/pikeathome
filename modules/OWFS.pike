@@ -8,12 +8,12 @@ int module_type = MODULE_SENSOR;
 
 object OWFS;
 
-constant defvar = ({
+constant ModuleParameters = ({
                    ({ "port",PARAM_STRING,"/dev/ttyUSB0","TTY Port of the USB Stick", POPT_RELOAD }),
                   });
 
 /* Sensor Specific Variable */
-constant sensvar = ({
+constant SensorBaseParameters = ({
                    ({ "type",PARAM_STRING,"","Special Type Definition", 0 }),
                     });
 
@@ -21,7 +21,7 @@ constant sensvar = ({
 
 void init() 
 {
-   logdebug("Init Module %s\n",name);
+   logdebug("Init Module %s\n",ModuleProperties->name);
    OWFS = Public.IO.OWFS( configuration->port );
    init_sensors(configuration->sensor + ({}) );
 }
@@ -32,9 +32,9 @@ array find_sensors()
    array device_path = get_device_path("/");
    foreach( device_path, string path )
    {
-      array var = sensvar;
+      array var = SensorBaseParameters;
       var+= ({ ({ "name",PARAM_STRING,"default","Name"})});
-      ret += ({ ([ "sensor":path,"module":name,"parameters":var ]) });
+      ret += ({ ([ "sensor":path,"module":ModuleProperties->name,"parameters":var ]) });
    }
    return ret;
 }
@@ -66,14 +66,14 @@ class sensor
 
    inherit Sensor;
 
-   protected mapping sensor_prop = ([
+   mapping SensorProperties = ([
                                     "module":"",
                                     "name":""
                                    ]);
 
    void sensor_init()
    {
-      ValueCache->online= ([ "value":0, "mode":DIR_RO, "type":VAR_BOOLEAN ]);
+      ValueCache->online= ([ "value":0, "direction":DIR_RO, "type":VAR_BOOLEAN ]);
       string low_type = "";
       if( !has_suffix( configuration->sensor, "/" ) )
          configuration->sensor = configuration->sensor+"/";
@@ -82,7 +82,7 @@ class sensor
       };
       if( catch_err )
       {
-         logerror("OWFS: Sensor %s not found at %s\n",sensor_prop->name,configuration->sensor);
+         logerror("OWFS: Sensor %s not found at %s\n",SensorProperties->name,configuration->sensor);
          ValueCache->online = 0;
          return;
       }
@@ -91,104 +91,104 @@ class sensor
          case "DS2450":
          if ( configuration->type = "currentcost" )
          {
-            sensor_prop->sensor_type=SENSOR_INPUT;
-            ValueCache->VOLTA= ([ "value":0.0, "mode":DIR_RO, "type":VAR_FLOAT ]);
+            SensorProperties->sensor_type=SENSOR_INPUT;
+            ValueCache->VOLTA= ([ "value":0.0, "direction":DIR_RO, "type":VAR_FLOAT ]);
 
-            ValueCache->VOLTB = ([ "value":0.0, "mode":DIR_RO, "type":VAR_FLOAT ]);
-            ValueCache->VOLTC = ([ "value":0.0, "mode":DIR_RO, "type":VAR_FLOAT ]);
-            ValueCache->VOLTD = ([ "value":0.0, "mode":DIR_RO, "type":VAR_FLOAT ]);
-            ValueCache->powerA= ([ "value":0.0, "mode":DIR_RO, "type":VAR_FLOAT ]);
-            ValueCache->powerC= ([ "value":0.0, "mode":DIR_RO, "type":VAR_FLOAT ]);
-            ValueCache->powerD= ([ "value":0.0, "mode":DIR_RO, "type":VAR_FLOAT ]);
-            ValueCache->VOLT2A = ([ "value":0.0, "mode":DIR_RO, "type":VAR_FLOAT ]);
-            ValueCache->VOLT2B = ([ "value":0.0, "mode":DIR_RO, "type":VAR_FLOAT ]);
-            ValueCache->VOLT2C = ([ "value":0.0, "mode":DIR_RO, "type":VAR_FLOAT ]);
-            ValueCache->VOLT2D = ([ "value":0.0, "mode":DIR_RO, "type":VAR_FLOAT ]);
+            ValueCache->VOLTB = ([ "value":0.0, "direction":DIR_RO, "type":VAR_FLOAT ]);
+            ValueCache->VOLTC = ([ "value":0.0, "direction":DIR_RO, "type":VAR_FLOAT ]);
+            ValueCache->VOLTD = ([ "value":0.0, "direction":DIR_RO, "type":VAR_FLOAT ]);
+            ValueCache->powerA= ([ "value":0.0, "direction":DIR_RO, "type":VAR_FLOAT ]);
+            ValueCache->powerC= ([ "value":0.0, "direction":DIR_RO, "type":VAR_FLOAT ]);
+            ValueCache->powerD= ([ "value":0.0, "direction":DIR_RO, "type":VAR_FLOAT ]);
+            ValueCache->VOLT2A = ([ "value":0.0, "direction":DIR_RO, "type":VAR_FLOAT ]);
+            ValueCache->VOLT2B = ([ "value":0.0, "direction":DIR_RO, "type":VAR_FLOAT ]);
+            ValueCache->VOLT2C = ([ "value":0.0, "direction":DIR_RO, "type":VAR_FLOAT ]);
+            ValueCache->VOLT2D = ([ "value":0.0, "direction":DIR_RO, "type":VAR_FLOAT ]);
          }
          else
          {
-            sensor_prop->sensor_type=SENSOR_INPUT|SENSOR_OUTPUT;
-            ValueCache->PIOA = ([ "value":0, "mode":DIR_RW, "type":VAR_BOOLEAN ]);
-            ValueCache->PIOB = ([ "value":0, "mode":DIR_RW, "type":VAR_BOOLEAN ]);
-            ValueCache->PIOC = ([ "value":0, "mode":DIR_RW, "type":VAR_BOOLEAN ]);
-            ValueCache->PIOD = ([ "value":0, "mode":DIR_RW, "type":VAR_BOOLEAN ]);
-            ValueCache->VOLTA = ([ "value":0.0, "mode":DIR_RO, "type":VAR_FLOAT ]);
-            ValueCache->VOLTB = ([ "value":0.0, "mode":DIR_RO, "type":VAR_FLOAT ]);
-            ValueCache->VOLTC = ([ "value":0.0, "mode":DIR_RO, "type":VAR_FLOAT ]);
-            ValueCache->VOLTD = ([ "value":0.0, "mode":DIR_RO, "type":VAR_FLOAT ]);
-            ValueCache->VOLT2A = ([ "value":0.0, "mode":DIR_RO, "type":VAR_FLOAT ]);
-            ValueCache->VOLT2B = ([ "value":0.0, "mode":DIR_RO, "type":VAR_FLOAT ]);
-            ValueCache->VOLT2C = ([ "value":0.0, "mode":DIR_RO, "type":VAR_FLOAT ]);
-            ValueCache->VOLT2D = ([ "value":0.0, "mode":DIR_RO, "type":VAR_FLOAT ]);
+            SensorProperties->sensor_type=SENSOR_INPUT|SENSOR_OUTPUT;
+            ValueCache->PIOA = ([ "value":0, "direction":DIR_RW, "type":VAR_BOOLEAN ]);
+            ValueCache->PIOB = ([ "value":0, "direction":DIR_RW, "type":VAR_BOOLEAN ]);
+            ValueCache->PIOC = ([ "value":0, "direction":DIR_RW, "type":VAR_BOOLEAN ]);
+            ValueCache->PIOD = ([ "value":0, "direction":DIR_RW, "type":VAR_BOOLEAN ]);
+            ValueCache->VOLTA = ([ "value":0.0, "direction":DIR_RO, "type":VAR_FLOAT ]);
+            ValueCache->VOLTB = ([ "value":0.0, "direction":DIR_RO, "type":VAR_FLOAT ]);
+            ValueCache->VOLTC = ([ "value":0.0, "direction":DIR_RO, "type":VAR_FLOAT ]);
+            ValueCache->VOLTD = ([ "value":0.0, "direction":DIR_RO, "type":VAR_FLOAT ]);
+            ValueCache->VOLT2A = ([ "value":0.0, "direction":DIR_RO, "type":VAR_FLOAT ]);
+            ValueCache->VOLT2B = ([ "value":0.0, "direction":DIR_RO, "type":VAR_FLOAT ]);
+            ValueCache->VOLT2C = ([ "value":0.0, "direction":DIR_RO, "type":VAR_FLOAT ]);
+            ValueCache->VOLT2D = ([ "value":0.0, "direction":DIR_RO, "type":VAR_FLOAT ]);
          }
          break;
          case "DS2408":
-         sensor_prop->sensor_type=SENSOR_INPUT|SENSOR_OUTPUT;
-         ValueCache->PIOA = ([ "value":0, "mode":DIR_RW, "type":VAR_BOOLEAN ]); 
-         ValueCache->PIOB = ([ "value":0, "mode":DIR_RW, "type":VAR_BOOLEAN ]);
-         ValueCache->PIOC = ([ "value":0, "mode":DIR_RW, "type":VAR_BOOLEAN ]);
-         ValueCache->PIOD = ([ "value":0, "mode":DIR_RW, "type":VAR_BOOLEAN ]);
-         ValueCache->PIOE = ([ "value":0, "mode":DIR_RW, "type":VAR_BOOLEAN ]);
-         ValueCache->PIOF = ([ "value":0, "mode":DIR_RW, "type":VAR_BOOLEAN ]);
-         ValueCache->PIOG = ([ "value":0, "mode":DIR_RW, "type":VAR_BOOLEAN ]);
-         ValueCache->PIOH = ([ "value":0, "mode":DIR_RW, "type":VAR_BOOLEAN ]);
-         ValueCache->SENSEDA = ([ "value":0, "mode":DIR_RW, "type":VAR_BOOLEAN ]);
-         ValueCache->SENSEDB = ([ "value":0, "mode":DIR_RW, "type":VAR_BOOLEAN ]);
-         ValueCache->SENSEDC = ([ "value":0, "mode":DIR_RW, "type":VAR_BOOLEAN ]);
-         ValueCache->SENSEDD = ([ "value":0, "mode":DIR_RW, "type":VAR_BOOLEAN ]);
-         ValueCache->SENSEDE = ([ "value":0, "mode":DIR_RW, "type":VAR_BOOLEAN ]);
-         ValueCache->SENSEDF = ([ "value":0, "mode":DIR_RW, "type":VAR_BOOLEAN ]); 
+         SensorProperties->sensor_type=SENSOR_INPUT|SENSOR_OUTPUT;
+         ValueCache->PIOA = ([ "value":0, "direction":DIR_RW, "type":VAR_BOOLEAN ]); 
+         ValueCache->PIOB = ([ "value":0, "direction":DIR_RW, "type":VAR_BOOLEAN ]);
+         ValueCache->PIOC = ([ "value":0, "direction":DIR_RW, "type":VAR_BOOLEAN ]);
+         ValueCache->PIOD = ([ "value":0, "direction":DIR_RW, "type":VAR_BOOLEAN ]);
+         ValueCache->PIOE = ([ "value":0, "direction":DIR_RW, "type":VAR_BOOLEAN ]);
+         ValueCache->PIOF = ([ "value":0, "direction":DIR_RW, "type":VAR_BOOLEAN ]);
+         ValueCache->PIOG = ([ "value":0, "direction":DIR_RW, "type":VAR_BOOLEAN ]);
+         ValueCache->PIOH = ([ "value":0, "direction":DIR_RW, "type":VAR_BOOLEAN ]);
+         ValueCache->SENSEDA = ([ "value":0, "direction":DIR_RW, "type":VAR_BOOLEAN ]);
+         ValueCache->SENSEDB = ([ "value":0, "direction":DIR_RW, "type":VAR_BOOLEAN ]);
+         ValueCache->SENSEDC = ([ "value":0, "direction":DIR_RW, "type":VAR_BOOLEAN ]);
+         ValueCache->SENSEDD = ([ "value":0, "direction":DIR_RW, "type":VAR_BOOLEAN ]);
+         ValueCache->SENSEDE = ([ "value":0, "direction":DIR_RW, "type":VAR_BOOLEAN ]);
+         ValueCache->SENSEDF = ([ "value":0, "direction":DIR_RW, "type":VAR_BOOLEAN ]); 
          break;
          case "DS2413":
-         sensor_prop->sensor_type=SENSOR_INPUT|SENSOR_OUTPUT;
-         ValueCache->PIOA = ([ "value":0, "mode":DIR_RW, "type":VAR_BOOLEAN ]);
-         ValueCache->PIOB = ([ "value":0, "mode":DIR_RW, "type":VAR_BOOLEAN ]);
+         SensorProperties->sensor_type=SENSOR_INPUT|SENSOR_OUTPUT;
+         ValueCache->PIOA = ([ "value":0, "direction":DIR_RW, "type":VAR_BOOLEAN ]);
+         ValueCache->PIOB = ([ "value":0, "direction":DIR_RW, "type":VAR_BOOLEAN ]);
          break; 
          case "DS2502":
             if( configuration->type == "vbus" )
             {
-               sensor_prop->sensor_type=SENSOR_INPUT;
-               ValueCache->collector = ([ "value":0.0, "mode":DIR_RO, "type":VAR_FLOAT ]);
-               ValueCache->boiler = ([ "value":0.0, "mode":DIR_RO, "type":VAR_FLOAT ]);
-               ValueCache->pump = ([ "value":0, "mode":DIR_RO, "type":VAR_BOOLEAN ]);
+               SensorProperties->sensor_type=SENSOR_INPUT;
+               ValueCache->collector = ([ "value":0.0, "direction":DIR_RO, "type":VAR_FLOAT ]);
+               ValueCache->boiler = ([ "value":0.0, "direction":DIR_RO, "type":VAR_FLOAT ]);
+               ValueCache->pump = ([ "value":0, "direction":DIR_RO, "type":VAR_BOOLEAN ]);
             }
             else if ( configuration->type == "slimmemeter" )
             {
-               sensor_prop->sensor_type=SENSOR_INPUT;
-               ValueCache->T1_in = ([ "value":0, "mode":DIR_RO, "type":VAR_INT ]);
-               ValueCache->T2_in = ([ "value":0, "mode":DIR_RO, "type":VAR_INT ]);
-               ValueCache->T1_out = ([ "value":0, "mode":DIR_RO, "type":VAR_INT ]);
-               ValueCache->T2_out = ([ "value":0, "mode":DIR_RO, "type":VAR_INT ]);
-               ValueCache->power_in = ([ "value":0.0, "mode":DIR_RO, "type":VAR_FLOAT ]);
-               ValueCache->power_out = ([ "value":0.0, "mode":DIR_RO, "type":VAR_FLOAT ]);
-               ValueCache->power = ([ "value":0.0, "mode":DIR_RO, "type":VAR_FLOAT ]);
-               ValueCache->gas = ([ "value":0.0, "mode":DIR_RO, "type":VAR_FLOAT ]);
-               ValueCache->kWh_in = ([ "value":0, "mode":DIR_RO, "type":VAR_INT ]);
-               ValueCache->kWh_out = ([ "value":0, "mode":DIR_RO, "type":VAR_INT ]);
+               SensorProperties->sensor_type=SENSOR_INPUT;
+               ValueCache->T1_in = ([ "value":0, "direction":DIR_RO, "type":VAR_INT ]);
+               ValueCache->T2_in = ([ "value":0, "direction":DIR_RO, "type":VAR_INT ]);
+               ValueCache->T1_out = ([ "value":0, "direction":DIR_RO, "type":VAR_INT ]);
+               ValueCache->T2_out = ([ "value":0, "direction":DIR_RO, "type":VAR_INT ]);
+               ValueCache->power_in = ([ "value":0.0, "direction":DIR_RO, "type":VAR_FLOAT ]);
+               ValueCache->power_out = ([ "value":0.0, "direction":DIR_RO, "type":VAR_FLOAT ]);
+               ValueCache->power = ([ "value":0.0, "direction":DIR_RO, "type":VAR_FLOAT ]);
+               ValueCache->gas = ([ "value":0.0, "direction":DIR_RO, "type":VAR_FLOAT ]);
+               ValueCache->kWh_in = ([ "value":0, "direction":DIR_RO, "type":VAR_INT ]);
+               ValueCache->kWh_out = ([ "value":0, "direction":DIR_RO, "type":VAR_INT ]);
             }
             break;
          case "DS1820":
          case "DS18B20":
-            sensor_prop->sensor_type=SENSOR_INPUT;
-            ValueCache->temperature = ([ "value":0.0, "mode":DIR_RO, "type":VAR_FLOAT ]);
+            SensorProperties->sensor_type=SENSOR_INPUT;
+            ValueCache->temperature = ([ "value":0.0, "direction":DIR_RO, "type":VAR_FLOAT ]);
             break;
          case "DS2438":
-            sensor_prop->sensor_type=SENSOR_INPUT;
+            SensorProperties->sensor_type=SENSOR_INPUT;
             if( configuration->type == "CO2" )
             {
-               ValueCache->concentration = ([ "value":0, "mode":DIR_RO, "type":VAR_INT ]);
-               ValueCache->vis = ([ "value":0.0, "mode":DIR_RO, "type":VAR_FLOAT ]);
+               ValueCache->concentration = ([ "value":0, "direction":DIR_RO, "type":VAR_INT ]);
+               ValueCache->vis = ([ "value":0.0, "direction":DIR_RO, "type":VAR_FLOAT ]);
             }
             else
             {
-               ValueCache->VDD = ([ "value":0.0, "mode":DIR_RO, "type":VAR_FLOAT ]);
-               ValueCache->VAD = ([ "value":0.0, "mode":DIR_RO, "type":VAR_FLOAT ]);
-               ValueCache->vis = ([ "value":0.0, "mode":DIR_RO, "type":VAR_FLOAT ]);
+               ValueCache->VDD = ([ "value":0.0, "direction":DIR_RO, "type":VAR_FLOAT ]);
+               ValueCache->VAD = ([ "value":0.0, "direction":DIR_RO, "type":VAR_FLOAT ]);
+               ValueCache->vis = ([ "value":0.0, "direction":DIR_RO, "type":VAR_FLOAT ]);
              }
          
          break;
       }
-      getnew();
+      UpdateSensor();
    }
 
    mapping write( mapping what )
@@ -227,11 +227,11 @@ class sensor
                OWFS->write(configuration->sensor+"PIO.7",(int) what->PIOH );
          break;
       }
-      getnew();
+      UpdateSensor();
       return (mapping) ValueCache;   
    }
 
-   void getnew()
+   void UpdateSensor()
    {
       string low_type = "";
       string catch_err = catch {
@@ -239,7 +239,7 @@ class sensor
       };
       if( catch_err )
       {
-         logerror("Sensor %s not found\n",name);
+         logerror("Sensor %s not found\n",ModuleProperties->name);
          ValueCache->online = 0;
          return;
       }
@@ -319,9 +319,9 @@ class sensor
                //Check if the sensor needs a reset?
                if ( concentration >= 4400 )
                {
-                  logdebug("CO2 Sensor %s Needs reset\n",sensor_prop->name);
-                  switchboard(sensor_prop->name, configuration->reset, COM_WRITE, 1 );
-                  call_out( switchboard, 20, sensor_prop->name,configuration->reset, COM_WRITE, 0 );
+                  logdebug("CO2 Sensor %s Needs reset\n",SensorProperties->name);
+                  switchboard(SensorProperties->name, configuration->reset, COM_WRITE, 1 );
+                  call_out( switchboard, 20, SensorProperties->name,configuration->reset, COM_WRITE, 0 );
                }
                ValueCache->concentration = concentration; 
                ValueCache->vis = (float)  OWFS->read(configuration->sensor+"vis");

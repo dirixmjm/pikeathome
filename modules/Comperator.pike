@@ -8,10 +8,10 @@ int module_type = MODULE_SENSOR;
 
 string module_name = "Comperator";
 
-constant defvar = ({
+constant ModuleParameters = ({
                   });
 
-constant sensvar = ({
+constant SensorBaseParameters = ({
                    ({ "input",PARAM_SENSORINPUT,"","Input Sensor",0 }),
                    ({ "output",PARAM_SENSOROUTPUT,"","Output Sensor",0 }),
                    ({ "timer",PARAM_INT,300,"Time Value (Seconds)",0 }),
@@ -32,7 +32,7 @@ class sensor
 
    protected object ValueCache = VariableStorage( );
  
-   protected mapping sensor_prop = ([
+   mapping SensorProperties = ([
                                   "module":"Comperator",
                                   "name":"",
                                   "type":sensor_type,
@@ -42,13 +42,13 @@ class sensor
    {
       counter = (int) configuration->gracecount;
       call_out(sensor_timer, (int) configuration->timer);
-      ValueCache->level= ([ "value":0, "mode":DIR_RO, "type":VAR_BOOLEAN ]);
+      ValueCache->level= ([ "value":0, "direction":DIR_RO, "type":VAR_BOOLEAN ]);
    }
 
    protected void sensor_timer()
    {
       call_out(sensor_timer, (int) configuration->timer);
-      switchboard(sensor_prop->name,configuration->input, COM_READ, (["new":1]));
+      switchboard(SensorProperties->name,configuration->input, COM_READ, (["new":1]));
    }
 
    void got_answer(int command, mixed params)
@@ -117,11 +117,11 @@ class sensor
           switch( (int) configuration->function )
           {
              case 0:
-                switchboard(sensor_prop->name,configuration->output,COM_WRITE,(["value":0]));
+                switchboard(SensorProperties->name,configuration->output,COM_WRITE,(["value":0]));
                 break;
              case 1:
              case 2:
-                switchboard(sensor_prop->name,configuration->output,COM_WRITE,(["value":1]));
+                switchboard(SensorProperties->name,configuration->output,COM_WRITE,(["value":1]));
                 break;
           }
        }
@@ -130,11 +130,11 @@ class sensor
           switch( (int) configuration->function )
           {
              case 1:
-                switchboard(sensor_prop->name,configuration->output,COM_WRITE,(["value":0]));
+                switchboard(SensorProperties->name,configuration->output,COM_WRITE,(["value":0]));
                 break;
              case 0:
              case 3:
-                switchboard(sensor_prop->name,configuration->output,COM_WRITE,(["value":1]));
+                switchboard(SensorProperties->name,configuration->output,COM_WRITE,(["value":1]));
                 break;
           }
        }

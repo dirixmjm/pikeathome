@@ -6,9 +6,9 @@ inherit Module;
 int module_type = MODULE_SENSOR;
 string module_name = "WebAction";
 
-constant defvar = ({
+constant ModuleParameters = ({
                   });
-constant sensvar = ({
+constant SensorBaseParameters = ({
                    ({ "url", PARAM_STRING,"","Website Action URL",0 }),
                    ({ "repeat", PARAM_INT ,1,"Number of repeating calls, -1 means indefinetely",0 }),
                    ({ "time", PARAM_INT ,300,"Time between repetitions",0 }),
@@ -22,7 +22,7 @@ class sensor
     
    void sensor_init(  )
    {
-      ValueCache->state= ([ "value":0, "mode":DIR_RO, "type":VAR_BOOLEAN ]);
+      ValueCache->state= ([ "value":0, "direction":DIR_RO, "type":VAR_BOOLEAN ]);
    }
 
    mapping write( mapping what )

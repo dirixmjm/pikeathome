@@ -6,12 +6,11 @@
 inherit Module;
 
 int module_type = MODULE_SENSOR | MODULE_SCHEDULE;
-string module_name="TimeTable";
 
-constant defvar = ({
+constant ModuleParameters = ({
                   });
 
-constant sensvar = ({
+constant SensorBaseParameters = ({
                    ({ "output",PARAM_SENSOROUTPUT,"","Output Sensor",0 }),
                    ({ "preoutput",PARAM_BOOLEAN,0,"Turn On / Off Adaptive Scheduling",0 }),
                    ({ "scheduletime",PARAM_INT,600,"Fallback Schedule Timing",0 }),
@@ -31,11 +30,11 @@ class sensor
 
    void sensor_init()
    {
-      ValueCache->state= ([ "value":0, "mode":DIR_RO, "type":VAR_BOOLEAN ]);
-      ValueCache->current_schedule= ([ "value":0, "mode":DIR_RO, "type":VAR_INT ]);
-      ValueCache->next_schedule= ([ "value":0, "mode":DIR_RO, "type":VAR_INT ]);
+      ValueCache->state= ([ "value":0, "direction":DIR_RO, "type":VAR_BOOLEAN ]);
+      ValueCache->current_schedule= ([ "value":0, "direction":DIR_RO, "type":VAR_INT ]);
+      ValueCache->next_schedule= ([ "value":0, "direction":DIR_RO, "type":VAR_INT ]);
       //Variable of the schedule pre-announcer (Necessary for the Heater module)
-      ValueCache->next_schedule_time= ([ "value":0, "mode":DIR_RO, "type":VAR_INT ]);
+      ValueCache->next_schedule_time= ([ "value":0, "direction":DIR_RO, "type":VAR_INT ]);
       theschedule = configuration->schedule;
       sort_schedule();
       find_last_schedule();
@@ -47,7 +46,7 @@ class sensor
    {
       if(!theschedule || !sizeof(theschedule) )
       {
-         logerror("No Schedule defined for TimePlan %s",sensor_prop->name);
+         logerror("No Schedule defined for TimePlan %s",SensorProperties->name);
          return;
       }
       array to_sort = ({});
@@ -79,7 +78,7 @@ class sensor
      else 
         call_out(run_schedule,600);
       //Set output sensor to current setting to the newly scheduled.
-      switchboard(sensor_prop->name,configuration->output,COM_WRITE,(["value": (int) theschedule[ValueCache->current_schedule]->value]));
+      switchboard(SensorProperties->name,configuration->output,COM_WRITE,(["value": (int) theschedule[ValueCache->current_schedule]->value]));
       logdebug("Done schedule, output %d\n", (int) theschedule[ValueCache->current_schedule]->value);
    }
 
@@ -87,7 +86,7 @@ class sensor
    void preannounce()
    {
       if ( has_index(configuration, "preoutput" ) && configuration->preoutput==1 )
-         switchboard(sensor_prop->name,configuration->output,COM_WRITE,(["values":theschedule[ValueCache->current_schedule]->value]));
+         switchboard(SensorProperties->name,configuration->output,COM_WRITE,(["values":theschedule[ValueCache->current_schedule]->value]));
 
    }
 

@@ -5,7 +5,7 @@ int module_type = MODULE_LOGDATA | MODULE_LOGEVENT;
 string module_name = "SQLOG";
 Sql.Sql DB;
 
-array defvar = ({
+array ModuleParameters = ({
                    ({ "database",PARAM_STRING,"","Database URI", 0 }),
                    ({ "precision",PARAM_INT,1,"Default Multiplier", 0 }),
                    ({ "logdataquery",PARAM_STRING,"","Query for logging data", 0 }),
@@ -82,7 +82,6 @@ mapping retr_data( mapping parameters )
       queryparam[":precision"]=parameters->precision;
    }
    query += ");";
-   werror("%s\n%O\n",query,queryparam);
    array res = DB->query( query, queryparam);
    return ([ "timestamp":res->stamp,"value":res->value ]);
 }

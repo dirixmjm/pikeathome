@@ -8,20 +8,20 @@ int module_type = MODULE_SENSOR;
 object PlugWise;
 
 
-constant defvar = ({
+constant ModuleParameters = ({
                    ({ "port",PARAM_STRING,"/dev/ttyUSB0","TTY Port of the USB Stick", POPT_RELOAD }),
                    ({ "debug",PARAM_BOOLEAN,0,"Turn On / Off Debugging" }),
                    });
 
 /* Sensor Specific Variables */
-constant sensvar = ({
+constant SensorBaseParameters = ({
                    ({ "nextaddress",PARAM_INT,-1,"Current Log Pointer (-1 use plug headpointer)",0   }),
                    ({ "log",PARAM_BOOLEAN,0,"Turn On / Off Logging",0   }),
                 });
 
 void init() 
 {
-   logdebug("Init Module %s\n",name);
+   logdebug("Init Module %s\n",ModuleProperties->name);
    PlugWise = Public.IO.PlugWise(configuration->port,1);
    init_sensors( configuration->sensor+({}) );
 }
@@ -39,10 +39,10 @@ void init_sensors( array load_sensors )
 array find_sensors( )
 {
   array ret=({});
-  array var = sensvar;
+  array var = SensorBaseParameters;
   var+= ({ ({ "name",PARAM_STRING,"default","Name"}) });
   foreach(PlugWise->Plugs; string mac; object plug)
-     ret += ({ ([ "sensor":mac,"module":name,"parameters":var ]) });
+     ret += ({ ([ "sensor":mac,"module":ModuleProperties->name,"parameters":var ]) });
   return ret;
 }
 
@@ -56,16 +56,15 @@ class sensor
    {
       module = _module;
       configuration = _configuration;
-      sensor_name = name;
-      sensor_prop->module = _module->name;
-      sensor_prop->name = name;
-      sensor_prop->sensor_type = sensor_type;
+      SensorProperties->module = _module->ModuleProperties->name;
+      SensorProperties->name = name;
+      SensorProperties->sensor_type = sensor_type;
       if( has_index( configuration, "log" ) && (int) configuration->log == 1 )
          call_out(log,30);
       //Initialise Variables
-      ValueCache->state= ([ "value":0, "mode":DIR_RW, "type":VAR_BOOLEAN ]);
-      ValueCache->online= ([ "value":0, "mode":DIR_RO, "type":VAR_BOOLEAN ]);
-      ValueCache->power= ([ "value":0.0, "mode":DIR_RO, "type":VAR_FLOAT ]);
+      ValueCache->state= ([ "value":0, "direction":DIR_RW, "type":VAR_BOOLEAN ]);
+      ValueCache->online= ([ "value":0, "direction":DIR_RO, "type":VAR_BOOLEAN ]);
+      ValueCache->power= ([ "value":0.0, "direction":DIR_RO, "type":VAR_FLOAT ]);
    }
 
    object getplug( string mac )
@@ -74,7 +73,7 @@ class sensor
          return module->PlugWise->Plugs[mac];
       else
       {
-         logerror("Plug %s with mac %s Not Found, search started\n",sensor_prop->name,mac);
+         logerror("Plug %s with mac %s Not Found, search started\n",SensorProperties->name,mac);
          if( module->PlugWise->CirclePlus )
             module->PlugWise->CirclePlus->find_plugs();
          return UNDEFINED;
@@ -108,7 +107,7 @@ class sensor
       }
    }
 
-   protected void getnew( )
+   protected void UpdateSensor( )
    {
          object plug = getplug(configuration->sensor); 
          if(! plug ) 
@@ -122,7 +121,7 @@ class sensor
    protected void log_callback( array data, int logaddress )
    {
       object plug = module->PlugWise->Plugs[configuration->sensor];
-      logdebug("Plug %s logaddress %d\n",sensor_prop->name,logaddress);
+      logdebug("Plug %s logaddress %d\n",SensorProperties->name,logaddress);
       //Check for roundtrip
       //Seems to be a bug
       int logpointer = plug->powerlogpointer();
@@ -143,14 +142,14 @@ class sensor
          if( log_item->hour - time(1) > 60 )
             logerror("Loghour %d is larger then current timestamp %d\n",log_item->hour, time(1)); 
          //Make sure logging occurs timesynchronised.
-         call_out(logdata,0.1*logcount++,sensor_prop->name+".Wh",log_item->kwh,log_item->hour);
+         call_out(logdata,0.1*logcount++,SensorProperties->name+".Wh",log_item->kwh,log_item->hour);
       }
       //Get next log if we lag behind  
       if( logaddress+1 < logpointer )
       {
          //Add a delay to make sure logging occurs chronologically
          call_out(plug->powerlog,1,logaddress+1);
-         logdebug("Retrieving address %d for plug %s with current address %d\n",(int) logaddress+1,sensor_prop->name,(int) logpointer);
+         logdebug("Retrieving address %d for plug %s with current address %d\n",(int) logaddress+1,SensorProperties->name,(int) logpointer);
       }
    }
 
@@ -158,7 +157,7 @@ class sensor
    protected void log()
    {
       call_out(log,3600 );
-      logdebug("Checking Log for Plug %s\n",sensor_prop->name);
+      logdebug("Checking Log for Plug %s\n",SensorProperties->name);
       object plug = module->PlugWise->Plugs[configuration->sensor]; 
       if( ! plug )
       { 
@@ -167,7 +166,7 @@ class sensor
       }
       if( ! plug->online)
       {
-         logdebug("Plug %s Not Online Sleeping\n",sensor_prop->name);
+         logdebug("Plug %s Not Online Sleeping\n",SensorProperties->name);
          //Send a query to the plug, maybe it's online now.
          plug->info();
          return;
@@ -186,7 +185,7 @@ class sensor
 
       if( (int) configuration->nextaddress < logpointer )
       {
-         logdebug("Retrieving address %d for plug %s with current address %d\n",(int) configuration->nextaddress,sensor_prop->name,logpointer);
+         logdebug("Retrieving address %d for plug %s with current address %d\n",(int) configuration->nextaddress,SensorProperties->name,logpointer);
          plug->set_powerlog_callback( log_callback );
          plug->powerlog( (int) configuration->nextaddress );
       }

@@ -1,5 +1,7 @@
-#include <module.h>
 #include <command.h>
+#include <module.h>
+#include <sensor.h>
+#include <variable.h>
 
 inherit Base_func;
 
@@ -34,7 +36,6 @@ mapping tags = ([
 mapping emit = ([
 "sensors": EmitSensors,
 "sensor": EmitSensor,
-"modules": EmitModules,
 ]);
 
 mapping containers = ([
@@ -150,15 +151,6 @@ int exists_entity(string entity, mapping query )
        !has_index(query->entities[scope],variable) )
       return 0;
    return 1;
-}
-
-array EmitModules( mapping args, mapping query )
-{
-  array ret=({});
-  array modules = rpc( "xiserver", COM_LIST, 0 );
-  foreach( modules, string name)
-     ret+= ({  ([ "name":name ]) });
-  return ret;
 }
 
 array EmitSensors( mapping args, mapping query )

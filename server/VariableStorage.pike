@@ -26,6 +26,14 @@ mixed `->(string Key)
 {
    if( has_index ( Storage, Key) )
       return Storage[Key]->value; 
+   return UNDEFINED;
+}
+
+mixed `[](string Key)
+{
+   if( has_index ( Storage, Key) )
+      return Storage[Key]->value; 
+   return UNDEFINED;
 }
 
 mixed `->=(string Key, mixed Value)

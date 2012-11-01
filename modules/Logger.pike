@@ -6,9 +6,9 @@ inherit Module;
 int module_type = MODULE_SENSOR;
 string module_name = "Logger";
 
-constant defvar= ({
+constant ModuleParameters= ({
                  });
-constant sensvar = ({
+constant SensorBaseParameters = ({
                    ({ "input", PARAM_SENSORINPUT,"","Input Sensor",0 }),
                    ({ "logtime", PARAM_INT,600,"Log Repeat",0 }),
                    });
@@ -18,7 +18,7 @@ class sensor
    inherit Sensor;
    int sensor_type = SENSOR_FUNCTION;
     
-   protected mapping sensor_prop = ([
+   mapping SensorProperties = ([
                                   "module":"Logger",
                                   "name":"",
                                   "type":sensor_type,
@@ -31,7 +31,7 @@ class sensor
    void log_timer()
    {
       call_out(log_timer,(int) configuration->logtime );
-      switchboard(sensor_prop->name,configuration->input, COM_READ);
+      switchboard(SensorProperties->name,configuration->input, COM_READ);
    }
   
    void got_answer(int command, mapping params )
