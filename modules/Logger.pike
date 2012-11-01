@@ -1,12 +1,14 @@
 #include <module.h>
 inherit Module;
+#include <sensor.h>
+#include <variable.h>
 
 int module_type = MODULE_SENSOR;
 string module_name = "Logger";
 
-constant defvar= ({
+constant ModuleParameters= ({
                  });
-constant sensvar = ({
+constant SensorBaseParameters = ({
                    ({ "input", PARAM_SENSORINPUT,"","Input Sensor",0 }),
                    ({ "logtime", PARAM_INT,600,"Log Repeat",0 }),
                    });
@@ -16,11 +18,10 @@ class sensor
    inherit Sensor;
    int sensor_type = SENSOR_FUNCTION;
     
-   protected mapping sensor_var = ([
+   mapping SensorProperties = ([
                                   "module":"Logger",
                                   "name":"",
                                   "type":sensor_type,
-                                  "level": 0
                                   ]); 
    void sensor_init(  )
    {
@@ -30,13 +31,13 @@ class sensor
    void log_timer()
    {
       call_out(log_timer,(int) configuration->logtime );
-      switchboard(sensor_prop->name,configuration->input, COM_READ);
+      switchboard(SensorProperties->name,configuration->input, COM_READ);
    }
   
-   void got_answer(int command, mixed params )
+   void got_answer(int command, mapping params )
    {
       if ( command == -COM_READ )
-         logdata(configuration->input,params,time(1));
+         logdata(configuration->input,params->value,time(1));
       else
          logdebug("Logger can't handle return data for command %d\n",command);
    } 

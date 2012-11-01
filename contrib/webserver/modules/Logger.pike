@@ -1,7 +1,7 @@
 #include <module.h>
 
 
-protected object webserver;
+protected object DML;
 protected object configuration;
 
 
@@ -16,9 +16,9 @@ mapping containers = ([
 ]);
 
 
-void create( object webserver_ , object Config)
+void create( object DML_ , object Config)
 {
-   webserver= webserver_;
+   DML= DML_;
    configuration = Config;
 }
 
@@ -29,9 +29,15 @@ array EmitLog( mapping args, mapping query )
    int start = (int) args->start | 0;
    int end = (int) args->end | time(1);
 
-   mapping values = webserver->rpc( args->logger,
-                       COM_LOGDATA, ([ "name":args->sensor, "start":start,
-                                       "end":end ]) );
-   werror("%O\n",values);
+   mapping ret = DML->rpc( args->logger,
+                       COM_RETRLOGDATA, ([ "name":args->sensor, "start":start,
+                                       "end":end, "precision":args->precision,
+                                       "aggregate":args->aggregate ]) );
+   werror("%O\n",ret);
+   if( ret && has_index( ret, "data" ) )
+   {
+       return ret["data"];
+   }
+   
    return ({});
 }

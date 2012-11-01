@@ -1,5 +1,7 @@
-#include <module.h>
 #include <command.h>
+#include <module.h>
+#include <sensor.h>
+#include <variable.h>
 
 inherit Base_func;
 
@@ -34,7 +36,6 @@ mapping tags = ([
 mapping emit = ([
 "sensors": EmitSensors,
 "sensor": EmitSensor,
-"modules": EmitModules,
 ]);
 
 mapping containers = ([
@@ -122,7 +123,11 @@ mixed resolve_entity(string entity, mapping query )
    //So local scope (sizeof(split) ==2) doesn't get mixed
    else if ( sizeof(split) >= 3 )
    {
-      return rpc( entity, COM_READ);
+      mapping ett =  rpc( entity, COM_READ);
+      if( ett )
+         return ett->value;
+      else 
+         return UNDEFINED;
    }
    else
       return UNDEFINED;
@@ -146,15 +151,6 @@ int exists_entity(string entity, mapping query )
        !has_index(query->entities[scope],variable) )
       return 0;
    return 1;
-}
-
-array EmitModules( mapping args, mapping query )
-{
-  array ret=({});
-  array modules = rpc( "xiserver", COM_LIST, 0 );
-  foreach( modules, string name)
-     ret+= ({  ([ "name":name ]) });
-  return ret;
 }
 
 array EmitSensors( mapping args, mapping query )
@@ -187,12 +183,12 @@ array EmitSensor( mapping args, mapping query )
    if( has_index(args,"name" ) )
    {
       array res = ({});
-      mapping data = rpc( args->name, COM_READ );
-      if( !data )
+      mapping Variable_Data = rpc( args->name, COM_READ );
+      if( !Variable_Data )
          return ({});
-      foreach( indices(data), string index )
+      foreach( Variable_Data; string Var; mapping Data )
       {
-         res+= ({ ([ "index":index, "value":data[index] ]) });
+         res+= ({ ([ "variable":Var]) + Data });
       }
       return res;
    }

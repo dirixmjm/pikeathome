@@ -2,6 +2,8 @@ protected object dml;
 protected object configuration;
 inherit Base_func;
 
+array ModuleParameters = ({});
+
 void create( object dml_ , object Config)
 {
    dml = dml_;

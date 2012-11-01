@@ -7,39 +7,34 @@ protected object configuration;
 protected object domotica;
 
 int module_type = 0;
-string name = "module";
-
 
 //The Sensor Mapping should contain all sensors
 mapping sensors=([]);
 
-//The module_var mapping should contain all runtime variables
-mapping module_var = ([
+//The ModuleProperties mapping should contain all runtime variables
+mapping ModuleProperties = ([
                       ]);
 
-//The defvar mapping should contain all configuration variables
-//defvar should contain arrays  ({ "name","type","default","description"})
-constant defvar = ({});
+//The ModuleParameters mapping should contain all configuration variables
+//ModuleParameters should contain arrays  ({ "name","type","default","description"})
+constant ModuleParameters = ({});
 
 //Sensor Parameters
-//sensvar should contain arrays ({ "name","type","default","description"})
-constant sensvar = ({});
+//SensorBaseParameters should contain arrays ({ "name","type","default","description"})
+constant SensorBaseParameters = ({});
 
 void create( string _name, object _domotica )
 {
    domotica = _domotica;
-   //Maybe decrepate "name"
-   name = _name;
-   module_var->name=_name;
+   ModuleProperties->name=_name;
    configuration = domotica->configuration(_name);
-   //Maybe decrepate direct "module_type" variable?
-   module_var->module_type=module_type;
+   ModuleProperties->module_type=module_type;
 }
 
 void init()
 {
-   logdebug("Init Module %s\n",module_var->name);
-   if( (module_type & MODULE_SENSOR) && has_index(configuration,"sensor") )
+   logdebug("Init Module %s\n",ModuleProperties->name);
+   if( (ModuleProperties->module_type & MODULE_SENSOR) && has_index(configuration,"sensor") )
    {
       init_sensors( configuration->sensor +({}) );
    }
@@ -58,23 +53,23 @@ void init_sensors( array load_sensors )
 array find_sensors( )
 {
    //Default return manual sensor entry
-   array var = sensvar;
+   array var = SensorBaseParameters;
    var+= ({ ({ "name",PARAM_STRING,"default","Name"}) }) ;
-   return ({ ([ "sensor":"manual","module":name,"parameters":var ])});
+   return ({ ([ "sensor":"manual","module":ModuleProperties->name,"parameters":var ])});
 }
 
-array getvar()
+array GetParameters()
 {
    array ret = ({});
-   foreach(defvar, array var)
+   foreach(ModuleParameters, array var)
       ret+= ({ var + ({ configuration[var[0]] })});
    return ret;
 }
 
-void setvar( mapping params )
+void SetParameters( mapping params )
 { 
    int mod_options = 0;
-   foreach(defvar, array option)
+   foreach(ModuleParameters, array option)
    {
       //Find the parameter, and always set it
       if( has_index( params, option[0] ) )
@@ -144,13 +139,13 @@ void rpc_command( string sender, string receiver, int command, mapping parameter
          case COM_PARAM:
          {
             if ( parameters && mappingp(parameters) )
-               setvar(parameters);
-            switchboard( receiver,sender, -command, getvar() );
+               SetParameters(parameters);
+            switchboard( receiver,sender, -command, GetParameters() );
          }
          break;
          case COM_PROP:
          {
-            switchboard( receiver,sender, -command, module_var );
+            switchboard( receiver,sender, -command, ModuleProperties );
          }
          break;
          case COM_LIST:
@@ -166,7 +161,7 @@ void rpc_command( string sender, string receiver, int command, mapping parameter
          case COM_ADD: //Add Sensor
          {
             //What if this isn't a sensor-type module?
-            string sensor_name = name + "." + parameters->name;
+            string sensor_name = ModuleProperties->name + "." + parameters->name;
             m_delete(parameters,"name");
             if( !has_index( configuration, "sensor" ) )
                configuration->sensor=({});
@@ -225,12 +220,12 @@ void switchboard ( mixed ... args )
 void logdebug(mixed ... args)
 {
    if( (int) configuration->debug == 1 )
-      call_out(switchboard, 0, module_var->name, domotica->name, COM_LOGEVENT, ([ "level":LOG_DEBUG, "error":sprintf(@args) ]) );
+      call_out(switchboard, 0, ModuleProperties->name, domotica->name, COM_LOGEVENT, ([ "level":LOG_DEBUG, "error":sprintf(@args) ]) );
 }
 
 void logerror(mixed ... args)
 {
-   call_out(switchboard, 0, module_var->name, domotica->name, COM_LOGEVENT, ([ "level":LOG_ERR, "error":sprintf(@args) ]) );
+   call_out(switchboard, 0, ModuleProperties->name, domotica->name, COM_LOGEVENT, ([ "level":LOG_ERR, "error":sprintf(@args) ]) );
 
 }
 
@@ -240,7 +235,7 @@ void logdata(string name, string|int|float data, int|void tstamp)
    if ( intp(tstamp) )
      params+= ([ "stamp":tstamp ]);
 
-   call_out(switchboard, 0, module_var->name, domotica->name, COM_LOGDATA,
+   call_out(switchboard, 0, name, domotica->name, COM_LOGDATA,
                      params );
 }
 

@@ -9,26 +9,22 @@ object domotica;
 
 int module_type = 0;
 
-string name = "module";
+//ModuleParameters contains al configuration variables
+array ModuleParameters = ({});
 
-//defvar contains al configuration variables
-array defvar = ({});
-
-//The module_var mapping should contain all runtime variables
-mapping module_var = ([
+//The ModuleProperties mapping should contain all runtime variables
+mapping ModuleProperties = ([
                       ]);
 
 
 void create( string _name, object domo )
 {
    domotica = domo;
-   name=_name;
-
-   configuration = domotica->configuration(name);
-   logdebug("Init Module %s\n",name);
-   module_var->name=_name;
+   configuration = domotica->configuration(_name);
+   ModuleProperties->name=_name;
+   logdebug("Init Module %s\n",_name);
    //Maybe decrepate direct "module_type" variable?
-   module_var->module_type=module_type;
+   ModuleProperties->module_type=module_type;
 
 }
 
@@ -54,18 +50,18 @@ void log_event( int level, string name, string format, mixed ... args )
 }
 
 
-array getvar()
+array GetParameters()
 {
    array ret = ({});
-   foreach(defvar, array var)
+   foreach(ModuleParameters, array var)
       ret+= ({var + ({ configuration[var[0]] })});
    return ret;
 }
 
-void setvar( mapping params )
+void SetParameters( mapping params )
 {
    int mod_options = 0;
-   foreach(defvar, array option)
+   foreach(ModuleParameters, array option)
    {
       //Find the parameter, and always set it
       if( has_index( params, option[0] ) )
@@ -111,14 +107,14 @@ void rpc_command( string sender, string receiver, int command, mapping parameter
       break;
       case COM_PROP:
       {
-         switchboard( receiver,sender, -command, module_var );
+         switchboard( receiver,sender, -command, ModuleProperties );
       }
       break;
       case COM_PARAM:
       {
          if ( parameters && mappingp(parameters) )
-            setvar(parameters);
-         switchboard( receiver,sender, -command, getvar() );
+            SetParameters(parameters);
+         switchboard( receiver,sender, -command, GetParameters() );
       }
       break;
       case COM_ERROR:
@@ -136,11 +132,11 @@ void switchboard (mixed ... args )
 
 void logdebug(mixed ... args)
 {
-   call_out(switchboard, 0, name, domotica->name, COM_LOGEVENT, ([ "level":LOG_DEBUG, "error":sprintf(@args) ]) );
+   call_out(switchboard, 0, ModuleProperties->name, domotica->name, COM_LOGEVENT, ([ "level":LOG_DEBUG, "error":sprintf(@args) ]) );
 }
 
 void logerror(mixed ... args)
 {
-   call_out(switchboard, 0, name, domotica->name, COM_LOGEVENT, ([ "level":LOG_ERR, "error":sprintf(@args) ]) );
+   call_out(switchboard, 0, ModuleProperties->name, domotica->name, COM_LOGEVENT, ([ "level":LOG_ERR, "error":sprintf(@args) ]) );
 
 }

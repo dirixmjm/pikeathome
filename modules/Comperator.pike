@@ -1,14 +1,17 @@
 #include <module.h>
+#include <sensor.h>
+#include <variable.h>
+
 inherit Module;
 
 int module_type = MODULE_SENSOR;
 
 string module_name = "Comperator";
 
-constant defvar = ({
+constant ModuleParameters = ({
                   });
 
-constant sensvar = ({
+constant SensorBaseParameters = ({
                    ({ "input",PARAM_SENSORINPUT,"","Input Sensor",0 }),
                    ({ "output",PARAM_SENSOROUTPUT,"","Output Sensor",0 }),
                    ({ "timer",PARAM_INT,300,"Time Value (Seconds)",0 }),
@@ -26,13 +29,10 @@ class sensor
    //Grace counter;
    int counter = 0;
    array gracevalues = ({});
+
+   protected object ValueCache = VariableStorage( );
  
-   protected mapping sensor_var = ([
-                                  "module":"Comperator",
-                                  "type":sensor_type,
-                                  "level": 0
-                                  ]);
-   protected mapping sensor_prop = ([
+   mapping SensorProperties = ([
                                   "module":"Comperator",
                                   "name":"",
                                   "type":sensor_type,
@@ -42,12 +42,13 @@ class sensor
    {
       counter = (int) configuration->gracecount;
       call_out(sensor_timer, (int) configuration->timer);
+      ValueCache->level= ([ "value":0, "direction":DIR_RO, "type":VAR_BOOLEAN ]);
    }
 
    protected void sensor_timer()
    {
       call_out(sensor_timer, (int) configuration->timer);
-      switchboard(sensor_prop->name,configuration->input, COM_READ, (["new":1]));
+      switchboard(SensorProperties->name,configuration->input, COM_READ, (["new":1]));
    }
 
    void got_answer(int command, mixed params)
@@ -58,49 +59,49 @@ class sensor
       }
    }
  
-   void compare(float|int input)
+   void compare(mapping input)
    {
-      sensor_var->lastinput = input;
-      int lastlevel = sensor_var->level;
+      ValueCache->lastinput = input->value;
+      int lastlevel = ValueCache->level;
       switch( configuration->grace )
       {
          case "last":
          int newlevel = 0;
          if( lastlevel == 0 )
-           newlevel = (float) input > (float) configuration->highlevel;
+           newlevel = (float) input->value > (float) configuration->highlevel;
          else
-           newlevel = (float) input > (float) configuration->lowlevel;
+           newlevel = (float) input->value > (float) configuration->lowlevel;
 
          if( newlevel !=  lastlevel )
          {
             if( (--counter) == 0 )
             {
-               sensor_var->level = newlevel;
+               ValueCache->level = newlevel;
                counter = (int) configuration->gracecount;
             }
          }
          else
             counter = (int) configuration->gracecount;
-         sensor_var->counter = counter;
+         ValueCache->counter = counter;
          break;
          case "avg":
-         gracevalues += ({ (float) input });
+         gracevalues += ({ (float) input->value });
          if( sizeof(gracevalues) > (int) configuration->gracecount )
             gracevalues = gracevalues[1..];
          float avgvalue = Array.sum( gracevalues) / sizeof(gracevalues);
          if( lastlevel == 0 )
-           sensor_var->level = (float) avgvalue > (float) configuration->highlevel;
+           ValueCache->level = (float) avgvalue > (float) configuration->highlevel;
          else
-           sensor_var->level = (float) avgvalue > (float) configuration->lowlevel;
-         sensor_var->avg = avgvalue;
+           ValueCache->level = (float) avgvalue > (float) configuration->lowlevel;
+         ValueCache->avg = avgvalue;
          break;
          case "off":
          default:
             //Hystereses
             if( lastlevel == 0 )
-              sensor_var->level = (float) input > (float) configuration->highlevel;
+              ValueCache->level = (float) input->value > (float) configuration->highlevel;
             else
-              sensor_var->level = (float) input > (float) configuration->lowlevel;
+              ValueCache->level = (float) input->value > (float) configuration->lowlevel;
       }
 
       /*Detect LOW (function = 0) or HIGH (function = 1) levels.
@@ -111,29 +112,29 @@ class sensor
        *level change.
        */ 
        //Lastlevel = 0, level = 1 (HIGH / LOW-HIGH )
-       if( lastlevel < sensor_var->level ) 
+       if( lastlevel < (int) ValueCache->level ) 
        {
           switch( (int) configuration->function )
           {
              case 0:
-                switchboard(sensor_prop->name,configuration->output,COM_WRITE,(["value":0]));
+                switchboard(SensorProperties->name,configuration->output,COM_WRITE,(["value":0]));
                 break;
              case 1:
              case 2:
-                switchboard(sensor_prop->name,configuration->output,COM_WRITE,(["value":1]));
+                switchboard(SensorProperties->name,configuration->output,COM_WRITE,(["value":1]));
                 break;
           }
        }
-       else if( lastlevel > sensor_var->level ) 
+       else if( lastlevel > ValueCache->level ) 
        {
           switch( (int) configuration->function )
           {
              case 1:
-                switchboard(sensor_prop->name,configuration->output,COM_WRITE,(["value":0]));
+                switchboard(SensorProperties->name,configuration->output,COM_WRITE,(["value":0]));
                 break;
              case 0:
              case 3:
-                switchboard(sensor_prop->name,configuration->output,COM_WRITE,(["value":1]));
+                switchboard(SensorProperties->name,configuration->output,COM_WRITE,(["value":1]));
                 break;
           }
        }

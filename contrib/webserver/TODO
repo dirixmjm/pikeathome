@@ -1,2 +1,1 @@
-make tag <precision> or <round> for more consistent value representation
-
+Retrieve logging data from server instead of SQL access

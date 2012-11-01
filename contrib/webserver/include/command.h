@@ -14,5 +14,7 @@
 
 #define COM_LOGDATA	 20
 #define COM_RETRLOGDATA	 21
+#define COM_LOGEVENT	 22
+#define COM_RETRLOGEVENT	 23
 #define COM_ERROR	 30
 

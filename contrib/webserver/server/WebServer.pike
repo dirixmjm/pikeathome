@@ -21,10 +21,11 @@ protected object Config;
 
 protected string name="";
 
-constant defvar = ({
+constant ServerParameters = ({
                    ({ "port",PARAM_STRING,"8080","Listen Port",POPT_RELOAD }),
                    ({ "username",PARAM_STRING,"","Username",0 }),
                    ({ "password",PARAM_STRING,"","Password",0 }),
+                   ({ "peers",PARAM_MAPPING,"","Server Peer URLs",0}),
                    });
 
 void create( mapping rconfig )
@@ -144,14 +145,14 @@ mixed internal_command( string receiver, int command, mapping parameters )
       {
         if ( parameters && mappingp(parameters) )
         {
-            foreach(defvar, array var)
+            foreach(ServerParameters, array var)
             {
                if( has_index( parameters, var[0] ) )
                   configuration[var[0]] = parameters[var[0]];
             }
          }
          array ret = ({});
-         foreach(defvar, array var)
+         foreach(ServerParameters, array var)
             ret+= ({ var + ({ configuration[var[0]] }) });
          return ret;
       }
@@ -160,7 +161,7 @@ mixed internal_command( string receiver, int command, mapping parameters )
       if( sizeof(split) > 1 && split[1] == "parameters" && parameters)
       {
          array var = ({});
-         foreach( defvar, array thisvar )
+         foreach( ServerParameters, array thisvar )
          {
             //Set parameters if given
             if(parameters && has_index(parameters,thisvar[0] ) )
@@ -200,7 +201,7 @@ mixed internal_command( string receiver, int command, mapping parameters )
             else
             {
                compiled_modules += ({ ([ "module":name,
-                             "parameters":themodule->defvar +
+                             "parameters":themodule->ModuleParameters +
                              ({ ({ "name",PARAM_STRING,"default","Name"}) })
                               ]) });
             }

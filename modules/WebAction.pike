@@ -1,12 +1,14 @@
 #include <module.h>
 inherit Module;
+#include <sensor.h>
+#include <variable.h>
 
 int module_type = MODULE_SENSOR;
 string module_name = "WebAction";
 
-constant defvar = ({
+constant ModuleParameters = ({
                   });
-constant sensvar = ({
+constant SensorBaseParameters = ({
                    ({ "url", PARAM_STRING,"","Website Action URL",0 }),
                    ({ "repeat", PARAM_INT ,1,"Number of repeating calls, -1 means indefinetely",0 }),
                    ({ "time", PARAM_INT ,300,"Time between repetitions",0 }),
@@ -18,11 +20,9 @@ class sensor
    inherit Sensor;
    int sensor_type = SENSOR_OUTPUT;
     
-   protected mapping sensor_var = ([
-                                  "state":0
-                                  ]); 
    void sensor_init(  )
    {
+      ValueCache->state= ([ "value":0, "direction":DIR_RO, "type":VAR_BOOLEAN ]);
    }
 
    mapping write( mapping what )
@@ -31,15 +31,15 @@ class sensor
       mapping ret = ([]);
       if( has_index(what,"state") )
       {
-         sensor_var->state = (int) what->state;
-         if( sensor_var->state )
+         ValueCache->state = (int) what->state;
+         if( ValueCache->state )
          {
-            sensor_var->repeat_cnt = (int) configuration->repeat;
+            ValueCache->repeat_cnt = (int) configuration->repeat;
             call_out(webaction,0);
          }
          else
             remove_call_out(webaction);
-         ret+=([ "state":sensor_var->state]);
+         ret+=([ "state":ValueCache->state]);
       }
       return ret;
    }
@@ -47,12 +47,12 @@ class sensor
    private void webaction()
    {
       Protocols.HTTP.get_url(configuration->url); 
-      if ( sensor_var->repeat_cnt == -1 || (--sensor_var->repeat_cnt) > 0 )
+      if ( ValueCache->repeat_cnt == -1 || (--ValueCache->repeat_cnt) > 0 )
       {
          call_out(webaction, (int) configuration->time);
       }
       else
-         sensor_var->state = 0;
+         ValueCache->state = 0;
 
    }
 

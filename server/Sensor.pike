@@ -1,4 +1,5 @@
 #include <sensor.h>
+#include <variable.h>
 #include <parameters.h>
 #include <command.h>
 
@@ -6,17 +7,13 @@ int sensor_type = 0;
 
 protected object configuration;
 object module;
-array defvar = ({});
+
+array SensorParameters = ({});
 
 
-string sensor_name = "";
-protected mapping sensor_var = ([
-                               "module":"",
-                               "name":"",
-                               "sensor_type":sensor_type
-                               ]);
+object ValueCache = VariableStorage();
 
-protected mapping sensor_prop = ([
+mapping SensorProperties = ([
                                "module":"",
                                "name":"",
                                "sensor_type":sensor_type
@@ -26,10 +23,9 @@ void create( string name, object _module, object _configuration )
 {
    module = _module;
    configuration = _configuration;
-   sensor_name = name;
-   sensor_prop->module = _module->name;
-   sensor_prop->name = name;
-   sensor_prop->sensor_type = sensor_type;
+   SensorProperties->module = _module->ModuleProperties->name;
+   SensorProperties->name = name;
+   SensorProperties->sensor_type = sensor_type;
    sensor_init();
 }
 
@@ -45,45 +41,33 @@ mixed write( mapping what )
 {
 }
 
-/* 
- * Info returns the last seen sensor input and output values 
- * in a mapping.
- */
-mapping info( )
-{
-
-   getnew();
-   return  sensor_var;
-}
-
-
 /* Each sensor should implement this function. 
- * getnew() queries the sensor for new values, and 
- * updates sensor_var.
+ * UpdateSensor() queries the sensor for new values, and 
+ * updates ValueCache.
  */
 
-void getnew()
+void UpdateSensor()
 {
 }
 
 mapping property()
 {
-   return sensor_prop;
+   return SensorProperties;
 }
 
 
-array getvar()
+array GetParameters()
 {
    array ret = ({});
-   foreach(module->sensvar, array var)
+   foreach(module->SensorBaseParameters, array var)
       ret+= ({ var + ({ configuration[var[0]] })});
    return ret;
 }
 
-void setvar( mapping params )
+void SetParameters( mapping params )
 {
    int mod_options = 0;
-   foreach(module->sensvar, array option)
+   foreach(module->SensorBaseParameters, array option)
    {
       //Find the parameter, and always set it
       if( has_index( params, option[0] ) )
@@ -117,10 +101,13 @@ void rpc_command( string sender, string receiver, int command, mapping parameter
    {
       case COM_READ:
       {
+         UpdateSensor();
          if ( sizeof(split) == 3 )
-            switchboard(receiver, sender, -command, info( ) );
-         else if ( sizeof(split) == 4 && has_index( sensor_var, split[3] ) )
-            switchboard(receiver, sender, -command, info( )[split[3]]);
+            switchboard(receiver, sender, -command, (mapping) ValueCache );
+         else if ( sizeof(split) == 4 && has_index( ValueCache, split[3] ) )
+         {
+            switchboard(receiver, sender, -command, ((mapping) ValueCache)[split[3]]);
+         }
          else
             switchboard(receiver, sender, COM_ERROR, ([ "error":
                              sprintf( "Variable not found %s",receiver) ]) );
@@ -129,8 +116,8 @@ void rpc_command( string sender, string receiver, int command, mapping parameter
       case COM_PARAM:
       {
          if( parameters && mappingp(parameters) )
-            setvar(parameters);
-         switchboard( receiver,sender, -command, getvar() );
+            SetParameters(parameters);
+         switchboard( receiver,sender, -command, GetParameters() );
       }
       break;
       case COM_PROP:
@@ -148,7 +135,7 @@ void rpc_command( string sender, string receiver, int command, mapping parameter
          }
          if ( sizeof(split) == 3 && parameters && mappingp(parameters) )
             switchboard(receiver, sender, -command,write( parameters ));
-         else if ( sizeof(split) == 4 && has_index( sensor_var, split[3] ) )
+         else if ( sizeof(split) == 4 && has_index( ValueCache, split[3] ) )
              switchboard(receiver, sender, -command, write( ([ split[3]:parameters->value ]) ));
          else
             switchboard(receiver, sender, COM_ERROR, ([ "error":

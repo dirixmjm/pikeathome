@@ -5,6 +5,8 @@
 #define PARAM_SENSORINPUT 4
 #define PARAM_SENSOROUTPUT 5
 #define PARAM_SCHEDULE 6
+#define PARAM_ARRAY 7
+#define PARAM_MAPPING 8
 
 //Parameter Options
 #define POPT_RELOAD   (1<<0)

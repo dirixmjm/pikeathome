@@ -1,9 +1,6 @@
 == Pre Publish ==
 
 == Post Publish ==
-Create variable control (rw, ro etc).
-Create variable types (switch / float / int).
-	e.g. state == (setable) switch variable
 Switchboard add hook.
 Retrieve Logdata structure
 

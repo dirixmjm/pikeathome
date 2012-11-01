@@ -32,7 +32,7 @@ object configuration(string name )
 
 //Array with server configuration parameters
 //Goal is to keep it to a minimum and let modules worry about operation.
-array defvar = ({});
+array ServerParameters = ({});
 
 void logout(int log_level, mixed ... args )
 {
@@ -100,14 +100,14 @@ void rpc_command( string sender, string receiver, int command, mapping parameter
       {
         if ( parameters && mappingp(parameters) )
         {
-            foreach(defvar, array var)
+            foreach(ServerParameters, array var)
             {
                if( has_index( parameters, var[0] ) )
                   server_configuration[var[0]] = parameters[var[0]];
             }
          }
          array ret = ({});
-         foreach(defvar, array var)
+         foreach(ServerParameters, array var)
             ret+= ({ var + ({ server_configuration[var[0]] }) });
          switchboard(name, sender, -command, ret );
       }
@@ -135,7 +135,7 @@ void rpc_command( string sender, string receiver, int command, mapping parameter
             else
             {
                compiled_modules += ({ ([ "module":name,
-                             "parameters":themodule->defvar +
+                             "parameters":themodule->ModuleParameters +
                              ({ ({ "name",PARAM_STRING,"default","Name"}) })
                               ]) });
             }
@@ -156,7 +156,7 @@ void rpc_command( string sender, string receiver, int command, mapping parameter
            if( ! (modules[module]->module_type & MODULE_SENSOR) )
               continue;
            foreach( values(modules[module]->sensors), object sensor )
-              sensors+=({ sensor->sensor_name });
+              sensors+=({ sensor->SensorProperties->name });
          }
          switchboard(name, sender , -command, sensors);
       }

@@ -1,5 +1,7 @@
 #include <module.h>
+#include <sensor.h>
 #include <parameters.h>
+#include <variable.h>
 
 inherit Module;
 
@@ -288,7 +290,47 @@ mapping form_to_save(array params, mapping query, string name)
                         (int) param[5] != (int) query->entities->form[inname]))
             tosave+=([ param[0]:(int) query->entities->form[inname] ]);
          break;
+         case PARAM_ARRAY:
+         {
+            if( !has_index(query->entities->form,"array_"+inname))
+               continue;
+            int count = (int) query->entities->form["array_"+inname];
+            array Values = ({});
+            for( int i = 1; i<=count; i++ )
+            {
+               string findit = inname+"_value_"+(string) i;
+               //remove empty lines.
+               if( !query->entities->form[findit] || 
+                  query->entities->form[findit]=="" )
+               continue;
+               Values += ({ query->entities->form[findit] 
+                         });
+            }
+            tosave+=([ param[0]:Values ]);
+         }
+         break;
+         case PARAM_MAPPING:
+         {
+            if( !has_index(query->entities->form,"mapping_"+inname))
+               continue;
+            int count = (int) query->entities->form["mapping_"+inname];
+            mapping Values = ([]);
+            for( int i = 1; i<=count; i++ )
+            {
+               string findit = inname+"_index_"+(string) i;
+               //remove empty lines.
+               if( !query->entities->form[findit] || 
+                  query->entities->form[findit]=="" )
+               continue;
+               Values += ([ query->entities->form[findit]: 
+                            query->entities->form[inname+"_value_"+(string) i]
+                         ]);
+            }
+            tosave+=([ param[0]:Values ]);
+         }
+         break;
          case PARAM_SCHEDULE:
+         {
             if( !has_index(query->entities->form,"schedule_"+inname) )
                continue;
             int count = (int) query->entities->form["schedule_"+inname];
@@ -307,6 +349,7 @@ mapping form_to_save(array params, mapping query, string name)
                              ])});   
             }
             tosave+=([ param[0]:theschedule ]);
+         }
          break;
          default:
             logerror("Can't save unknown paramter type\n");
@@ -319,6 +362,7 @@ mapping form_to_save(array params, mapping query, string name)
 array make_form_input(array param, mapping query, string name)
 {
    array ret=({});
+   array name_split = split_server_module_sensor_value(name);
    string inname = (string) hash( name + (string) param[0] );
    switch( param[1] )
    {
@@ -345,8 +389,7 @@ array make_form_input(array param, mapping query, string name)
    {
       string value= sizeof(param)>5?(string)param[5]:(string)param[2];
       ret+= ({ sprintf("<select name=\"%s\">",inname), });
-      //FIXME xiserver
-      array|mapping sensors = dml->rpc( "xiserver", COM_ALLSENSOR, 0 );
+      array|mapping sensors = dml->rpc( name_split[0], COM_ALLSENSOR, 0 );
       if( mappingp(sensors) && has_index(sensors,"error"))
          return ({ sprintf("<H1>Server Return An Error</H1><p>%s",sensors->error) });
       sensors = sort(sensors + ({}) );
@@ -360,6 +403,8 @@ array make_form_input(array param, mapping query, string name)
             //vars = sort(vars);
             foreach( indices(vars), string key )
             {
+               if( param[1] == PARAM_SENSOROUTPUT && vars[key]->direction == DIR_RO )
+                  continue;
                string sname = prop->name +"."+key;
                ret+=({ sprintf("<option value=\"%s\" %s>%s</option>",
                                  sname,sname==value?"selected":"",sname)});
@@ -367,6 +412,64 @@ array make_form_input(array param, mapping query, string name)
          }
       }
       ret+=({ "</select>"});
+   }
+   break;
+   case PARAM_ARRAY:
+   {
+      ret+= ({ "<table>"});
+      array Values = sizeof(param)>5?param[5]:({});
+      int count = 0;
+      foreach( Values; string index; string value )
+      {
+         count++;
+         string svalue = inname+"_value_"+(string) count;
+         ret += ({ "<tr><td>" });
+         ret += ({ sprintf("<input type=\"text\" name=\"%s\" value=\"%s\" />"
+                         ,svalue,value) });
+         ret += ({ "</td></tr>" });
+
+      }
+      count++;
+      string svalue = inname+"_value_"+(string) count;
+      ret += ({ "<tr><td>" });
+      ret += ({ sprintf("<input type=\"text\" name=\"%s\" />"
+                      ,svalue) });
+      ret += ({ "</td></tr>" });
+      ret+=({"</table>"}); 
+      ret += ({ sprintf("<input type=\"hidden\" name=\"array_%s\" value=\"%d\" ",inname,count) });
+   }
+   break;
+   case PARAM_MAPPING:
+   {
+      ret+= ({ "<table>"});
+      mapping Values = sizeof(param)>5?param[5]:([]);
+      int count = 0;
+      foreach( Values; string index; string value )
+      {
+         count++;
+         string sindex = inname+"_index_"+(string) count;
+         string svalue = inname+"_value_"+(string) count;
+         ret += ({ "<tr><td>" });
+         ret += ({ sprintf("<input type=\"text\" name=\"%s\" value=\"%s\" />"
+                         ,sindex,index) });
+         ret += ({ "</td><td>" });
+         ret += ({ sprintf("<input type=\"text\" name=\"%s\" value=\"%s\" />"
+                         ,svalue,value) });
+         ret += ({ "</td></tr>" });
+
+      }
+      count++;
+      string sindex = inname+"_index_"+(string) count;
+      string svalue = inname+"_value_"+(string) count;
+      ret += ({ "<tr><td>" });
+      ret += ({ sprintf("<input type=\"text\" name=\"%s\" />"
+                       ,sindex) });
+      ret += ({ "</td><td>" });
+      ret += ({ sprintf("<input type=\"text\" name=\"%s\" />"
+                      ,svalue) });
+      ret += ({ "</td></tr>" });
+      ret+=({"</table>"}); 
+      ret += ({ sprintf("<input type=\"hidden\" name=\"mapping_%s\" value=\"%d\" ",inname,count) });
    }
    break;
    case PARAM_SCHEDULE:
