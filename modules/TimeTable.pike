@@ -8,10 +8,13 @@ inherit Module;
 int module_type = MODULE_SENSOR | MODULE_SCHEDULE;
 
 constant ModuleParameters = ({
+	({ "LongestDay",PARAM_INT,172,"Longest Day of the Year",POPT_NONE }),
                   });
 
 constant SensorBaseParameters = ({
                    ({ "output",PARAM_SENSOROUTPUT,"","Output Sensor",0 }),
+                   //Preoutput is used by an external module, 
+                   //e.g. a heater which wants to dynamically set pre-heating.
                    ({ "preoutput",PARAM_BOOLEAN,0,"Turn On / Off Adaptive Scheduling",0 }),
                    ({ "scheduletime",PARAM_INT,600,"Fallback Schedule Timing",0 }),
                    ({ "schedule",PARAM_SCHEDULE,"","The Schedule",0 }),
@@ -68,7 +71,23 @@ class sensor
      if ( seconds >= 0 )
      {
         call_out(run_schedule,seconds);
+
+        //Check if the next schedule has a Day-length antedating
+        if ( has_index( theschedule[ValueCache->next_schedule] , "antedate")
+             && theschedule[ValueCache->next_schedule]->antedate > 0 )
+        {
+           //Calculate number of days from the longest day.
+           int longestday = module->GetParameter("LongestDay");
+           int days = (Calendar.Day()->year_day() +365 - longestday)%365;
+           int antedate_seconds = seconds - (days*60* (int) theschedule[ValueCache->next_schedule]->antedate);
+           if( antedate_seconds < 0 )
+              antedate_seconds = 0;
+
+           call_out( switchboard, antedate_seconds, SensorProperties->name,configuration->output,COM_WRITE,(["value": (int) theschedule[ValueCache->next_schedule]->value]));
+
+        }
         //only call pre announcer when there is a valid timespan.
+        //The pretimer can be changed by an external module using the TimeTable.
         if( has_index(theschedule[ValueCache->current_schedule],"pretimer") && (int) theschedule[ValueCache->current_schedule]->pretimer > 0 && seconds-(int) theschedule[ValueCache->current_schedule]->pretimer > 0 )
            call_out(preannounce,seconds-(int) theschedule[ValueCache->current_schedule]->pretimer);
  

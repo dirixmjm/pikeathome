@@ -58,6 +58,11 @@ array find_sensors( )
    return ({ ([ "sensor":"manual","module":ModuleProperties->name,"parameters":var ])});
 }
 
+mixed GetParameter( string Param )
+{
+   return configuration[Param];
+}
+
 array GetParameters()
 {
    array ret = ({});

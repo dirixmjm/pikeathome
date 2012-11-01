@@ -345,7 +345,8 @@ mapping form_to_save(array params, mapping query, string name)
                theschedule+= ({ ([
                              "start":query->entities->form["start_"+findit],
                              "dow":query->entities->form["dow_"+findit],
-                             "value":query->entities->form["value_"+findit]
+                             "value":query->entities->form["value_"+findit],
+                             "antedate":query->entities->form["antedate_"+findit]
                              ])});   
             }
             tosave+=([ param[0]:theschedule ]);
@@ -485,7 +486,8 @@ array make_form_input(array param, mapping query, string name)
             count++;
             ret+=makescheduleline(count,inname,(string) schedule->start,
                                   (string) schedule->dow, 
-                                  (string) schedule->value );
+                                  (string) schedule->value,
+                                  (string) schedule->antedate );
          }  
       }
       else
@@ -502,11 +504,12 @@ array make_form_input(array param, mapping query, string name)
             ret+=makescheduleline(count, inname,
                      (string) query->entities->form["start_"+findit],
                      (string) query->entities->form["dow_"+findit],
-                     (string) query->entities->form["value_"+findit]);
+                     (string) query->entities->form["value_"+findit],
+                     (string) query->entities->form["antedate_"+findit]);
          }
       }
       count++;
-      ret+= makescheduleline(count,inname,"","","");
+      ret+= makescheduleline(count,inname,"","","","");
       ret += ({"<tr><td><input type=\"submit\" name=\"Add Schedule\" value=\"add_schedule\" /></td></tr>"});
       ret+=({"</table>"});
       ret += ({ sprintf("<input type=\"hidden\" name=\"schedule_%s\" value=\"%d\" ",inname,count) });
@@ -518,13 +521,14 @@ array make_form_input(array param, mapping query, string name)
    return ret;
 }
 
-protected array makescheduleline(int i, string name, string start, string dow, string output)
+protected array makescheduleline(int i, string name, string start, string dow, string output,string antedate)
 {
    array ret = ({
 "<tr>",
 sprintf("<td>Start in Minutes<input type=\"text\" name=\"start_%s_%d\" value=\"%s\" /></td>",name,i,start),
 sprintf("<td>Day Of the Week<input type=\"text\" name=\"dow_%s_%d\" value=\"%s\"/></td>",name,i,dow),
 sprintf("<td>Output Value <input type=\"text\" name=\"value_%s_%d\" value=\"%s\"/></td>",name,i,output),
+sprintf("<td>Antedate <input type=\"text\" name=\"antedate_%s_%d\" value=\"%s\"/></td>",name,i,antedate),
 "</tr>"
                });
    return ret;
