@@ -23,13 +23,16 @@ DESC="Description of the service"
 NAME=pikeathome
 DAEMON=/usr/local/bin/$NAME.pike
 DAEMON_ARGS="--config=/etc/pikeathome.conf"
-PIDFILE=/var/run/$NAME.pid
+PIDLOCATION=/var/run/$NAME
+PIDFILE=$PIDLOCATION/$NAME.pid
 SCRIPTNAME=/etc/init.d/$NAME
 USER=marc
 
 # Exit if the package is not installed
 [ -x "$DAEMON" ] || exit 0
 
+# Create pidlocation if doesn'T exist
+[ -e "$PIDLOCATION" ] || mkdir "$PIDLOCATION" && chown $USER $PIDLOCATION
 # Read configuration variable file if it is present
 [ -r /etc/default/$NAME ] && . /etc/default/$NAME
 
