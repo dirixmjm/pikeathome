@@ -30,7 +30,6 @@ array options = ({
                ({ "installpath", Getopt.HAS_ARG, ({ "-i","--install-path" }) }),
                ({ "webpath", Getopt.HAS_ARG, ({ "-w","--webpath" }) }),
                ({ "webport", Getopt.HAS_ARG, ({ "-p","--webport" }) }),
-               ({ "xmlrpcserver", Getopt.HAS_ARG, ({ "-x","--xmlrpcserver" }) }),
                ({ "database", Getopt.HAS_ARG, ({ "-d","--database" }) }),
                ({ "debug", Getopt.NO_ARG, ({ "-D","--debug" }) }),
                ({ "nodaemon", Getopt.NO_ARG, ({ "-N","--nodaemon" }) }),
