@@ -150,7 +150,7 @@ class sensor
                SensorProperties->sensor_type=SENSOR_INPUT;
                ValueCache->collector = ([ "value":0.0, "direction":DIR_RO, "type":VAR_FLOAT ]);
                ValueCache->boiler = ([ "value":0.0, "direction":DIR_RO, "type":VAR_FLOAT ]);
-               ValueCache->pump = ([ "value":0, "direction":DIR_RO, "type":VAR_BOOLEAN ]);
+               ValueCache->pump = ([ "value":0, "direction":DIR_RO, "type":VAR_INT ]);
             }
             else if ( configuration->type == "slimmemeter" )
             {

@@ -73,9 +73,12 @@ class sensor
          return module->PlugWise->Plugs[mac];
       else
       {
+         werror("%O\n",module->PlugWise->Plugs);
          logerror("Plug %s with mac %s Not Found, search started\n",SensorProperties->name,mac);
          if( module->PlugWise->CirclePlus )
-            module->PlugWise->CirclePlus->find_plugs();
+         {
+            module->PlugWise->CirclePlus->find_plugs(mac);
+         }
          return UNDEFINED;
       }
    }
