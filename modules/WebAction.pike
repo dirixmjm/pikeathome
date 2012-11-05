@@ -22,7 +22,7 @@ class sensor
     
    void sensor_init(  )
    {
-      ValueCache->state= ([ "value":0, "direction":DIR_RO, "type":VAR_BOOLEAN ]);
+      ValueCache->state= ([ "value":0, "direction":DIR_RW, "type":VAR_BOOLEAN ]);
    }
 
    mapping write( mapping what )
