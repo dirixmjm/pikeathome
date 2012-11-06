@@ -445,7 +445,7 @@ array make_form_input(array param, mapping query, string name)
       ret+= ({ "<table>"});
       mapping Values = sizeof(param)>5?param[5]:([]);
       int count = 0;
-      foreach( Values; string index; string value )
+      foreach( Values+({}); string index; string value )
       {
          count++;
          string sindex = inname+"_index_"+(string) count;

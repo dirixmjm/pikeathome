@@ -6,7 +6,7 @@
 <title>DomoWeb</title>
 <link rel="stylesheet" type="text/css" href="index.css" />
 <if variable="form.write">
-   <write name="&form.module;.&form.name;.state" value="&form.write;" />
+   <write name="&form.name;" value="&form.write;" />
 </if>
 </head>
 
@@ -15,23 +15,38 @@
  <div class="menu" ><include file="menu.dml" /></div>
  <div class="head">Sensors</div>
  <div class="main"><form method="GET"> <table class="maincenter" >
-    <tr><th>Sensor</th><th>Module</th><th>Value</th><th>Type</th><th>Online</th><th>State</th></tr>
-    <emit input="" output="" source="sensors" ><tr>
-    <td><a href=/sensor.dml?name=&_.name;&amp;module=&_.module; >&_.name;</a></td>
-    <td>&_.module;</td><td>&_.value;</td>
-    <td><if variable="_.sensor_type = 1"><img height="20px" src="/icons/Input.png" /></if>
+    <tr ><th class="maincenter">Sensor</th><th class="maincenter">Module</th>
+<th class="maincenter" >Value</th><th class="maincenter">Type</th>
+<th class="maincenter">Online</th><th class="maincenter">State</th></tr>
+    <emit source="sensors" name="xiserver" >
+   <tr valign="top" >
+    <td align="left" class="maincenter">
+     <a href=/sensor.dml?name=&_.name;&amp;module=&_.module; >&_.name;</a></td>
+    <td align="left" class="maincenter" >&_.module;</td><td align="left" class="maincenter">
+     <emit source="sensor" name="&_.name;" scope="inf" >
+     <if variable="inf.variable = online">
+       <set variable="form.online" value="&inf.value;" />
+     </if>
+     <if variable="inf.variable = state">
+       <set variable="form.state" value="&inf.value;" />
+     </if>
+     &inf.variable;&nbsp;:&nbsp;&inf.value;<br />
+     </emit>
+    </td>
+    <td class="maincenter" ><if variable="_.sensor_type = 1"><img height="20px" src="/icons/Input.png" /></if>
     <if variable="_.sensor_type = 2"><img height="20px" src="/icons/Output.png" /></if>
     <if variable="_.sensor_type = 3"><img height="20px" src="/icons/Sensor.png" /></if></td>
-    <td><if variable="_.online = 1"><img height="20px" src="/icons/Green_Dot.png" /></if>
-    <if variable="_.online = 0"><img height="20px" src="/icons/Red_Dot.png" /></if></td>
+    <td><if variable="form.online"><if variable="form.online = 1"><img height="20px" src="/icons/Green_Dot.png" /></if>
+    <if variable="form.online = 0"><img height="20px" src="/icons/Red_Dot.png" /></if></if></td>
     
-    <td><if variable="_.state = 1">
-    <a href="/sensors.dml?name=&_.name;&amp;module=&_.module;&amp;write=0"><img height="20px" src="/icons/Light Bulb On.png" /></a>
+    <td>
+    <if variable="form.state">
+    <if variable="form.state = 1">
+    <a href="/sensors.dml?name=&_.name;.state&amp;module=&_.module;&amp;write=0"><img height="20px" src="/icons/Light Bulb On.png" /></a>
     </if>
-    <if variable="_.state = 0">
-    <a href="/sensors.dml?name=&_.name;&amp;module=&_.module;&amp;write=1"><img height="20px" src="/icons/Light Bulb Off.png" /></a></if></td>
-
-
+    <if variable="form.state = 0">
+    <a href="/sensors.dml?name=&_.name;.state&amp;module=&_.module;&amp;write=1"><img height="20px" src="/icons/Light Bulb Off.png" /></a></if>
+    </if></td>
     </tr></emit>
  </table>
  </form></div>

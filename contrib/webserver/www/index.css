@@ -15,14 +15,15 @@ div.content {
 div.menu{
    height: 100%;
    float: left;
-   width: 10%;
+%   width: 10%;
 }
 
 div.modules{
    height: 100%;
    float: left;
-   width: 10%;
+%   width: 10%;
 }
+
 div.sensors{
    height: 100%;
    float: left;
@@ -42,17 +43,28 @@ td.large{
    font-size: 50px;
 }
 td.huge{
-   font-size: 70px;
+   border-spacing: 20px;
+   text-align: left;
+   font-size: 40px;
 }
 
+td.hugeB{
+   color: blue;
+   border-spacing: 20px;
+   text-align: left;
+   font-size: 40px;
+}
+
+
 div.main{
-   overflow:auto;
    float: left;
+   overflow:auto;
    text-align: center;
 }
 
 table.mainitem
 {
+   border-spacing: 20px;
    margin-left: auto;
    margin-right: 0;
 }
@@ -61,4 +73,18 @@ table.maincenter
 {
    margin-left: auto;
    margin-right: auto;
+   border-width: 1px;
+   border-style: dashed;
+   border-spacing: 0px;
+}
+
+td.maincenter
+{
+   border-top: 1px dashed;
+   border-right: 1px dashed;
+}
+
+th.maincenter
+{
+   border-right: 1px dashed;
 }
