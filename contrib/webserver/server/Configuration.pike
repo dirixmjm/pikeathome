@@ -418,7 +418,9 @@ array make_form_input(array param, mapping query, string name)
    case PARAM_ARRAY:
    {
       ret+= ({ "<table>"});
-      array Values = sizeof(param)>5?param[5]:({});
+      array Values = ({});
+      if( sizeof(param)>5 && param[5] )
+         Values = param[5];
       int count = 0;
       foreach( Values; string index; string value )
       {
@@ -443,9 +445,11 @@ array make_form_input(array param, mapping query, string name)
    case PARAM_MAPPING:
    {
       ret+= ({ "<table>"});
-      mapping Values = sizeof(param)>5?param[5]:([]);
+      mapping Values = ([]);
+      if( sizeof(param)>5 && param[5] )
+         Values = param[5];
       int count = 0;
-      foreach( Values+({}); string index; string value )
+      foreach( Values; string index; string value )
       {
          count++;
          string sindex = inname+"_index_"+(string) count;
@@ -480,7 +484,10 @@ array make_form_input(array param, mapping query, string name)
       //If there was no form-post fill the form with database variables.
       if ( ! has_index( query->entities->form,"schedule_"+inname ) )
       {
-         array theschedule= sizeof(param)>5?param[5]:({});
+         array theschedule= ({});
+         if( sizeof(param)>5 && param[5] )
+            theschedule = param[5];
+
          foreach( theschedule, mapping schedule )
          {
             count++;
