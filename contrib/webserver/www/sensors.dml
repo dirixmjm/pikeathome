@@ -18,7 +18,7 @@
     <tr ><th class="maincenter">Sensor</th><th class="maincenter">Module</th>
 <th class="maincenter" >Value</th><th class="maincenter">Type</th>
 <th class="maincenter">Online</th><th class="maincenter">State</th></tr>
-    <emit source="sensors" name="xiserver" >
+    <emit source="sensors">
    <tr valign="top" >
     <td align="left" class="maincenter">
      <a href=/sensor.dml?name=&_.name;&amp;module=&_.module; >&_.name;</a></td>

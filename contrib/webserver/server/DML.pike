@@ -166,7 +166,14 @@ array EmitSensors( mapping args, mapping query )
                    !has_index(args,"output") && !has_index(args,"schedule") ) )
        sensor_type = 0xFF;
    array ret = ({});
-   array sensors = rpc( args->name, COM_ALLSENSOR ) + ({}); 
+   array sensors = ({});
+   if( has_index( args, "name" ) )
+     sensors = rpc( args->name, COM_ALLSENSOR ) || ({}); 
+   else 
+   {
+      foreach ( indices(configuration->peers || ({})), string peername )
+         sensors+= rpc( peername, COM_ALL_SENSOR ) || ({});
+   }
    foreach( sensors , string sensor )
    {
       mapping prop = rpc( sensor, COM_PROP );

@@ -37,7 +37,7 @@ array DMLConfiguration(Parser.HTML p, mapping args, mapping query )
       }
    }
    // Next list all peers
-   foreach( indices(configuration->peers || ([])), string peername )
+   foreach( indices(configuration->peers || ({})), string peername )
    {
       ret+= ({ sprintf("<a href=\"/configuration/index.dml?name=%s\">%s</a><br />",peername,peername) });
       array|mapping module_sensors = dml->rpc( peername, COM_LIST );
