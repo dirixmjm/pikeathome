@@ -21,7 +21,8 @@
 PATH=/sbin:/usr/sbin:/bin:/usr/bin
 DESC="Description of the service"
 NAME=pikeathome
-DAEMON=/usr/local/bin/$NAME.pike
+LOCATION=/usr/local/pikeathome
+DAEMON=$LOCATION/$NAME.pike
 DAEMON_ARGS="--config=/etc/pikeathome.conf"
 PIDLOCATION=/var/run/$NAME
 PIDFILE=$PIDLOCATION/$NAME.pid
