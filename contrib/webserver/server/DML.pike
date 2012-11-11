@@ -172,7 +172,7 @@ array EmitSensors( mapping args, mapping query )
    else 
    {
       foreach ( indices(configuration->peers || ({})), string peername )
-         sensors+= rpc( peername, COM_ALL_SENSOR ) || ({});
+         sensors+= rpc( peername, COM_ALLSENSOR ) || ({});
    }
    foreach( sensors , string sensor )
    {
