@@ -320,8 +320,8 @@ class sensor
                if ( concentration >= 4400 )
                {
                   logdebug("CO2 Sensor %s Needs reset\n",SensorProperties->name);
-                  switchboard(SensorProperties->name, configuration->reset, COM_WRITE, 1 );
-                  call_out( switchboard, 20, SensorProperties->name,configuration->reset, COM_WRITE, 0 );
+                  switchboard(SensorProperties->name, configuration->reset, COM_WRITE, (["value":1]) );
+                  call_out( switchboard, 20, SensorProperties->name,configuration->reset, COM_WRITE, ([ "value":0]) );
                }
                ValueCache->concentration = concentration; 
                ValueCache->vis = (float)  OWFS->read(configuration->sensor+"vis");
