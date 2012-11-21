@@ -9,6 +9,8 @@ int module_type = MODULE_SENSOR | MODULE_SCHEDULE;
 
 constant ModuleParameters = ({
 	({ "LongestDay",PARAM_INT,172,"Longest Day of the Year",POPT_NONE }),
+         ({ "debug",PARAM_BOOLEAN,0,"Turn On / Off Debugging",POPT_NONE }),
+
                   });
 
 constant SensorBaseParameters = ({
@@ -105,7 +107,7 @@ class sensor
    void preannounce()
    {
       if ( has_index(configuration, "preoutput" ) && configuration->preoutput==1 )
-         switchboard(SensorProperties->name,configuration->output,COM_WRITE,(["values":theschedule[ValueCache->current_schedule]->value]));
+         switchboard(SensorProperties->name,configuration->output,COM_WRITE,(["value":theschedule[ValueCache->current_schedule]->value]));
 
    }
 

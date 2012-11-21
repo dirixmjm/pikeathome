@@ -10,6 +10,8 @@ object OWFS;
 
 constant ModuleParameters = ({
                    ({ "port",PARAM_STRING,"/dev/ttyUSB0","TTY Port of the USB Stick", POPT_RELOAD }),
+		   ({ "debug",PARAM_BOOLEAN,0,"Turn On / Off Debugging",POPT_NONE }),
+
                   });
 
 /* Sensor Specific Variable */
@@ -73,7 +75,6 @@ class sensor
 
    void sensor_init()
    {
-      ValueCache->online= ([ "value":0, "direction":DIR_RO, "type":VAR_BOOLEAN ]);
       string low_type = "";
       if( !has_suffix( configuration->sensor, "/" ) )
          configuration->sensor = configuration->sensor+"/";
@@ -83,7 +84,6 @@ class sensor
       if( catch_err )
       {
          logerror("OWFS: Sensor %s not found at %s\n",SensorProperties->name,configuration->sensor);
-         ValueCache->online = 0;
          return;
       }
       switch ( low_type )
@@ -240,7 +240,6 @@ class sensor
       if( catch_err )
       {
          logerror("Sensor %s not found\n",ModuleProperties->name);
-         ValueCache->online = 0;
          return;
       }
       switch ( low_type )
@@ -340,9 +339,16 @@ class sensor
    void get_vbus()
    {
       string data = OWFS->read(configuration->sensor+"memory");
-      if(!sizeof(data) )
+      if(!data || !sizeof(data) )
          return;
-      ValueCache->collector = (float) (data[3] + (data[4]<<8)) / 10;
+      float collector = (float) (data[3] + (data[4]<<8)) / 10;
+      //The collector can return negative values.
+      if( collector >= (1 << 15) )
+      {
+         collector = - (collector % ( 1 <<15));
+      }
+      ValueCache->collector = collector;
+      //The Boiler temperature (hopefully) never gets below 0 degrees.
       ValueCache->boiler = (float) (data[5] + (data[6]<<8)) / 10 ;
       ValueCache->pump = (int) data[11] ;
       //ValueCache->state = (int) data[25] ;
