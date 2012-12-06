@@ -102,7 +102,7 @@ array get_main_configuration( Parser.HTML p, mapping args, mapping query )
       {
          if( has_index(module_sensor, "sensor" ) && has_index( query->entities->form, module_sensor->sensor  ) )
          {
-            mapping tosave=form_to_save(module_sensor->parameters,query,module_sensor->sensor);
+            mapping tosave=form_to_save(module_sensor->parameters,query,name+module_sensor->sensor);
             if(sizeof(tosave))
             {
                tosave+= ([ "sensor":module_sensor->sensor ]);
@@ -204,7 +204,7 @@ array get_main_configuration( Parser.HTML p, mapping args, mapping query )
          ret+= ({ sprintf("<td><input type=\"submit\" name=\"%s\""+
                                   " value=\"Update\" /></td>",sensor) });
          ret+=({ "<td>" });
-         ret+=({ sprintf("<a href=\"module.dml?name=%s&Delete=%s\"><img src=\"/icons/Delete.png\" height=\"15px\" /></a>",name,sensor ) });
+         ret+=({ sprintf("<a href=\"index.dml?name=%s&Delete=%s\"><img src=\"/icons/Delete.png\" height=\"15px\" /></a>",name,sensor ) });
 
          ret+=({ "</td></tr>" });
 
@@ -237,9 +237,9 @@ array get_main_configuration( Parser.HTML p, mapping args, mapping query )
                foreach( module_sensor->parameters, array param )
                {
                   ret+=({ sprintf( "<td align=\"lef\">%s&nbsp;",(string) param[0]) });
-                  //FIXME else? 
+                  //FIXME sensor only contains the sensor name, not server info? 
                   if( has_index( module_sensor, "sensor" ) )
-                     ret+= make_form_input(param,query,module_sensor->sensor);
+                     ret+= make_form_input(param,query,name+module_sensor->sensor);
                   else if( has_index( module_sensor, "module" ) )
                      ret+= make_form_input(param,query,module_sensor->module);
                   ret+= ({ "</td>"});
