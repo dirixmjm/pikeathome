@@ -341,13 +341,13 @@ class sensor
       string data = OWFS->read(configuration->sensor+"memory");
       if(!data || !sizeof(data) )
          return;
-      float collector = (float) (data[3] + (data[4]<<8)) / 10;
+      int collector = (data[3] + (data[4]<<8));
       //The collector can return negative values.
       if( collector >= (1 << 15) )
       {
-         collector = - (collector % ( 1 <<15));
+         collector = ((1<<16 - collector);
       }
-      ValueCache->collector = collector;
+      ValueCache->collector = (float) collector / 10.00;
       //The Boiler temperature (hopefully) never gets below 0 degrees.
       ValueCache->boiler = (float) (data[5] + (data[6]<<8)) / 10 ;
       ValueCache->pump = (int) data[11] ;
