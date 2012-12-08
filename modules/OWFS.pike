@@ -345,7 +345,7 @@ class sensor
       //The collector can return negative values.
       if( collector >= (1 << 15) )
       {
-         collector = ((1<<16) - collector);
+         collector = collector - (1<<16);
       }
       ValueCache->collector = (float) collector / 10.00;
       //The Boiler temperature (hopefully) never gets below 0 degrees.
