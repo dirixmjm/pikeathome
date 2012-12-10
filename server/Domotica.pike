@@ -165,7 +165,7 @@ void rpc_command( string sender, string receiver, int command, mapping parameter
       {
          string module_name = name+"."+parameters->name;
          m_delete(parameters,"name");
-         if ( has_value(server_configuration->module, module_name ) )
+         if ( has_value(server_configuration->module + ({}), module_name ) )
          {
             string error=sprintf("There already exists a module instance with name %s\n",module_name);
             switchboard(module_name, sender, 30, ([ "error":error ]));
