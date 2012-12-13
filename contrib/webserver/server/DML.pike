@@ -19,6 +19,9 @@ mapping run_config;
 protected object Configuration_Interface;
 protected object ICom;
 
+//Mapping holding the webserver modules
+protected mapping  modules=([]);
+
 string servername;
 Parser.HTML parser;
 
@@ -86,6 +89,7 @@ void init_modules( array names )
          logerror("Error Module INIT\n %O\n%s\t\t%s\n%O\n",catch_result,name,describe_error(catch_result),backtrace());
          continue;
       }
+      modules+=([ name:mod]);
       parser->add_tags(mod->tags);
       parser->add_containers(mod->containers);
       emit += mod->emit; 
@@ -173,6 +177,10 @@ array EmitSensors( mapping args, mapping query )
    {
       foreach ( indices(configuration->peers || ({})), string peername )
          sensors+= rpc( peername, COM_ALLSENSOR ) || ({});
+   }
+   if ( has_index( args, "sort" ) )
+   {
+      sensors=sort(sensors);
    }
    foreach( sensors , string sensor )
    {
@@ -477,14 +485,20 @@ mixed rpc( string receiver, int command, mapping|void parameters )
 mixed internal_command( string receiver, int command, mapping parameters )
 {
    array split =  split_server_module_sensor_value( receiver );
-   //Check if the command is voor DML and it's sibblings, or for
-   //the WebServer
-   if ( sizeof (split) > 1 && split[1] == "DML" ) 
+   //Check if the command is for the WebServer
+   if ( sizeof (split) == 1 ) 
    {
-     //TODO
-   }
-   else
      return webserver->internal_command( receiver, command, parameters);
+   }
+   else if ( split[1] == "DML" )
+   {
+      //TODO
+   }
+   else if ( has_index ( modules, split[1] ) )
+   {
+      //TODO
+   }
+   
 }
 
 

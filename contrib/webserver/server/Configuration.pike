@@ -31,13 +31,13 @@ array DMLConfiguration(Parser.HTML p, mapping args, mapping query )
       ret+=({ module_sensors->error });
    else if ( arrayp(module_sensors) ) 
    {
-      foreach( module_sensors , string module_sensor )
+      foreach( sort(module_sensors) , string module_sensor )
       {
          ret+= ({ sprintf("&nbsp;<a href=\"/configuration/index.dml?name=%s\">%s</a><br />",module_sensor,module_sensor) });
       }
    }
    // Next list all peers
-   foreach( indices(configuration->peers || ({})), string peername )
+   foreach( sort(indices(configuration->peers || ({}))), string peername )
    {
       ret+= ({ sprintf("<a href=\"/configuration/index.dml?name=%s\">%s</a><br />",peername,peername) });
       array|mapping module_sensors = dml->rpc( peername, COM_LIST );
@@ -45,7 +45,7 @@ array DMLConfiguration(Parser.HTML p, mapping args, mapping query )
          ret+=({ module_sensors->error });
       else if ( arrayp(module_sensors) ) 
       {
-         foreach( module_sensors , string module_sensor )
+         foreach( sort(module_sensors) , string module_sensor )
          {
             ret+= ({ sprintf("&nbsp;<a href=\"/configuration/index.dml?name=%s\">%s</a><br />",module_sensor,module_sensor) });
          }
@@ -98,7 +98,7 @@ array get_main_configuration( Parser.HTML p, mapping args, mapping query )
       array|mapping module_sensors = dml->rpc( name, COM_FIND );
       if( mappingp(module_sensors) && has_index(module_sensors,"error"))
          return ({ sprintf("<H1>Server Return An Error</H1><p>%s",module_sensors->error) });
-      foreach(module_sensors, mapping module_sensor)
+      foreach(sort(module_sensors), mapping module_sensor)
       {
          if( has_index(module_sensor, "sensor" ) && has_index( query->entities->form, module_sensor->sensor  ) )
          {
@@ -173,7 +173,7 @@ array get_main_configuration( Parser.HTML p, mapping args, mapping query )
       ret+=({ "<FORM method=\"POST\" > " });
       ret+=({ "<input type=\"hidden\" name=\"update_mod_sensor\" value=\"1\"/>" });
       ret+=({ "<table border=\"1\">" });
-      foreach( module_sensors || ({}), string sensor )
+      foreach( sort(module_sensors || ({})), string sensor )
       {
          array module_sensor_split = split_server_module_sensor_value(sensor);
          string module_sensor_name = "";
@@ -220,7 +220,7 @@ array get_main_configuration( Parser.HTML p, mapping args, mapping query )
          ret+=({ "<FORM method=\"POST\">" });
          ret+=({ "<input type=\"hidden\" name=\"add_mod_sensor\" value=\"1\"/>" });
          ret+=({ "<table border=\"1\">" });
-         foreach(module_sensors+({}), mapping module_sensor)
+         foreach(sort(module_sensors+({})), mapping module_sensor)
          {
             ret+=({ "<tr><td align=\"left\" >"});
              //FIXME else? 
@@ -394,7 +394,7 @@ array make_form_input(array param, mapping query, string name)
       if( mappingp(sensors) && has_index(sensors,"error"))
          return ({ sprintf("<H1>Server Return An Error</H1><p>%s",sensors->error) });
       sensors = sort(sensors + ({}) );
-      foreach( sensors, string sensor )
+      foreach( sort(sensors), string sensor )
       {
          //FIXME I should be able to designate output variables from input values
          mapping prop = dml->rpc(sensor,COM_PROP);

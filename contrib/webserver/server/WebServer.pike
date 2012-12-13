@@ -175,9 +175,9 @@ mixed internal_command( string receiver, int command, mapping parameters )
          return var;
       }
       case COM_LIST:
-      return ({ name + ".DML" });
-      /*
-      if( parameters && has_index(parameters, "new" ) )
+         return configuration->module + ({ name + ".DML" });
+      break;
+      case COM_FIND:
       {
          array compiled_modules = ({});
          array failed_modules = ({});
@@ -209,13 +209,7 @@ mixed internal_command( string receiver, int command, mapping parameters )
          }
          return compiled_modules+failed_modules;
       }
-      else
-      {
-         return configuration->module +({});
-      }
-      */
       break;
-      
       case COM_ADD:
       {
          string module_name = name+"."+parameters->name;
