@@ -70,20 +70,44 @@ class sensor
 
    mapping SensorProperties = ([
                                     "module":"",
-                                    "name":""
+                                    "name":"",
+                                    "init":0,
                                    ]);
+   protected string OWFSread( string sensor )
+   {
+      string answer;
+      string catch_err = catch {
+         answer = OWFS->read(sensor) ;
+      };
+      if( catch_err )
+      {
+         logerror("OWFS: Sensor %s not found at %s\n",SensorProperties->name,sensor);
+         return UNDEFINED;
+      }
+      return answer;
+   }
+
+   protected void OWFSwrite( string sensor, string|int value)
+   {
+      string catch_err = catch {
+         OWFS->write(sensor,value) ;
+      };
+      if( catch_err )
+      {
+         logerror("OWFS: Sensor %s not found at %s\n",SensorProperties->name,sensor);
+         return;
+      }
+   }
 
    void sensor_init()
    {
       string low_type = "";
       if( !has_suffix( configuration->sensor, "/" ) )
          configuration->sensor = configuration->sensor+"/";
-      string catch_err = catch {
-         low_type = OWFS->read(configuration->sensor+"type") ;
-      };
-      if( catch_err )
+      low_type = OWFSread(configuration->sensor+"type");
+      if( !low_type )
       {
-         logerror("OWFS: Sensor %s not found at %s\n",SensorProperties->name,configuration->sensor);
+         werror("Here\n");
          return;
       }
       switch ( low_type )
@@ -188,43 +212,49 @@ class sensor
          
          break;
       }
+      SensorProperties.init = 1;
       UpdateSensor();
    }
 
    mapping write( mapping what )
    {
+      if ( SensorProperties.init == 0 )
+         sensor_init();
+      if ( SensorProperties.init == 0 )
+         return ([]);
+ 
       string low_type = "";
       if( !has_suffix( configuration->sensor, "/" ) )
          configuration->sensor = configuration->sensor+"/";
-      string catch_err = catch {
-         low_type = OWFS->read(configuration->sensor+"type") ;
-      };
+      low_type = OWFSread(configuration->sensor+"type") ;
+      if( !low_type )
+         return ([]);
       switch ( low_type )
       {
 
          case "DS2413":
             if( has_index( what, "PIOA" ) )
-               OWFS->write(configuration->sensor+"PIO.A", (int) what->PIOA);
+               OWFSwrite(configuration->sensor+"PIO.A", (int) what->PIOA);
             if( has_index( what, "PIOB" ) )
-               OWFS->write(configuration->sensor+"PIO.B",(int) what->PIOB );
+               OWFSwrite(configuration->sensor+"PIO.B",(int) what->PIOB );
          break;
          case "DS2408":
             if( has_index( what, "PIOA" ) )
-               OWFS->write(configuration->sensor+"PIO.0", (int) what->PIOA);
+               OWFSwrite(configuration->sensor+"PIO.0", (int) what->PIOA);
             if( has_index( what, "PIOB" ) )
-               OWFS->write(configuration->sensor+"PIO.1",(int) what->PIOB );
+               OWFSwrite(configuration->sensor+"PIO.1",(int) what->PIOB );
             if( has_index( what, "PIOC" ) )
-               OWFS->write(configuration->sensor+"PIO.2",(int) what->PIOC );
+               OWFSwrite(configuration->sensor+"PIO.2",(int) what->PIOC );
             if( has_index( what, "PIOD" ) )
-               OWFS->write(configuration->sensor+"PIO.3",(int) what->PIOD );
+               OWFSwrite(configuration->sensor+"PIO.3",(int) what->PIOD );
             if( has_index( what, "PIOE" ) )
-               OWFS->write(configuration->sensor+"PIO.4",(int) what->PIOE );
+               OWFSwrite(configuration->sensor+"PIO.4",(int) what->PIOE );
             if( has_index( what, "PIOF" ) )
-               OWFS->write(configuration->sensor+"PIO.5",(int) what->PIOF );
+               OWFSwrite(configuration->sensor+"PIO.5",(int) what->PIOF );
             if( has_index( what, "PIOG" ) )
-               OWFS->write(configuration->sensor+"PIO.6",(int) what->PIOG );
+               OWFSwrite(configuration->sensor+"PIO.6",(int) what->PIOG );
             if( has_index( what, "PIOH" ) )
-               OWFS->write(configuration->sensor+"PIO.7",(int) what->PIOH );
+               OWFSwrite(configuration->sensor+"PIO.7",(int) what->PIOH );
          break;
       }
       UpdateSensor();
@@ -233,73 +263,69 @@ class sensor
 
    void UpdateSensor()
    {
-      string low_type = "";
-      string catch_err = catch {
-         low_type = OWFS->read(configuration->sensor+"type") ;
-      };
-      if( catch_err )
+      if ( SensorProperties.init == 0 )
       {
-         logerror("Sensor %s not found\n",ModuleProperties->name);
+         sensor_init();
          return;
       }
+      string low_type = "";
+      low_type = OWFSread(configuration->sensor+"type") ;
+      if( !low_type )
+         return;
       switch ( low_type )
       {
          case "DS2450":
          if ( configuration->type = "currentcost" )
          {
-            ValueCache->VOLTA = (float)  OWFS->read(configuration->sensor+"volt.A");
+            ValueCache->VOLTA = (float)  OWFSread(configuration->sensor+"volt.A");
 
-            ValueCache->VOLTB = (float)  OWFS->read(configuration->sensor+"volt.B");
-            ValueCache->VOLTC = (float)  OWFS->read(configuration->sensor+"volt.C");
-            ValueCache->VOLTD = (float)  OWFS->read(configuration->sensor+"volt.D");
+            ValueCache->VOLTB = (float)  OWFSread(configuration->sensor+"volt.B");
+            ValueCache->VOLTC = (float)  OWFSread(configuration->sensor+"volt.C");
+            ValueCache->VOLTD = (float)  OWFSread(configuration->sensor+"volt.D");
             ValueCache->powerA= (ValueCache->VOLTA-0.14) / 3E-4;
             ValueCache->powerB= (ValueCache->VOLTB-0.14) / 3E-4;
             ValueCache->powerC= (ValueCache->VOLTC-0.14) / 3E-4;
             ValueCache->powerD= (ValueCache->VOLTD-0.14) / 3E-4;
-            ValueCache->VOLT2A = (float)  OWFS->read(configuration->sensor+"volt2.A");
-            ValueCache->VOLT2B = (float)  OWFS->read(configuration->sensor+"volt2.B");
-            ValueCache->VOLT2C = (float)  OWFS->read(configuration->sensor+"volt2.C");
-            ValueCache->VOLT2D = (float)  OWFS->read(configuration->sensor+"volt2.D");
+            ValueCache->VOLT2A = (float)  OWFSread(configuration->sensor+"volt2.A");
+            ValueCache->VOLT2B = (float)  OWFSread(configuration->sensor+"volt2.B");
+            ValueCache->VOLT2C = (float)  OWFSread(configuration->sensor+"volt2.C");
+            ValueCache->VOLT2D = (float)  OWFSread(configuration->sensor+"volt2.D");
          }
          else
          {
-            ValueCache->PIOA = (int)  OWFS->read(configuration->sensor+"PIO.A");
-            ValueCache->PIOB = (int)  OWFS->read(configuration->sensor+"PIO.B");
-            ValueCache->PIOC = (int)  OWFS->read(configuration->sensor+"PIO.C");
-            ValueCache->PIOD = (int)  OWFS->read(configuration->sensor+"PIO.D");
-            ValueCache->VOLTA = (float)  OWFS->read(configuration->sensor+"volt.A");
-            ValueCache->VOLTB = (float)  OWFS->read(configuration->sensor+"volt.B");
-            ValueCache->VOLTC = (float)  OWFS->read(configuration->sensor+"volt.C");
-            ValueCache->VOLTD = (float)  OWFS->read(configuration->sensor+"volt.D");
-            ValueCache->VOLT2A = (float)  OWFS->read(configuration->sensor+"volt2.A");
-            ValueCache->VOLT2B = (float)  OWFS->read(configuration->sensor+"volt2.B");
-            ValueCache->VOLT2C = (float)  OWFS->read(configuration->sensor+"volt2.C");
-            ValueCache->VOLT2D = (float)  OWFS->read(configuration->sensor+"volt2.D");
+            ValueCache->PIOA = (int)  OWFSread(configuration->sensor+"PIO.A");
+            ValueCache->PIOB = (int)  OWFSread(configuration->sensor+"PIO.B");
+            ValueCache->PIOC = (int)  OWFSread(configuration->sensor+"PIO.C");
+            ValueCache->PIOD = (int)  OWFSread(configuration->sensor+"PIO.D");
+            ValueCache->VOLTA = (float)  OWFSread(configuration->sensor+"volt.A");
+            ValueCache->VOLTB = (float)  OWFSread(configuration->sensor+"volt.B");
+            ValueCache->VOLTC = (float)  OWFSread(configuration->sensor+"volt.C");
+            ValueCache->VOLTD = (float)  OWFSread(configuration->sensor+"volt.D");
+            ValueCache->VOLT2A = (float)  OWFSread(configuration->sensor+"volt2.A");
+            ValueCache->VOLT2B = (float)  OWFSread(configuration->sensor+"volt2.B");
+            ValueCache->VOLT2C = (float)  OWFSread(configuration->sensor+"volt2.C");
+            ValueCache->VOLT2D = (float)  OWFSread(configuration->sensor+"volt2.D");
          }
          break;
          case "DS2408":
-         catch {
-            ValueCache->PIOA = (int)  OWFS->read(configuration->sensor+"PIO.0");
-            ValueCache->PIOB = (int)  OWFS->read(configuration->sensor+"PIO.1");
-            ValueCache->PIOC = (int)  OWFS->read(configuration->sensor+"PIO.2");
-            ValueCache->PIOD = (int)  OWFS->read(configuration->sensor+"PIO.3");
-            ValueCache->PIOE = (int)  OWFS->read(configuration->sensor+"PIO.4");
-            ValueCache->PIOF = (int)  OWFS->read(configuration->sensor+"PIO.5");
-            ValueCache->PIOG = (int)  OWFS->read(configuration->sensor+"PIO.6");
-            ValueCache->PIOH = (int)  OWFS->read(configuration->sensor+"PIO.7");
-            ValueCache->SENSEDA = (int)  OWFS->read(configuration->sensor+"SENSED.0");
-            ValueCache->SENSEDB = (int)  OWFS->read(configuration->sensor+"SENSED.1");
-            ValueCache->SENSEDC = (int)  OWFS->read(configuration->sensor+"SENSED.2");
-            ValueCache->SENSEDD = (int)  OWFS->read(configuration->sensor+"SENSED.3");
-            ValueCache->SENSEDE = (int)  OWFS->read(configuration->sensor+"SENSED.4");
-            ValueCache->SENSEDF = (int)  OWFS->read(configuration->sensor+"SENSED.5");
-         };
+            ValueCache->PIOA = (int)  OWFSread(configuration->sensor+"PIO.0");
+            ValueCache->PIOB = (int)  OWFSread(configuration->sensor+"PIO.1");
+            ValueCache->PIOC = (int)  OWFSread(configuration->sensor+"PIO.2");
+            ValueCache->PIOD = (int)  OWFSread(configuration->sensor+"PIO.3");
+            ValueCache->PIOE = (int)  OWFSread(configuration->sensor+"PIO.4");
+            ValueCache->PIOF = (int)  OWFSread(configuration->sensor+"PIO.5");
+            ValueCache->PIOG = (int)  OWFSread(configuration->sensor+"PIO.6");
+            ValueCache->PIOH = (int)  OWFSread(configuration->sensor+"PIO.7");
+            ValueCache->SENSEDA = (int)  OWFSread(configuration->sensor+"sensed.0");
+            ValueCache->SENSEDB = (int)  OWFSread(configuration->sensor+"sensed.1");
+            ValueCache->SENSEDC = (int)  OWFSread(configuration->sensor+"sensed.2");
+            ValueCache->SENSEDD = (int)  OWFSread(configuration->sensor+"sensed.3");
+            ValueCache->SENSEDE = (int)  OWFSread(configuration->sensor+"sensed.4");
+            ValueCache->SENSEDF = (int)  OWFSread(configuration->sensor+"sensed.5");
          break;
          case "DS2413":
-         catch {
-            ValueCache->PIOA = (int)  OWFS->read(configuration->sensor+"PIO.A");
-            ValueCache->PIOB = (int)  OWFS->read(configuration->sensor+"PIO.B");
-         };
+            ValueCache->PIOA = (int)  OWFSread(configuration->sensor+"PIO.A");
+            ValueCache->PIOB = (int)  OWFSread(configuration->sensor+"PIO.B");
          break; 
          case "DS2502":
             if( configuration->type == "vbus" )
@@ -309,12 +335,12 @@ class sensor
             break;
          case "DS1820":
          case "DS18B20":
-            ValueCache->temperature = (float) OWFS->read(configuration->sensor+"temperature") + (float) configuration->bias;
+            ValueCache->temperature = (float) OWFSread(configuration->sensor+"temperature") + (float) configuration->bias;
             break;
          case "DS2438":
             if( configuration->type == "CO2" )
             {
-               int concentration = (int)  ((float) OWFS->read(configuration->sensor+"VAD")*1000.00);
+               int concentration = (int)  ((float) OWFSread(configuration->sensor+"VAD")*1000.00);
                //Check if the sensor needs a reset?
                if ( concentration >= 4400 )
                {
@@ -323,13 +349,13 @@ class sensor
                   call_out( switchboard, 20, SensorProperties->name,configuration->reset, COM_WRITE, ([ "value":0]) );
                }
                ValueCache->concentration = concentration; 
-               ValueCache->vis = (float)  OWFS->read(configuration->sensor+"vis");
+               ValueCache->vis = (float)  OWFSread(configuration->sensor+"vis");
             }
             else
             {
-               ValueCache->VDD = (float)  OWFS->read(configuration->sensor+"VDD");
-               ValueCache->VAD = (float)  OWFS->read(configuration->sensor+"VAD");
-               ValueCache->vis = (float)  OWFS->read(configuration->sensor+"vis");
+               ValueCache->VDD = (float)  OWFSread(configuration->sensor+"VDD");
+               ValueCache->VAD = (float)  OWFSread(configuration->sensor+"VAD");
+               ValueCache->vis = (float)  OWFSread(configuration->sensor+"vis");
              }
          
          break;
@@ -338,7 +364,7 @@ class sensor
   
    void get_vbus()
    {
-      string data = OWFS->read(configuration->sensor+"memory");
+      string data = OWFSread(configuration->sensor+"memory");
       if(!data || !sizeof(data) )
          return;
       int collector = (data[3] + (data[4]<<8));
@@ -356,8 +382,8 @@ class sensor
 
    void get_slimmemeter()
    {
-      string data = OWFS->read(configuration->sensor+"memory");
-      if(!sizeof(data) )
+      string data = OWFSread(configuration->sensor+"memory");
+      if( !data || !sizeof(data) )
          return;
       ValueCache->T1_in = data[4]*10000+data[5]*1000+data[6]*100+data[7]*10+data[8];
       ValueCache->T2_in = data[20]*10000+data[21]*1000+data[22]*100+data[23]*10+data[24];
