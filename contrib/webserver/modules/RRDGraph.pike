@@ -1,26 +1,10 @@
 #include <module.h>
-
-
-protected object domotica;
-protected object configuration;
+inherit DMLModule;
 
 
 mapping tags = ([
 "rrdgraph":DMLRRDgraph,
 ]);
-
-mapping emit = ([
-]);
-
-mapping containers = ([
-]);
-
-
-void create( object domi , object Config)
-{
-   domotica= domi;
-   configuration = Config;
-}
 
 array DMLRRDgraph(Parser.HTML p, 
                mapping args, mapping query )

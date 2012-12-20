@@ -1,27 +1,22 @@
+// Copyright (c) 2011,2012 Marc Dirix, The Netherlands.
+//                         <marc@dirix.nu>
+//
+// This script is open source software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License as published
+// by the Free Software Foundation; either version 2, or (at your option) any
+// later version.
+//
+
 #include <module.h>
-
-
-protected object webserver;
-protected object configuration;
-
-
-mapping tags = ([
-]);
+inherit DMLModule;
 
 mapping emit = ([
 "sql":EmitSql,
 ]);
 
-mapping containers = ([
-]);
-
-
-void create( object webserver_ , object Config)
-{
-   webserver= webserver_;
-   configuration = Config;
-}
-
+constant ModuleParameters = ({
+                   ({ "database",PARAM_STRING,"","Database URL", POPT_NONE }),
+                   });
 
 array EmitSql( mapping args, mapping query )
 {

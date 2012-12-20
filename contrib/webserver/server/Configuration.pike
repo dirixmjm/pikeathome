@@ -3,7 +3,7 @@
 #include <parameters.h>
 #include <variable.h>
 
-inherit Module;
+inherit DMLModule;
 
 
 

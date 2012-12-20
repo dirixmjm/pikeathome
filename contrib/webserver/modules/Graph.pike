@@ -1,4 +1,3 @@
-#!/usr/bin/pike
 // Copyright (c) 2011, Marc Dirix, The Netherlands.
 //                         <marc@dirix.nu>
 //
@@ -8,19 +7,13 @@
 // later version.
 //
 #include <module.h>
-inherit Module;
+inherit DMLModule;
 
 protected object DML;
 protected object configuration;
 
 
 #define SEP ","
-
-mapping tags = ([
-]);
-
-mapping emit = ([
-]);
 
 mapping containers = ([
    "graph":DMLGraph,
@@ -53,7 +46,7 @@ data->name = args->name || "";
 
 //FIXME Error if filename is not given?
 
-parse_html( content, ([]), ([ "data":get_data ]), query, data );
+DMLParser( ([]), ([ "data":get_data ]), query,data)->parse_html( content );
 
 
 if( !data->data || ! sizeof(data->data) )

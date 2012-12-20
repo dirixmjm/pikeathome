@@ -3,7 +3,8 @@
 #include <sensor.h>
 #include <variable.h>
 
-inherit Base_func;
+//inherit Base_func;
+inherit DMLModule;
 
 //FIXME Protect with Mutex?
 protected Sql.Sql db;
@@ -25,6 +26,8 @@ protected mapping  modules=([]);
 string servername;
 Parser.HTML parser;
 
+constant ModuleParameters = ({
+                   });
 
 mapping tags = ([
 "include":DMLInclude,
@@ -57,14 +60,14 @@ void create( string server_name, object webserver_ , mapping run_config_, object
    configuration->listenaddress=run_config->listenaddress;
    ICom = master()->resolv("InterCom")(this, configuration);
 
-   parser = DMLParser();
-   parser->add_tags(tags);
-   parser->add_containers(containers);
+   parser = DMLParser(tags,containers);
+   //parser->add_tags(tags);
+   //parser->add_containers(containers);
    parser->add_entity ( "lt", 0);
    parser->add_entity ( "gt", 0 );
    parser->add_entity("amp",0);
    parser->_set_entity_callback( entity_callback );
-   parser->lazy_entity_end(1);
+   //parser->lazy_entity_end(1);
 
    Configuration_Interface = master()->resolv("Configuration")(this, configuration);
    parser->add_tags(Configuration_Interface->tags);
@@ -89,7 +92,7 @@ void init_modules( array names )
          logerror("Error Module INIT\n %O\n%s\t\t%s\n%O\n",catch_result,name,describe_error(catch_result),backtrace());
          continue;
       }
-      modules+=([ name:mod]);
+      modules+=([ name:mod ]);
       parser->add_tags(mod->tags);
       parser->add_containers(mod->containers);
       emit += mod->emit; 
@@ -234,7 +237,6 @@ array DMLEmit(Parser.HTML p,
          if(!objectp(values[ind]))
             query->entities[scope] += ([ ind: (string) values[ind] ]);
       }
-      /*FIXME recursive? this->parse(request, clone)*/
       object emitparser = parser->clone();
       emitparser->set_extra(query);
       emitparser->ignore_tags(1);
@@ -422,6 +424,7 @@ class DMLFile
    }
 }
 
+/*
 class DMLParser
 {
    inherit Parser.HTML;
@@ -434,6 +437,7 @@ class DMLParser
    }
 
 }
+*/
 
 void switchboard( string sender, string receiver, int command, mixed|void parameters)
 {
@@ -492,11 +496,32 @@ mixed internal_command( string receiver, int command, mapping parameters )
    }
    else if ( split[1] == "DML" )
    {
-      //TODO
+      switch(command)
+      {
+         case COM_PARAM:
+         {
+            if( parameters && mappingp(parameters) )
+               SetParameters(parameters);
+            return GetParameters();
+         }
+      }
    }
-   else if ( has_index ( modules, split[1] ) )
+   else if ( has_index ( modules, receiver ) )
    {
-      //TODO
+      switch(command)
+      {
+         case COM_PARAM:
+         {
+            if( parameters && mappingp(parameters) )
+               modules[receiver]->SetParameters(parameters);
+            return modules[receiver]->GetParameters();
+         }
+         break;
+      }
+   }
+   else
+   {
+      logerror("Unknown Modules %s\n",receiver);
    }
    
 }

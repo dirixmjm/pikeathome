@@ -8,30 +8,14 @@
 // later version.
 //
 #include <module.h>
-inherit Module;
-
-protected object DML;
-protected object configuration;
-
+inherit DMLModule;
 
 #define SEP ","
-
-mapping tags = ([
-]);
-
-mapping emit = ([
-]);
 
 mapping containers = ([
    "math":DMLMath,
 ]);
 
-
-void create( object dml_ , object Config)
-{
-   DML = dml_;
-   configuration = Config;
-}
 
 array DMLMath(Parser.HTML p, 
                mapping args, string content, mapping query )
@@ -43,7 +27,7 @@ array DMLMath(Parser.HTML p,
    }
    else if ( has_index( args, "variable" ) )
    {
-      value = (float) DML->resolve_entity(args->variable, query ); 
+      value = (float) dml->resolve_entity(args->variable, query ); 
    }
    else if ( has_index ( args, "value" ) )
    {
