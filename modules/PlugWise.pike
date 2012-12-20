@@ -73,7 +73,6 @@ class sensor
          return module->PlugWise->Plugs[mac];
       else
       {
-         werror("%O\n",module->PlugWise->Plugs);
          logerror("Plug %s with mac %s Not Found, search started\n",SensorProperties->name,mac);
          if( module->PlugWise->CirclePlus )
          {
@@ -174,7 +173,7 @@ class sensor
          plug->info();
          return;
       }
-
+      plug->info();
       int logpointer = plug->powerlogpointer();
 
       //If no nextaddress is know, initialize it with the log head.

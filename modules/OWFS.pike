@@ -107,7 +107,6 @@ class sensor
       low_type = OWFSread(configuration->sensor+"type");
       if( !low_type )
       {
-         werror("Here\n");
          return;
       }
       switch ( low_type )
