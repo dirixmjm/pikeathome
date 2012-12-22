@@ -155,17 +155,19 @@ class sensor
          ValueCache->PIOF = ([ "value":0, "direction":DIR_RW, "type":VAR_BOOLEAN ]);
          ValueCache->PIOG = ([ "value":0, "direction":DIR_RW, "type":VAR_BOOLEAN ]);
          ValueCache->PIOH = ([ "value":0, "direction":DIR_RW, "type":VAR_BOOLEAN ]);
-         ValueCache->SENSEDA = ([ "value":0, "direction":DIR_RW, "type":VAR_BOOLEAN ]);
-         ValueCache->SENSEDB = ([ "value":0, "direction":DIR_RW, "type":VAR_BOOLEAN ]);
-         ValueCache->SENSEDC = ([ "value":0, "direction":DIR_RW, "type":VAR_BOOLEAN ]);
-         ValueCache->SENSEDD = ([ "value":0, "direction":DIR_RW, "type":VAR_BOOLEAN ]);
-         ValueCache->SENSEDE = ([ "value":0, "direction":DIR_RW, "type":VAR_BOOLEAN ]);
-         ValueCache->SENSEDF = ([ "value":0, "direction":DIR_RW, "type":VAR_BOOLEAN ]); 
+         ValueCache->SENSEDA = ([ "value":0, "direction":DIR_RO, "type":VAR_BOOLEAN ]);
+         ValueCache->SENSEDB = ([ "value":0, "direction":DIR_RO, "type":VAR_BOOLEAN ]);
+         ValueCache->SENSEDC = ([ "value":0, "direction":DIR_RO, "type":VAR_BOOLEAN ]);
+         ValueCache->SENSEDD = ([ "value":0, "direction":DIR_RO, "type":VAR_BOOLEAN ]);
+         ValueCache->SENSEDE = ([ "value":0, "direction":DIR_RO, "type":VAR_BOOLEAN ]);
+         ValueCache->SENSEDF = ([ "value":0, "direction":DIR_RO, "type":VAR_BOOLEAN ]); 
          break;
          case "DS2413":
          SensorProperties->sensor_type=SENSOR_INPUT|SENSOR_OUTPUT;
          ValueCache->PIOA = ([ "value":0, "direction":DIR_RW, "type":VAR_BOOLEAN ]);
          ValueCache->PIOB = ([ "value":0, "direction":DIR_RW, "type":VAR_BOOLEAN ]);
+         ValueCache->SENSEDA = ([ "value":0, "direction":DIR_RO, "type":VAR_BOOLEAN ]);
+         ValueCache->SENSEDB = ([ "value":0, "direction":DIR_RO, "type":VAR_BOOLEAN ]);
          break; 
          case "DS2502":
             if( configuration->type == "vbus" )
@@ -325,6 +327,8 @@ class sensor
          case "DS2413":
             ValueCache->PIOA = (int)  OWFSread(configuration->sensor+"PIO.A");
             ValueCache->PIOB = (int)  OWFSread(configuration->sensor+"PIO.B");
+            ValueCache->SENSEDA = (int)  OWFSread(configuration->sensor+"SENSED.A");
+            ValueCache->SENSEDB = (int)  OWFSread(configuration->sensor+"SENSED.B");
          break; 
          case "DS2502":
             if( configuration->type == "vbus" )
