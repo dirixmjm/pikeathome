@@ -327,8 +327,8 @@ class sensor
          case "DS2413":
             ValueCache->PIOA = (int)  OWFSread(configuration->sensor+"PIO.A");
             ValueCache->PIOB = (int)  OWFSread(configuration->sensor+"PIO.B");
-            ValueCache->SENSEDA = (int)  OWFSread(configuration->sensor+"SENSED.A");
-            ValueCache->SENSEDB = (int)  OWFSread(configuration->sensor+"SENSED.B");
+            ValueCache->SENSEDA = (int)  OWFSread(configuration->sensor+"sensed.A");
+            ValueCache->SENSEDB = (int)  OWFSread(configuration->sensor+"sensed.B");
          break; 
          case "DS2502":
             if( configuration->type == "vbus" )
