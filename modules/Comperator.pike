@@ -70,7 +70,7 @@ class sensor
          if( lastlevel == 0 )
            newlevel = (float) input->value >= (float) configuration->highlevel;
          else
-           newlevel = (float) input->value >= (float) configuration->lowlevel;
+           newlevel = (float) input->value > (float) configuration->lowlevel;
 
          if( newlevel !=  lastlevel )
          {
@@ -92,7 +92,7 @@ class sensor
          if( lastlevel == 0 )
            ValueCache->level = (float) avgvalue >= (float) configuration->highlevel;
          else
-           ValueCache->level = (float) avgvalue >= (float) configuration->lowlevel;
+           ValueCache->level = (float) avgvalue > (float) configuration->lowlevel;
          ValueCache->avg = avgvalue;
          break;
          case "off":
@@ -101,7 +101,7 @@ class sensor
             if( lastlevel == 0 )
               ValueCache->level = (float) input->value >= (float) configuration->highlevel;
             else
-              ValueCache->level = (float) input->value >= (float) configuration->lowlevel;
+              ValueCache->level = (float) input->value > (float) configuration->lowlevel;
       }
 
       /*Detect LOW (function = 0) or HIGH (function = 1) levels.
