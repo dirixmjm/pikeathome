@@ -10,11 +10,14 @@ object PlugWise;
 
 constant ModuleParameters = ({
                    ({ "port",PARAM_STRING,"/dev/ttyUSB0","TTY Port of the USB Stick", POPT_RELOAD }),
+                   ({ "plugfind",PARAM_BOOLEAN,0,"Turn On / Off Plug Finder for 5 Minutes",POPT_NONE }),
                    ({ "debug",PARAM_BOOLEAN,0,"Turn On / Off Debugging",POPT_NONE }),
                    });
 
 /* Sensor Specific Variables */
 constant SensorBaseParameters = ({
+                   ({ "type",PARAM_INT,-1,"Plug Type",0   }),
+                   ({ "mac",PARAM_STRING,-1,"Plug Hardware Address",0   }),
                    ({ "nextaddress",PARAM_INT,-1,"Current Log Pointer (-1 use plug headpointer)",0   }),
                    ({ "log",PARAM_BOOLEAN,0,"Turn On / Off Logging",0   }),
                 });
@@ -22,7 +25,7 @@ constant SensorBaseParameters = ({
 void init() 
 {
    logdebug("Init Module %s\n",ModuleProperties->name);
-   PlugWise = Public.IO.PlugWise(configuration->port,1);
+   PlugWise = Public.IO.PlugWise(configuration->port);
    init_sensors( configuration->sensor+({}) );
 }
 
@@ -39,12 +42,48 @@ void init_sensors( array load_sensors )
 array find_sensors( )
 {
   array ret=({});
-  array var = SensorBaseParameters;
-  var+= ({ ({ "name",PARAM_STRING,"default","Name"}) });
-  foreach(PlugWise->Plugs; string mac; object plug)
+  //array var = SensorBaseParameters;
+  foreach(indices(PlugWise), string mac)
+  {
+     array var = ({ ({ "name",PARAM_STRING,"default","Name"}) });
+     foreach ( SensorBaseParameters, array Parameter )
+     {
+        if ( Parameter[0] == "mac" )
+           var+= ({ Parameter+({ mac }) });
+        else if ( Parameter[0] == "type" )
+           var+= ({ Parameter+({ PlugWise[mac]->type })});
+        else
+           var+= ({Parameter});
+           
+     }  
      ret += ({ ([ "sensor":mac,"module":ModuleProperties->name,"parameters":var ]) });
+  }
   return ret;
 }
+
+void SetParameters( mapping params )
+{
+   int mod_options = 0;
+   foreach(ModuleParameters, array option)
+   {
+      //Find the parameter, and always set it
+      if( has_index( params, option[0] ) )
+      {
+         if( option[0] == "plugfind" )
+         {
+            PlugWise->CirclePlus->FindNewPlugs( 300 );
+         }
+         else
+         {
+            configuration[option[0]]=params[option[0]];
+            mod_options |= option[4];
+         }
+      }
+   }
+   if( mod_options & POPT_RELOAD )
+      reload();
+}
+
 
 class sensor
 {
@@ -69,17 +108,13 @@ class sensor
 
    object getplug( string mac )
    {
-      if( has_index( module->PlugWise->Plugs, mac ))
-         return module->PlugWise->Plugs[mac];
-      else
+      object Plug = module->PlugWise[mac];
+      if( ! Plug )
       {
          logerror("Plug %s with mac %s Not Found, search started\n",SensorProperties->name,mac);
-         if( module->PlugWise->CirclePlus )
-         {
-            module->PlugWise->CirclePlus->find_plugs(mac);
-         }
          return UNDEFINED;
-      }
+      } 
+     return Plug;
    }
 
    mapping write( mapping what, int|void retry )
@@ -94,7 +129,7 @@ class sensor
          }
          else
          {
-            logerror("Plug %s Not Found in the PlugWise Network retry in 30 seconds\n",configuration->sensor);
+            logerror("Plug %s Not Found in the PlugWise Network not retrying\n",configuration->sensor);
          }
          return ([]);
       }
@@ -122,14 +157,14 @@ class sensor
 
    protected void log_callback( array data, int logaddress )
    {
-      object plug = module->PlugWise->Plugs[configuration->sensor];
+      object plug = getplug(configuration->sensor);
       logdebug("Plug %s logaddress %d\n",SensorProperties->name,logaddress);
       //Check for roundtrip
       //Seems to be a bug
-      int logpointer = plug->powerlogpointer();
+      int logpointer = plug->log_pointer();
       if( logaddress >= logpointer )
       {
-           logerror("logaddress: %d => powerlogpoint %d\n",logaddress, logpointer);
+           logerror("logaddress: %d => logpoint %d\n",logaddress, logpointer);
            configuration->nextaddress=logpointer;
            return;
       }
@@ -150,7 +185,7 @@ class sensor
       if( logaddress+1 < logpointer )
       {
          //Add a delay to make sure logging occurs chronologically
-         call_out(plug->powerlog,1,logaddress+1);
+         call_out(plug->log,1,logaddress+1);
          logdebug("Retrieving address %d for plug %s with current address %d\n",(int) logaddress+1,SensorProperties->name,(int) logpointer);
       }
    }
@@ -160,12 +195,9 @@ class sensor
    {
       call_out(log,3600 );
       logdebug("Checking Log for Plug %s\n",SensorProperties->name);
-      object plug = module->PlugWise->Plugs[configuration->sensor]; 
+      object plug = getplug(configuration->sensor);
       if( ! plug )
-      { 
-         logerror("Plug %s Not Found in the PlugWise Network\n",configuration->sensor);
          return;
-      }
       if( ! plug->online)
       {
          logdebug("Plug %s Not Online Sleeping\n",SensorProperties->name);
@@ -174,7 +206,7 @@ class sensor
          return;
       }
       plug->info();
-      int logpointer = plug->powerlogpointer();
+      int logpointer = plug->log_pointer();
 
       //If no nextaddress is know, initialize it with the log head.
       if( !has_index(configuration, "nextaddress" ) || 
@@ -188,8 +220,8 @@ class sensor
       if( (int) configuration->nextaddress < logpointer )
       {
          logdebug("Retrieving address %d for plug %s with current address %d\n",(int) configuration->nextaddress,SensorProperties->name,logpointer);
-         plug->set_powerlog_callback( log_callback );
-         plug->powerlog( (int) configuration->nextaddress );
+         plug->set_log_callback( log_callback );
+         plug->log( (int) configuration->nextaddress );
       }
   }
 
@@ -199,15 +231,11 @@ void reload()
 {
    //remove_call_out(log);
    sensors = ([]);
-   PlugWise->close();
    init(); 
 }
 
 void close()
 {
-   //remove_call_out(log);
-   //Stdio.stdout("Closing PlugWise\n");
    sensors = ([]);
-   PlugWise->close();
    configuration = 0;
 }
