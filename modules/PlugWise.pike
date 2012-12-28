@@ -98,12 +98,45 @@ class sensor
       SensorProperties->module = _module->ModuleProperties->name;
       SensorProperties->name = name;
       SensorProperties->sensor_type = sensor_type;
-      if( has_index( configuration, "log" ) && (int) configuration->log == 1 )
-         call_out(log,30);
+      //Logging only for Circle+, Circle and (Sense)
+      switch( (int) configuration->type )
+      {
+         case 0:
+         case 1:
+         {
+            ValueCache->state= ([ "value":0, "direction":DIR_RW, "type":VAR_BOOLEAN ]);
+            ValueCache->power= ([ "value":0.0, "direction":DIR_RO, "type":VAR_FLOAT ]);
+            if( has_index( configuration, "log" ) && (int) configuration->log == 1)
+               call_out(log,30);
+         }
+         break;
+         case 3:
+         {
+           call_out(set_switch_callback,0);
+           SensorProperties->sensor_type |= SENSOR_FUNCTION;
+           ValueCache->switch1= ([ "value":0, "direction":DIR_RO, "type":VAR_BOOLEAN ]);
+           ValueCache->switch2= ([ "value":0, "direction":DIR_RO, "type":VAR_BOOLEAN ]);
+         }
+         break;
+         case 4:
+         {
+            call_out(set_switch_callback,0);
+            SensorProperties->sensor_type |= SENSOR_FUNCTION;
+            ValueCache->switch1= ([ "value":0, "direction":DIR_RO, "type":VAR_BOOLEAN ]);
+         }
+         break;
+         case 5:
+         {
+            call_out(set_switch_callback,0);
+            SensorProperties->sensor_type |= SENSOR_FUNCTION;
+            ValueCache->switch1= ([ "value":0, "direction":DIR_RO, "type":VAR_BOOLEAN ]);
+            ValueCache->humidity= ([ "value":0.0, "direction":DIR_RO, "type":VAR_FLOAT ]);
+            ValueCache->temperature= ([ "value":0.0, "direction":DIR_RO, "type":VAR_FLOAT ]);
+         }
+         break;
+      }
       //Initialise Variables
-      ValueCache->state= ([ "value":0, "direction":DIR_RW, "type":VAR_BOOLEAN ]);
       ValueCache->online= ([ "value":0, "direction":DIR_RO, "type":VAR_BOOLEAN ]);
-      ValueCache->power= ([ "value":0.0, "direction":DIR_RO, "type":VAR_FLOAT ]);
    }
 
    object getplug( string mac )
@@ -149,10 +182,43 @@ class sensor
          object plug = getplug(configuration->sensor); 
          if(! plug ) 
             return;
-         plug->info();
-         ValueCache->state = plug->powerstate;
-         ValueCache->power = (float) plug->power();
+
+         switch ( (int) configuration->type )
+         {
+            case 0:
+            case 1:
+            {
+               plug->info();
+               ValueCache->state = plug->powerstate;
+               ValueCache->power = (float) plug->power();
+            }
+            break;
+            case 5:
+            {
+               ValueCache->humidity = (float) plug->Humidity;
+               ValueCache->temperature = (float) plug->Temperature;
+            }
+         }
          ValueCache->online = plug->online;
+   }
+
+   //Repeated callback, since at start we probably don't know or see the switch
+   //Keep checking until we've found it.
+   protected void set_switch_callback ( )
+   {
+      object plug = getplug( configuration->sensor );
+      if ( ! plug )
+      {
+         call_out(set_switch_callback,10);
+         return;
+      }
+      plug->set_switch_callback( switch_callback );
+   }
+
+   protected void switch_callback ( int switchnr, int onoff )
+   {
+      if ( has_index( configuration, sprintf("Switch%d",switchnr ) ))
+         switchboard( SensorProperties->name,configuration[sprintf("Switch%d",switchnr)],COM_WRITE,([ "value":onoff ] ) );
    }
 
    protected void log_callback( array data, int logaddress )
