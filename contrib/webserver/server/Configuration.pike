@@ -195,14 +195,17 @@ array get_main_configuration( Parser.HTML p, mapping args, mapping query )
          ret+=({ "<tr><td align=\"left\" >"});
          ret+=({ sprintf("<a href=\"index.dml?name=%s\">%s</a>",sensor,module_sensor_name ) });
          ret+=({ "</td>" });
-         foreach( params|| ({}), array param )
+         if ( (int) configuration->inlineconfig == 1 )
          {
-            ret+=({ sprintf( "<td align=\"lef\">%s&nbsp;",(string) param[0]) });
-            ret+= make_form_input(param,query,sensor);
-            ret+= ({ "</td>"});
-         }
-         ret+= ({ sprintf("<td><input type=\"submit\" name=\"%s\""+
+            foreach( params|| ({}), array param )
+            {
+               ret+=({ sprintf( "<td align=\"lef\">%s&nbsp;",(string) param[0]) });
+               ret+= make_form_input(param,query,sensor);
+               ret+= ({ "</td>"});
+            }
+            ret+= ({ sprintf("<td><input type=\"submit\" name=\"%s\""+
                                   " value=\"Update\" /></td>",sensor) });
+         }
          ret+=({ "<td>" });
          ret+=({ sprintf("<a href=\"index.dml?name=%s&Delete=%s\"><img src=\"/icons/Delete.png\" height=\"15px\" /></a>",name,sensor ) });
 
