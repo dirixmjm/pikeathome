@@ -48,15 +48,9 @@ class sensor
       return ret;
    }
 
-   private void webaction()
-   {
-   }
-
    void close()
    {
-      remove_call_out(webaction);
    }
-
 
 }
 

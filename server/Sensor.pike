@@ -84,7 +84,7 @@ void close()
 
 
 
-void got_answer(int command, mixed params )
+void got_answer(int command, string name, mixed params )
 {
 
 }
@@ -93,7 +93,7 @@ void rpc_command( string sender, string receiver, int command, mapping parameter
 {
    if( command < 0 )
    {
-      got_answer(command, parameters);
+      got_answer(command, sender, parameters);
       return;
    }
    array split = module->split_server_module_sensor_value(receiver);

@@ -7,6 +7,8 @@
 #define PARAM_SCHEDULE 6
 #define PARAM_ARRAY 8
 #define PARAM_MAPPING 7
+#define PARAM_SENSORINPUTARRAY 8
+#define PARAM_SENSOROUTPUTARRAY 8
 
 //Parameter Options
 #define POPT_NONE        0

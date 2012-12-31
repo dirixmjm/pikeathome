@@ -87,7 +87,7 @@ void SetParameters( mapping params )
       reload();
 }
 
-void got_answer(int command, mixed parameters)
+void got_answer(int command, string name, mixed parameters)
 {
 
 }
@@ -136,7 +136,7 @@ void rpc_command( string sender, string receiver, int command, mapping parameter
    {
       if( command < 0 )
       {
-         got_answer(command,parameters);
+         got_answer(command, sender, parameters);
          return;
       }
       switch(command)
@@ -178,6 +178,7 @@ void rpc_command( string sender, string receiver, int command, mapping parameter
             }
             configuration->sensor+= ({ sensor_name });
             object cfg = domotica->configuration( sensor_name );
+            werror("%O\n",parameters);
             foreach( parameters; string index; mixed value )
             {
                cfg[index]=value;

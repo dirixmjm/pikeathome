@@ -20,6 +20,7 @@ constant SensorBaseParameters = ({
                    ({ "gracecount",PARAM_INT,300,"Grace Time = Grace Count * timer",0 }),
                    ({ "grace",PARAM_STRING,"","Grace function: avg, last",0 }),
                    ({ "function",PARAM_INT,0,"Comperator Function",0 }),
+                   ({ "passive",PARAM_BOOLEAN,0,"Passive Output",0 }),
                    });
 
 class sensor
@@ -43,15 +44,17 @@ class sensor
       counter = (int) configuration->gracecount;
       call_out(sensor_timer, (int) configuration->timer);
       ValueCache->level= ([ "value":0, "direction":DIR_RO, "type":VAR_BOOLEAN ]);
+      if ( (int) configuration->passive == 1 )
+         ValueCache->state= ([ "value":0, "direction":DIR_RO, "type":VAR_BOOLEAN ]);
    }
 
    protected void sensor_timer()
    {
       call_out(sensor_timer, (int) configuration->timer);
-      switchboard(SensorProperties->name,configuration->input, COM_READ, (["new":1]));
+      switchboard(SensorProperties->name,configuration->input, COM_READ,([]));
    }
 
-   void got_answer(int command, mixed params)
+   void got_answer(int command, string name, mixed params)
    {
       if ( command  == -COM_READ)
       {
@@ -117,11 +120,19 @@ class sensor
           switch( (int) configuration->function )
           {
              case 0:
-                switchboard(SensorProperties->name,configuration->output,COM_WRITE,(["value":0]));
-                break;
+             {
+                if( (int) configuration->passive )
+                   ValueCache->state = 0;
+                else
+                   switchboard(SensorProperties->name,configuration->output,COM_WRITE,(["value":0]));
+             }
+             break;
              case 1:
              case 2:
-                switchboard(SensorProperties->name,configuration->output,COM_WRITE,(["value":1]));
+                if( (int) configuration->passive )
+                   ValueCache->state = 1;
+                else
+                   switchboard(SensorProperties->name,configuration->output,COM_WRITE,(["value":1]));
                 break;
           }
        }

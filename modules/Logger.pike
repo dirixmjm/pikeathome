@@ -26,18 +26,20 @@ class sensor
    void sensor_init(  )
    {
      call_out(log_timer,(int) configuration->logtime );
+     ValueCache->state= ([ "value":1, "direction":DIR_RW, "type":VAR_BOOLEAN ]);
    }
   
    void log_timer()
    {
       call_out(log_timer,(int) configuration->logtime );
-      switchboard(SensorProperties->name,configuration->input, COM_READ);
+      if( ValueCache->state == 1 )
+         switchboard(SensorProperties->name,configuration->input, COM_READ);
    }
   
-   void got_answer(int command, mapping params )
+   void got_answer(int command, string name, mapping params )
    {
       if ( command == -COM_READ )
-         logdata(configuration->input,params->value,time(1));
+         logdata(name,params->value,time(1));
       else
          logdebug("Logger can't handle return data for command %d\n",command);
    } 

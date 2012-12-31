@@ -112,6 +112,11 @@ class sensor
          break;
          case 3:
          {
+           SensorParameters += ({ 
+                  ({ "switch1_output",PARAM_SENSOROUTPUT,"","Output Switch 1",0 }),
+                  ({ "switch2_output",PARAM_SENSOROUTPUT,"","Output Switch 2",0 }),
+                              });
+
            call_out(set_switch_callback,0);
            SensorProperties->sensor_type |= SENSOR_FUNCTION;
            ValueCache->switch1= ([ "value":0, "direction":DIR_RO, "type":VAR_BOOLEAN ]);
@@ -217,8 +222,8 @@ class sensor
 
    protected void switch_callback ( int switchnr, int onoff )
    {
-      if ( has_index( configuration, sprintf("Switch%d",switchnr ) ))
-         switchboard( SensorProperties->name,configuration[sprintf("Switch%d",switchnr)],COM_WRITE,([ "value":onoff ] ) );
+      if ( has_index( configuration, sprintf("switch%d_output",switchnr ) ))
+         switchboard( SensorProperties->name,configuration[sprintf("switch%d_output",switchnr)],COM_WRITE,([ "value":onoff ] ) );
    }
 
    protected void log_callback( array data, int logaddress )
@@ -259,6 +264,9 @@ class sensor
 
    protected void log()
    {
+      if( (int) configuration->type == 3 || (int) configuration->type == 6 )
+         return;
+
       call_out(log,3600 );
       logdebug("Checking Log for Plug %s\n",SensorProperties->name);
       object plug = getplug(configuration->sensor);
