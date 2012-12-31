@@ -61,6 +61,8 @@ array GetParameters()
    array ret = ({});
    foreach(module->SensorBaseParameters, array var)
       ret+= ({ var + ({ configuration[var[0]] })});
+   foreach(SensorParameters, array var)
+      ret+= ({ var + ({ configuration[var[0]] })});
    return ret;
 }
 
@@ -68,6 +70,14 @@ void SetParameters( mapping params )
 {
    int mod_options = 0;
    foreach(module->SensorBaseParameters, array option)
+   {
+      //Find the parameter, and always set it
+      if( has_index( params, option[0] ) )
+      {
+         configuration[option[0]]=params[option[0]];
+      }
+   }
+   foreach(SensorParameters, array option)
    {
       //Find the parameter, and always set it
       if( has_index( params, option[0] ) )
