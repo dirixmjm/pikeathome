@@ -54,8 +54,8 @@ array find_sensors( )
 {
    //Default return manual sensor entry
    array var = SensorBaseParameters;
-   var+= ({ ({ "name",PARAM_STRING,"default","Name"}) }) ;
-   return ({ ([ "sensor":"manual","module":ModuleProperties->name,"parameters":var ])});
+   var+= ({ }) ;
+   return ({ ([ "name":"manual","module":ModuleProperties->name,"parameters":var ])});
 }
 
 mixed GetParameter( string Param )
@@ -123,7 +123,8 @@ void rpc_command( string sender, string receiver, int command, mapping parameter
    {
       if ( ! has_index(sensors,split[0]+"."+split[1]+"."+split[2]) )
       {
-         switchboard( receiver,sender,COM_ERROR, ([ "error":sprintf("Sensor %s in module %s not found",split[1],split[0]) ]) );
+         werror("%O\n",indices(sensors));
+         switchboard( receiver,sender,COM_ERROR, ([ "error":sprintf("Sensor %s in module %s not found, sender %s, receiver %s\n",split[2],split[1],sender,receiver) ]) );
       }
       else
       {
@@ -167,7 +168,7 @@ void rpc_command( string sender, string receiver, int command, mapping parameter
          {
             //What if this isn't a sensor-type module?
             string sensor_name = ModuleProperties->name + "." + parameters->name;
-            m_delete(parameters,"name");
+            mapping params = parameters->parameters+([]);
             if( !has_index( configuration, "sensor" ) )
                configuration->sensor=({});
             if( has_value( configuration->sensor, sensor_name ) )
@@ -178,8 +179,8 @@ void rpc_command( string sender, string receiver, int command, mapping parameter
             }
             configuration->sensor+= ({ sensor_name });
             object cfg = domotica->configuration( sensor_name );
-            werror("%O\n",parameters);
-            foreach( parameters; string index; mixed value )
+            //FIXME set default value if parameters is not in the mapping
+            foreach( params; string index; mixed value )
             {
                cfg[index]=value;
             }

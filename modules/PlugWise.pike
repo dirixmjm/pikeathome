@@ -45,7 +45,7 @@ array find_sensors( )
   //array var = SensorBaseParameters;
   foreach(indices(PlugWise), string mac)
   {
-     array var = ({ ({ "name",PARAM_STRING,"default","Name"}) });
+     array var = ({ });
      foreach ( SensorBaseParameters, array Parameter )
      {
         if ( Parameter[0] == "mac" )
@@ -56,7 +56,7 @@ array find_sensors( )
            var+= ({Parameter});
            
      }  
-     ret += ({ ([ "sensor":mac,"module":ModuleProperties->name,"parameters":var ]) });
+     ret += ({ ([ "name":mac,"module":ModuleProperties->name,"parameters":var ]) });
   }
   return ret;
 }

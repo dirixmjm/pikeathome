@@ -61,6 +61,7 @@ array DMLConfiguration(Parser.HTML p, mapping args, mapping query )
 
 array get_main_configuration( Parser.HTML p, mapping args, mapping query )
 {
+   //Set name to the value of the current object we're configuring
    string name = query->entities ->form->name || dml->servername;
 
    if(!name || !sizeof(name) )
@@ -100,13 +101,20 @@ array get_main_configuration( Parser.HTML p, mapping args, mapping query )
          return ({ sprintf("<H1>Server Return An Error</H1><p>%s",module_sensors->error) });
       foreach(sort(module_sensors), mapping module_sensor)
       {
-         if( has_index(module_sensor, "sensor" ) && has_index( query->entities->form, module_sensor->sensor  ) )
+         if( has_index(module_sensor, "name" ) && has_index( query->entities->form, module_sensor->name  ) )
          {
-            mapping tosave=form_to_save(module_sensor->parameters,query,name+module_sensor->sensor);
+            mapping tosave=form_to_save(module_sensor->parameters,query,name+module_sensor->name);
             if(sizeof(tosave))
             {
-               tosave+= ([ "sensor":module_sensor->sensor ]);
-               mapping serv = dml->rpc( name, COM_ADD, tosave );
+               string inname = (string) hash( name+module_sensor->name + "name" );
+               string newname;
+               if( has_index(query->entities->form, inname) )
+                  newname = query->entities->form[inname];
+               else
+                  //No Name field is given, continue
+                  break;
+               mapping parameters= ([ "name":newname, "parameters":tosave ]);
+               mapping serv = dml->rpc( name, COM_ADD, parameters );
                if( serv && has_index( serv, "error" ) )
                   return ({ "<H1>Error<H1><p>Module or Sensor add failed with:",
                             sprintf("%O\n",serv) });
@@ -226,9 +234,14 @@ array get_main_configuration( Parser.HTML p, mapping args, mapping query )
          foreach(sort(module_sensors+({})), mapping module_sensor)
          {
             ret+=({ "<tr><td align=\"left\" >"});
-             //FIXME else? 
-            if( has_index( module_sensor, "sensor" ) )
-               ret+=({ sprintf("%s",module_sensor->sensor ) });
+             //FIXME sensor sends name, module too? 
+            if( has_index( module_sensor, "name" ) )
+            {
+               array param = ({ "name",PARAM_STRING,module_sensor->name,"Name", 
+                                module_sensor->name });
+               ret+= make_form_input(param,query,name+module_sensor->name);
+               //ret+=({ sprintf("%s",module_sensor->name ) });
+            }
             else if( has_index( module_sensor, "module" ) )
                ret+=({ sprintf("%s",module_sensor->module ) });
             if( mappingp(module_sensor) && has_index( module_sensor, "error" ) )
@@ -240,17 +253,17 @@ array get_main_configuration( Parser.HTML p, mapping args, mapping query )
                foreach( module_sensor->parameters, array param )
                {
                   ret+=({ sprintf( "<td align=\"lef\">%s&nbsp;",(string) param[0]) });
-                  //FIXME sensor only contains the sensor name, not server info? 
-                  if( has_index( module_sensor, "sensor" ) )
-                     ret+= make_form_input(param,query,name+module_sensor->sensor);
+                  if( has_index( module_sensor, "name" ) )
+                     ret+= make_form_input(param,query,name+module_sensor->name);
                   else if( has_index( module_sensor, "module" ) )
                      ret+= make_form_input(param,query,module_sensor->module);
                   ret+= ({ "</td>"});
                }
-               if( has_index( module_sensor, "sensor" ) )
+               //FIXME module<->name
+               if( has_index( module_sensor, "name" ) )
                {
                   ret+= ({ sprintf("<td><input type=\"submit\" name=\"%s\""+
-                                  " value=\"Add\" /></td>",module_sensor->sensor) });
+                                  " value=\"Add\" /></td>",module_sensor->name) });
                }
                else if( has_index( module_sensor, "module" ) )
                {
@@ -280,17 +293,13 @@ mapping form_to_save(array params, mapping query, string name)
          case PARAM_SENSORINPUT:
          case PARAM_STRING:
          //Don't save if the paramater hasn't changed
-         if( has_index(query->entities->form, inname) && 
-             (sizeof(param)<6 || 
-                        param[5] != query->entities->form[inname]))
+         if( has_index(query->entities->form, inname)) 
             tosave+=([ param[0]:query->entities->form[inname] ]);
          break;
          case PARAM_INT:
          case PARAM_BOOLEAN:
          //Don't save if the paramater hasn't changed
-         if( has_index(query->entities->form, inname) && 
-             (sizeof(param)<6 || 
-                        (int) param[5] != (int) query->entities->form[inname]))
+         if( has_index(query->entities->form, inname) )
             tosave+=([ param[0]:(int) query->entities->form[inname] ]);
          break;
          case PARAM_ARRAY:
