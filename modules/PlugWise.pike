@@ -157,17 +157,17 @@ class sensor
 
    mapping write( mapping what, int|void retry )
    {
-      object plug = getplug(configuration->sensor);
+      object plug = getplug(configuration->mac);
       if( !plug )
       {
          if( !retry )
          {
-            logerror("Plug %s Not Found in the PlugWise Network retry in 30 seconds\n",configuration->sensor);
+            logerror("Plug %s Not Found in the PlugWise Network retry in 30 seconds\n",configuration->mac);
             call_out(write,30,what,1);
          }
          else
          {
-            logerror("Plug %s Not Found in the PlugWise Network not retrying\n",configuration->sensor);
+            logerror("Plug %s Not Found in the PlugWise Network not retrying\n",configuration->mac);
          }
          return ([]);
       }
@@ -184,7 +184,7 @@ class sensor
 
    protected void UpdateSensor( )
    {
-         object plug = getplug(configuration->sensor); 
+         object plug = getplug(configuration->mac); 
          if(! plug ) 
             return;
 
@@ -211,7 +211,7 @@ class sensor
    //Keep checking until we've found it.
    protected void set_switch_callback ( )
    {
-      object plug = getplug( configuration->sensor );
+      object plug = getplug( configuration->mac );
       if ( ! plug )
       {
          call_out(set_switch_callback,10);
@@ -228,7 +228,7 @@ class sensor
 
    protected void log_callback( array data, int logaddress )
    {
-      object plug = getplug(configuration->sensor);
+      object plug = getplug(configuration->mac);
       logdebug("Plug %s logaddress %d\n",SensorProperties->name,logaddress);
       //Check for roundtrip
       //Seems to be a bug
@@ -269,7 +269,7 @@ class sensor
 
       call_out(log,3600 );
       logdebug("Checking Log for Plug %s\n",SensorProperties->name);
-      object plug = getplug(configuration->sensor);
+      object plug = getplug(configuration->mac);
       if( ! plug )
          return;
       if( ! plug->online)
