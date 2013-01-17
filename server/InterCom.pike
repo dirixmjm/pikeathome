@@ -120,8 +120,13 @@ void rpc_command( string sender, string receiver, int command, mapping parameter
 {
    array receiver_split = split_server_module_sensor_value(receiver);
    if( has_index( sockets, receiver_split[0] ))
-      sockets[receiver_split[0]]->write( sender, receiver, command,
+   {
+      if( sockets[receiver_split[0]]->is_open() )
+         sockets[receiver_split[0]]->write( sender, receiver, command,
                                                                    parameters);
+      else
+         deletepeer(receiver_split[0]);
+   }
    else
       logerror("ICom: Unknown receiver %s\n",receiver);
 }
