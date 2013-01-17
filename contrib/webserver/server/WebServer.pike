@@ -194,16 +194,16 @@ mixed internal_command( string receiver, int command, mapping parameters )
             };
             if( catch_result)
             {
-               failed_modules+= ({ ([ "module":name, "error":"Compilation Failed" ]) });
+               failed_modules+= ({ ([ "name":name, "error":"Compilation Failed" ]) });
 #ifdef DEBUG
          log(LOG_ERR,"Error:%O\n",catch_result);
 #endif
             }
             else
             {
-               compiled_modules += ({ ([ "module":name,
+               compiled_modules += ({ ([ "name":name,
                              "parameters":themodule->ModuleParameters +
-                             ({ ({ "name",PARAM_STRING,"default","Name"}) })
+                             ({  })
                               ]) });
             }
 
@@ -214,7 +214,7 @@ mixed internal_command( string receiver, int command, mapping parameters )
       case COM_ADD:
       {
          string module_name = name+"."+parameters->name;
-         m_delete(parameters,"name");
+         mapping params = parameters->parameters+([]);
          if( configuration->module && has_value( configuration->module, module_name ) )
          {
             log(LOG_ERR, "There already exists a module instance with name %s\n",module_name);
@@ -223,7 +223,7 @@ mixed internal_command( string receiver, int command, mapping parameters )
          }
          configuration->module+=({module_name});
          object cfg = Config->Configuration(module_name);
-         foreach( parameters; string index; mixed value )
+         foreach( params; string index; mixed value )
             cfg[index]=value;
          dml->init_modules( ({ module_name }));
          return UNDEFINED;

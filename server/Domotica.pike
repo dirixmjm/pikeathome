@@ -128,15 +128,15 @@ void rpc_command( string sender, string receiver, int command, mapping parameter
             };
             if(catch_result)
             {
-               failed_modules += ({ ([  "module":name,
+               failed_modules += ({ ([  "name":name,
                             "error": "Compilation Failed" ]) });
                logerror("Error:%O\n",catch_result);
             }
             else
             {
-               compiled_modules += ({ ([ "module":name,
+               compiled_modules += ({ ([ "name":name,
                              "parameters":themodule->ModuleParameters +
-                             ({ ({ "name",PARAM_STRING,"default","Name"}) })
+                             ({  })
                               ]) });
             }
          }
@@ -164,7 +164,8 @@ void rpc_command( string sender, string receiver, int command, mapping parameter
       case COM_ADD:
       {
          string module_name = name+"."+parameters->name;
-         m_delete(parameters,"name");
+         mapping params = parameters->parameters + ([]);
+         //m_delete(parameters,"name");
          if ( has_value(server_configuration->module + ({}), module_name ) )
          {
             string error=sprintf("There already exists a module instance with name %s\n",module_name);
@@ -172,7 +173,8 @@ void rpc_command( string sender, string receiver, int command, mapping parameter
          }
          server_configuration->module+=({module_name});
          object cfg = config->Configuration( module_name );
-         foreach ( parameters; string index; mixed value )
+         //FIXME if parameter not given set default parameter?
+         foreach ( params; string index; mixed value )
            cfg[index]=value;
          moduleinit(({ module_name } ) );
          switchboard(name, sender, -command, UNDEFINED );

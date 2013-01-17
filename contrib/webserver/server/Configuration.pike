@@ -120,18 +120,6 @@ array get_main_configuration( Parser.HTML p, mapping args, mapping query )
                             sprintf("%O\n",serv) });
             }
          }
-         else if( has_index(module_sensor, "module" ) && has_index( query->entities->form, module_sensor->module  ) )
-         {
-            mapping tosave=form_to_save(module_sensor->parameters,query,module_sensor->module);
-            if(sizeof(tosave))
-            {
-               tosave+= ([ "module":module_sensor->module ]);
-               mapping serv = dml->rpc( name, COM_ADD, tosave );
-               if( serv && has_index( serv, "error" ) )
-                  return ({ "<H1>Error<H1><p>Module or Sensor add failed with:",
-                            sprintf("%O\n",serv) });
-            }
-         }
       }
    }
 
@@ -242,8 +230,10 @@ array get_main_configuration( Parser.HTML p, mapping args, mapping query )
                ret+= make_form_input(param,query,name+module_sensor->name);
                //ret+=({ sprintf("%s",module_sensor->name ) });
             }
-            else if( has_index( module_sensor, "module" ) )
-               ret+=({ sprintf("%s",module_sensor->module ) });
+            else
+               //If there is no name we can't distinguish it.
+               continue;
+
             if( mappingp(module_sensor) && has_index( module_sensor, "error" ) )
             {
                ret+=({ sprintf( "<td align=\"lef\" colspan=\"10\">%s</td>",(string) module_sensor->error) });
@@ -253,23 +243,11 @@ array get_main_configuration( Parser.HTML p, mapping args, mapping query )
                foreach( module_sensor->parameters, array param )
                {
                   ret+=({ sprintf( "<td align=\"lef\">%s&nbsp;",(string) param[0]) });
-                  if( has_index( module_sensor, "name" ) )
-                     ret+= make_form_input(param,query,name+module_sensor->name);
-                  else if( has_index( module_sensor, "module" ) )
-                     ret+= make_form_input(param,query,module_sensor->module);
+                  ret+= make_form_input(param,query,name+module_sensor->name);
                   ret+= ({ "</td>"});
                }
-               //FIXME module<->name
-               if( has_index( module_sensor, "name" ) )
-               {
-                  ret+= ({ sprintf("<td><input type=\"submit\" name=\"%s\""+
-                                  " value=\"Add\" /></td>",module_sensor->name) });
-               }
-               else if( has_index( module_sensor, "module" ) )
-               {
-                  ret+= ({ sprintf("<td><input type=\"submit\" name=\"%s\""+
-                                  " value=\"Add\" /></td>",module_sensor->module) });
-               }
+               ret+= ({ sprintf("<td><input type=\"submit\" name=\"%s\""+
+                               " value=\"Add\" /></td>",module_sensor->name) });
             }
             ret+=({ "</tr>" });
          }
