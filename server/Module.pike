@@ -15,12 +15,8 @@ mapping sensors=([]);
 mapping ModuleProperties = ([
                       ]);
 
-//The ModuleParameters mapping should contain all configuration variables
-//ModuleParameters should contain arrays  ({ "name","type","default","description"})
 constant ModuleParameters = ({});
 
-//Sensor Parameters
-//SensorBaseParameters should contain arrays ({ "name","type","default","description"})
 constant SensorBaseParameters = ({});
 
 void create( string _name, object _domotica )
