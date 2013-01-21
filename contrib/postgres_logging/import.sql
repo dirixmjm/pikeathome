@@ -132,8 +132,3 @@ BEGIN
     END LOOP;     
 END;
   $log_update$ LANGUAGE PLPGSQL;
-
-CREATE OR REPLACE FUNCTION init_bucket_time(TIMESTAMP WITH TIME ZONE, INTERVAL)
-RETURNS TIMESTAMP WITH TIME ZONE AS $$
-   SELECT to_timestamp( floor( extract ( EPOCH FROM $1) / extract ( EPOCH FROM $2) ) * extract(EPOCH FROM $2 ) );
-  $$ LANGUAGE SQL;

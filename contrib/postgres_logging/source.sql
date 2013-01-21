@@ -81,7 +81,7 @@ BEGIN
     END IF;
     --Check if the bucket has no data values
     IF v_value IS NULL AND 
-        v_last_primarydata < (NEW.stamp - v_source.max_age ) THEN
+        v_last_primarydata >= (NEW.stamp - v_source.max_age ) THEN
      v_value = NEW.value::INT;
     END IF;
     --Now Fill the data for this timestamp
