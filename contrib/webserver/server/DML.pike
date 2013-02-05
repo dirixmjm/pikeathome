@@ -457,7 +457,7 @@ void switchboard( string sender, string receiver, int command, mixed|void parame
    }
    else if ( parameters || zero_type(parameters)==0 ) 
    {
-     rpc_cache[sender]+=([ abs(command):parameters]);
+     rpc_cache[sender][abs(command)]->data=parameters;
    }
 }
 
@@ -475,14 +475,23 @@ mixed rpc( string receiver, int command, mapping|void parameters )
    logdebug("RPC: Send Request %s %d\n",receiver, command );
    logdebug("RPC: %O\n",parameters );
 #endif
-   call_out(ICom->rpc_command,0, receiver, command, parameters);
+   if( !has_index(rpc_cache, receiver) || 
+       !has_index(rpc_cache[receiver],command) ) 
+   {
+      if( !has_index(rpc_cache, receiver) )
+         rpc_cache[receiver]= ([]);
+      rpc_cache[receiver][command] = ([ "timeout":time(1),"data":UNDEFINED ]);
+      call_out(ICom->rpc_command,0, receiver, command, parameters);
+   }
+   else if (rpc_cache[receiver][command]->timeout <= (time(1)-10))
+   {
+      call_out(ICom->rpc_command,0, receiver, command, parameters);
+   }
    
    // always return the cached value
-   // do split caching
-   if ( has_index( rpc_cache, receiver ) && has_index( rpc_cache[receiver],command))
-     return rpc_cache[receiver][command];
-  else
-     return UNDEFINED;
+   mixed toret = rpc_cache[receiver][command]->data;
+
+   return toret;
  
 }
 

@@ -135,7 +135,8 @@ array get_main_configuration( Parser.HTML p, mapping args, mapping query )
    if(params && arrayp(params)  )
    {
       ret+=({ "<FORM method=\"POST\">" });
-      ret+=({ sprintf("%O",query->request->variables) });
+      if( (int) configuration->debug )
+         ret+=({ sprintf("%O",query->request->variables) });
       ret+=({ "<input type=\"hidden\" name=\"formref\" value=\""+name+"\" />" });
       ret+=({ "<table>" });
       foreach( params, array param )

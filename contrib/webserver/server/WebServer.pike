@@ -27,6 +27,7 @@ constant ServerParameters = ({
                    ({ "password",PARAM_STRING,"","Password",0 }),
                    ({ "peers",PARAM_MAPPING,"","Server Peer URLs",0}),
                    ({ "inlineconfig",PARAM_BOOLEAN,0,"Show Configuration Parameters Inline",0}),
+                   ({ "debug",PARAM_BOOLEAN,0,"Show Debug Information",0}),
                    });
 
 void create( mapping rconfig )
