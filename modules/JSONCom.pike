@@ -6,8 +6,7 @@ inherit Module;
 int module_type = MODULE_INTERFACE;
 
 constant ModuleParameters = ({
-                   ({ "port",PARAM_INT,"","Listen Port", 0 }),
-                   ({ "host",PARAM_STRING,"","Listen IP", 0 }),
+                   ({ "listenaddress",PARAM_STRING,"","Listen Address", 0 }),
                     });
 
 protected object Port;
@@ -17,7 +16,7 @@ void init()
 {
    logdebug("Init InterCom Interface\n");
    Standards.URI U = Standards.URI(configuration->listenaddress);
-   Port = Stdio.Port( U->port?U->port:4090, AcceptCom, U->host?U->host:"127.0.0.1");
+   Port = Stdio.Port( U->port?U->port:4095, AcceptCom, U->host?U->host:"127.0.0.1");
    Port->set_id(Port);
 
 }
