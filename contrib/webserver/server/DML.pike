@@ -84,7 +84,7 @@ void init_modules( array names )
       object mod_conf = Config->Configuration(name);
       object mod;
       mixed catch_result = catch {
-         mod = compile_file(run_config->installpath + "/modules/" + mod_conf->module + ".pike")( this, mod_conf );
+         mod = compile_file(run_config->installpath + "/modules/" + mod_conf->filename)( this, mod_conf );
 
       };
       if(catch_result)

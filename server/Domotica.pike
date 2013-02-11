@@ -136,7 +136,7 @@ void rpc_command( string sender, string receiver, int command, mapping parameter
             {
                compiled_modules += ({ ([ "name":name,
                              "parameters":themodule->ModuleParameters +
-                             ({  })
+                             ({ ({  "filename",PARAM_RO,filename,"Module File", POPT_NONE }) })
                               ]) });
             }
          }
@@ -220,12 +220,14 @@ void rpc_command( string sender, string receiver, int command, mapping parameter
 * or add a hook to a given sensor / variable and receive it everytime
 * the variable enters the switchboard
 */
+int logcount=0;
 
 void switchboard( string sender, string receiver, int command, mixed parameters )
 {
 
 #ifdef DEBUG
-         logout(LOG_DEBUG,"Switchboard received command %d for %s from %s \n",command,receiver, sender );
+         logout(LOG_DEBUG,"Switchboard %d %O\n",++logcount, parameters );
+         logout(LOG_DEBUG,"Switchboard %d received command %d for %s from %s\n",logcount,command,receiver, sender);
 #endif
 
    //A receiver should always be given
@@ -282,7 +284,7 @@ void moduleinit( array names )
       object themodule;
       mixed catch_result = catch {
                     
-         themodule = compile_file(run_config->installpath + "/modules/" + mod_conf->module + ".pike")( name, this );
+         themodule = compile_file(run_config->installpath + "/modules/" + mod_conf->filename)( name, this );
        
 
       };

@@ -159,6 +159,7 @@ array get_main_configuration( Parser.HTML p, mapping args, mapping query )
    {
       ret+= ({ "<H1>This Module Has No Parameters</H1>\n" });
    }
+   werror("HERE\n");
 
    //Check if this is a server or a module, and check if it contains sensor's, 
    //then list them
@@ -220,7 +221,7 @@ array get_main_configuration( Parser.HTML p, mapping args, mapping query )
          ret+=({ "<FORM method=\"POST\">" });
          ret+=({ "<input type=\"hidden\" name=\"add_mod_sensor\" value=\"1\"/>" });
          ret+=({ "<table border=\"1\">" });
-         foreach(sort(module_sensors+({})), mapping module_sensor)
+         foreach(sort(module_sensors || ({})), mapping module_sensor)
          {
             ret+=({ "<tr><td align=\"left\" >"});
              //FIXME sensor sends name, module too? 
@@ -271,6 +272,7 @@ mapping form_to_save(array params, mapping query, string name)
          case PARAM_SENSOROUTPUT:
          case PARAM_SENSORINPUT:
          case PARAM_STRING:
+         case PARAM_RO:
          //Don't save if the paramater hasn't changed
          if( has_index(query->entities->form, inname)) 
             tosave+=([ param[0]:query->entities->form[inname] ]);
@@ -366,6 +368,13 @@ array make_form_input(array param, mapping query, string name)
                          ,inname,value) });
    }
    break;
+   case PARAM_RO:
+   {
+      string value= sizeof(param)>5?(string)param[5]:(string)param[2];
+      ret= ({ sprintf("<input type=\"text\" name=\"%s\" value=\"%s\" readonly />"
+                         ,inname,value) });
+   }
+   break;
    case PARAM_BOOLEAN:
    {
       int value= sizeof(param)>5?(int)param[5]:(int)param[2];
@@ -382,9 +391,11 @@ array make_form_input(array param, mapping query, string name)
       string value= sizeof(param)>5?(string)param[5]:(string)param[2];
       ret+= ({ sprintf("<select name=\"%s\">",inname), });
       array|mapping sensors = dml->rpc( name_split[0], COM_ALLSENSOR, 0 );
+      if( ! sensors )
+         return ({});
       if( mappingp(sensors) && has_index(sensors,"error"))
          return ({ sprintf("<H1>Server Return An Error</H1><p>%s",sensors->error) });
-      sensors = sort(sensors + ({}) );
+      sensors = sort(sensors );
       foreach( sort(sensors), string sensor )
       {
          //FIXME I should be able to designate output variables from input values

@@ -204,7 +204,7 @@ mixed internal_command( string receiver, int command, mapping parameters )
             {
                compiled_modules += ({ ([ "name":name,
                              "parameters":themodule->ModuleParameters +
-                             ({  })
+                             ({ ({  "filename",PARAM_RO,filename,"Module File", POPT_NONE }) })
                               ]) });
             }
 

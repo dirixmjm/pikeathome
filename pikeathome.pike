@@ -51,7 +51,8 @@ int main( int argc, array(string) argv )
       master()->CompatResolver()->add_predefine("DEBUG","1");
    master()->add_include_path(run_config->installpath+"/include" );
    master()->add_module_path(run_config->installpath+"/server" );
-   master()->add_module_path(run_config->installpath+"/modules" );
+   //Deprecated, modules should not be found in the path
+   //master()->add_module_path(run_config->installpath+"/modules" );
    // Init the Domotica master.
    domotica = master()->resolv("Domotica")( run_config );
    if( ! has_index( run_config, "nodaemon" ) )
