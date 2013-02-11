@@ -14,7 +14,7 @@ string name;
 
 void init()
 {
-   logdebug("Init InterCom Interface\n");
+   logdebug("Init JSONCom Interface\n");
    Standards.URI U = Standards.URI(configuration->listenaddress);
    Port = Stdio.Port( U->port?U->port:4095, AcceptCom, U->host?U->host:"127.0.0.1");
    Port->set_id(Port);
@@ -131,32 +131,3 @@ void rpc_command( string sender, string receiver, int command, mapping parameter
    else
       logerror("ICom: Unknown receiver %s\n",receiver);
 }
-
-
-/*
-* Helper Function for sensors to call the switchboard
-*/
-void switchboard ( mixed ... args )
-{
-   call_out( domotica->switchboard,0, @args );
-}
-
-
-
-/*
-* Helper / Short functions for Modules
-*/
-
-void logdebug(mixed ... args)
-{
-   call_out(switchboard, 0, name, domotica->name, COM_LOGEVENT, ([ "level":LOG_DEBUG, "error":sprintf(@args) ]) );
-}
-
-void logerror(mixed ... args)
-{
-   call_out(switchboard, 0, name, domotica->name, COM_LOGEVENT, ([ "level":LOG_ERR, "error":sprintf(@args) ]) );
-
-}
-
-
-
