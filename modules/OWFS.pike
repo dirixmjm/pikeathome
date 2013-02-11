@@ -363,7 +363,7 @@ class sensor
                   call_out( switchboard, 20, SensorProperties->name,configuration->reset, COM_WRITE, ([ "value":0]) );
                }
                ValueCache->concentration = concentration; 
-               ValueCache->vis = (float)  OWFSread(configuration->path+"vis");
+               ValueCache->vis = (float)  OWFSread(configuration->path+"vis") * 1000.00;
             }
             else
             {
