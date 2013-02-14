@@ -27,7 +27,7 @@ class sensor
       {
          ValueCache[sprintf("input%d",i)]= ([ "value":0, "direction":DIR_RW, "type":VAR_BOOLEAN ]);
       }
-         ValueCache->state= ([ "value":0, "direction":DIR_RW, "type":VAR_BOOLEAN ]);
+         ValueCache->state= ([ "value":0, "direction":DIR_RO, "type":VAR_BOOLEAN ]);
    }
 
    mapping write( mapping what )
@@ -35,7 +35,7 @@ class sensor
       foreach(what; string index; mixed value)
       {
          if( has_index(ValueCache,index))
-            ValueCache[index]=value;
+            ValueCache[index]= (int) value;
       }
       do_logic(); 
    }
