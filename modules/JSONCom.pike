@@ -63,14 +63,14 @@ class Communicator
       mapping call = Public.Parser.JSON2.parse_utf8(data);
       if( !has_index( call, "sender" ) )
       {
-         logerror("JSONCom received data without sender\n");   
+         logerror("JSONCom: received data without sender\n");   
          destruct_com();
          return;
       }
       
       if( !has_index( call, "receiver" ) )
       {
-         logerror("ICom received data without valid receiver\n");
+         logerror("JSONCOM received data without valid receiver\n");
          destruct_com();
          return;
       }
@@ -117,7 +117,7 @@ void deletepeer(string peername)
    m_delete(sockets,peername);
 }
 
-void rpc_command( string sender, string receiver, int command, mapping parameters )
+void external_rpc_command( string sender, string receiver, int command, mapping parameters )
 {
    array receiver_split = split_server_module_sensor_value(receiver);
    if( has_index( sockets, receiver_split[0] ))
@@ -129,5 +129,5 @@ void rpc_command( string sender, string receiver, int command, mapping parameter
          deletepeer(receiver_split[0]);
    }
    else
-      logerror("ICom: Unknown receiver %s\n",receiver);
+      logerror("JSONCom: Unknown receiver %s\n",receiver);
 }

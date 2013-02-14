@@ -54,6 +54,24 @@ mixed `->=(string Key, mixed Value)
    }
 }
 
+mixed `[]=(string Key, mixed Value)
+{
+   if( has_index ( Storage, Key) )
+   {
+      //If a mapping is provided it is expected to be a full variable description. A Variable cannot be a mapping itself.
+      if ( mappingp(Value) )
+      {
+         Storage[Key] = Value;
+      }
+      else
+         Storage[Key]->value = Value;
+   }
+   else
+   {
+      Storage[Key] = Variable(Key,Value);
+   }
+}
+
 array _indices(object|void context, int|void access)
 {
    return indices(Storage);

@@ -10,10 +10,9 @@ constant ModuleParameters = ({
                    });
 
 constant SensorBaseParameters = ({
-                   ({ "input",PARAM_SENSORINPUTARRAY,"","Output Sensor",0 }),
+                   ({ "input",PARAM_INT,"","Number of Inputs Sensor",0 }),
                    ({ "output",PARAM_SENSOROUTPUT,"","Output Sensor",0 }),
-                   ({ "delayhigh",PARAM_INT,300,"Input High Threshold",0 }),
-                   ({ "delaylow",PARAM_INT,300,"Input Low Threshold",0 }),
+                   ({ "function",PARAM_INT,0,"Logic Function",0 }),
                    });
 
 
@@ -24,55 +23,49 @@ class sensor
     
    void sensor_init(  )
    {
-      call_out( sensor_timer, (int) configuration->timer );
+      for( int i=1; i <= (int) configuration->input; i++ )
+      {
+         ValueCache[sprintf("input%d",i)]= ([ "value":0, "direction":DIR_RW, "type":VAR_BOOLEAN ]);
+      }
+         ValueCache->state= ([ "value":0, "direction":DIR_RW, "type":VAR_BOOLEAN ]);
    }
 
    mapping write( mapping what )
    {
-   }
-
-   mapping inputvalues = ([]);
-
-   protected void sensor_timer()
-   {
-      call_out( sensor_timer, (int) configuration->timer );
-      foreach( configuration->input+({}), string inputsensor )
+      foreach(what; string index; mixed value)
       {
-         switchboard(SensorProperties->name, inputsensor, COM_READ, ([ ]));
+         if( has_index(ValueCache,index))
+            ValueCache[index]=value;
       }
+      do_logic(); 
    }
 
    void got_answer( int command, string name, mixed params )
    {
-      if ( command == -COM_READ )
-      {
-         inputvalues[name] = params->value;
-         do_logic(); 
-      }
    }
 
    void do_logic()
    {
       int output = 0;
-      switch( (string) configuration->logic )
+      switch( (int) configuration->function )
       {
-         case "AND":
+         case 0:
          {
             output=1;
-            foreach( configuration->input+({}), string inputsensor )
+            for( int i=1; i <= (int) configuration->input; i++ )
             {
-               if ( ! has_index(inputvalues,inputsensor) || ! ( inputvalues[inputsensor] > 0 ) )
-                 output = 0;
+               if( !ValueCache[sprintf("input%d",i)] > 0 )
+                  output = 0;
             }
-            
          }
          break;
-         case "OR":
+         case 1:
          {
-            foreach( configuration->input+({}), string inputsensor )
+            output = 0;
+            for( int i=1; i <= (int) configuration->input; i++ )
             {
-               if ( has_index(inputvalues,inputsensor) && inputvalues[inputsensor] > 0 )
-                 output = 0;
+               if( ValueCache[sprintf("input%d",i)] > 0 )
+                  output = 1;
             }
          }
          break;

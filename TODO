@@ -1,11 +1,14 @@
 == Pre Publish ==
+Input SELECT->mapping
+Input Sensor Array
+Logic Module
+BOOLEAN On/Off in Webserver
 
 == Post Publish ==
 Switchboard add hook.
 Retrieve Logdata structure
 
 == Modules ==
-TimeTable - Add season-daytime-pretimer
 
 == Contrib ==
 Create Terminal Access
