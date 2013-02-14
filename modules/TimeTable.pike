@@ -76,7 +76,7 @@ class sensor
 
         //Check if the next schedule has a Day-length antedating
         if ( has_index( theschedule[ValueCache->next_schedule] , "antedate")
-             && theschedule[ValueCache->next_schedule]->antedate > 0 )
+             && (int) theschedule[ValueCache->next_schedule]->antedate > 0 )
         {
            //Calculate number of days from the longest day.
            int longestday = module->GetParameter("LongestDay");
