@@ -70,6 +70,7 @@ class sensor
          }
          break;
       }
+      ValueCache->state=output;
       switchboard(SensorProperties->name,configuration->output,COM_WRITE,(["value":output]));
    }
  

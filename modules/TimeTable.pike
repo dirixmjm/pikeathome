@@ -35,7 +35,6 @@ class sensor
 
    void sensor_init()
    {
-      ValueCache->state= ([ "value":0, "direction":DIR_RO, "type":VAR_BOOLEAN ]);
       ValueCache->current_schedule= ([ "value":0, "direction":DIR_RO, "type":VAR_INT ]);
       ValueCache->next_schedule= ([ "value":0, "direction":DIR_RO, "type":VAR_INT ]);
       //Variable of the schedule pre-announcer (Necessary for the Heater module)
