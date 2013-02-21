@@ -209,7 +209,7 @@ array EmitSensor( mapping args, mapping query )
          res+= ({ ([ "variable":Var]) + Data });
       }
       if( has_index(args,"sort") )
-        res=sort(res);
+        sort(res->Var,res);
       return res;
    }
    return ({});
