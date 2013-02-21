@@ -208,6 +208,8 @@ array EmitSensor( mapping args, mapping query )
       {
          res+= ({ ([ "variable":Var]) + Data });
       }
+      if( has_index(args,"sort") )
+        res=sort(res);
       return res;
    }
    return ({});
@@ -277,37 +279,85 @@ string DMLIf(Parser.HTML p,
    {
       //FIXME this should be made independant of spaces.
       array arr = args->variable/" ";
+      int ifstate = 0;
       if ( sizeof(arr) == 1 )
       {
             if( resolve_entity(arr[0],query)) 
-               return content;
-            else
-               return "";
+               ifstate = 1;
       }
       else if ( sizeof(arr) == 2 )
       {
          return "";
       }
-      else if ( arr[1] == "=" || arr[1] == "==" || arr[1] == "is" )
+      else 
       {
-         string var = (string) resolve_entity(arr[0],query);
-         string is = arr[2..]*" ";
-         if ( var == is )
-            return content;
-         else 
-            return "";
-      } 
-      else if ( arr[1] == "!=" ) 
-      {
-         string var = (string) resolve_entity(arr[0],query);
-         string is = arr[2..]*" ";
-         if ( var != is )
-            return content;
-         else 
-            return "";
+         mixed is;
+         mixed var = (string) resolve_entity(arr[0],query);
+
+         if( intp(var) )
+            is = (int) arr[2..];
+         else if( floatp(var) )
+            is = (int) arr[2..];
+         else
+            is = (string) (arr[2..]*" ");
+         
+         switch( arr[1] )
+         {
+            case "=":
+            case "==":
+            case "is":
+            {
+               if ( var == is )
+                  ifstate=1;
+            } 
+            break;
+            case "!=":
+            {
+               if ( var != is )
+                  ifstate=1;
+            }
+            break;
+            case "<=":
+            {
+               if ( var <= is )
+                  ifstate=1;
+            }
+            break;
+            case ">=":
+            {
+               if ( var >= is )
+                  ifstate=1;
+            }
+            break;
+            default:
+               return sprintf("Unknown if function %s<br />",arr[1]);
+         }
       }
+      //Create a parser that only speaks <then> and <else>
+      object elseparser = DMLParser(([]),(["then":DMLThen,"else":DMLElse]));
+      mapping elsequery = query + (["ifstate":ifstate]);
+      elseparser->set_extra(elsequery);
+      return elseparser->feed(content)->read();
    }
    return "No argument given for if tag<br />";
+}
+
+array DMLElse(Parser.HTML p, 
+               mapping args, string content, mapping query )
+{
+   if ( !query->ifstate )
+      return ({content});
+   else
+      return ({""});
+}
+
+array DMLThen(Parser.HTML p, 
+               mapping args, string content, mapping query )
+{
+   if ( query->ifstate )
+      return ({content});
+   else
+      return ({""});
 }
 
 string DMLInc(Parser.HTML p, 
