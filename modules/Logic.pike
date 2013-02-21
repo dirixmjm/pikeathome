@@ -12,7 +12,7 @@ constant ModuleParameters = ({
 constant SensorBaseParameters = ({
                    ({ "input",PARAM_INT,"","Number of Inputs Sensor",0 }),
                    ({ "output",PARAM_SENSOROUTPUT,"","Output Sensor",0 }),
-                   ({ "function",PARAM_INT,0,"Logic Function",0 }),
+                   ({ "function",PARAM_SELECT,(["and":0,"or":1]),"Logic Function",0 }),
                    });
 
 
@@ -49,6 +49,7 @@ class sensor
       int output = 0;
       switch( (int) configuration->function )
       {
+         //AND
          case 0:
          {
             output=1;
@@ -59,6 +60,7 @@ class sensor
             }
          }
          break;
+         //OR
          case 1:
          {
             output = 0;

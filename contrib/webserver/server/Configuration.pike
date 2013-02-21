@@ -271,6 +271,7 @@ mapping form_to_save(array params, mapping query, string name)
       {
          case PARAM_SENSOROUTPUT:
          case PARAM_SENSORINPUT:
+         case PARAM_SELECT:
          case PARAM_STRING:
          case PARAM_RO:
          //Don't save if the paramater hasn't changed
@@ -402,7 +403,7 @@ array make_form_input(array param, mapping query, string name)
          mapping prop = dml->rpc(sensor,COM_PROP);
          if( mappingp(prop) && prop->sensor_type &  (param[1]==PARAM_SENSOROUTPUT?SENSOR_OUTPUT:SENSOR_INPUT) )
          {
-            mapping vars = dml->rpc(sensor,COM_READ) +([]);
+            mapping vars = dml->rpc(sensor,COM_READ) || ([]);
             //vars = sort(vars);
             foreach( indices(vars), string key )
             {
@@ -477,6 +478,21 @@ array make_form_input(array param, mapping query, string name)
       ret += ({ "</td></tr>" });
       ret+=({"</table>"}); 
       ret += ({ sprintf("<input type=\"hidden\" name=\"mapping_%s\" value=\"%d\" ",inname,count) });
+   }
+   break;
+   case PARAM_SELECT:
+   {
+      string current="";
+      if( sizeof(param)>5 && param[5] )
+         current = (string) param[5];
+      
+      ret= ({ sprintf("<select name=\"%s\">",inname) });
+      foreach(param[2]; string ind; mixed value )
+      {
+          ret+=({ sprintf("<option value=\"%s\" %s>%s</option>",
+                                               (string) value,((string)value)==current?"selected":"",ind) });
+      }
+      ret+= ({ "</select>" });
    }
    break;
    case PARAM_SCHEDULE:

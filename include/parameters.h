@@ -10,6 +10,7 @@
 #define PARAM_SENSORINPUTARRAY 9
 #define PARAM_SENSOROUTPUTARRAY 10
 #define PARAM_RO 11
+#define PARAM_SELECT 12
 
 //Parameter Options
 #define POPT_NONE        0

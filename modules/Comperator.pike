@@ -19,7 +19,7 @@ constant SensorBaseParameters = ({
                    ({ "lowlevel",PARAM_INT,300,"Input Low Threshold",0 }),
                    ({ "gracecount",PARAM_INT,300,"Grace Time = Grace Count * timer",0 }),
                    ({ "grace",PARAM_STRING,"","Grace function: avg, last",0 }),
-                   ({ "function",PARAM_INT,(["Detect Low":0,"Detect High":1,"Detect Low to High":2,"Detect High to Low":3]),"Comperator Function",0 }),
+                   ({ "function",PARAM_SELECT,(["Detect Low":0,"Detect High":1,"Detect Low to High":2,"Detect High to Low":3]),"Comperator Function",0 }),
                    ({ "passive",PARAM_BOOLEAN,0,"Passive Output",0 }),
                    });
 
@@ -139,11 +139,15 @@ class sensor
           switch( (int) configuration->function )
           {
              case 1:
-                switchboard(SensorProperties->name,configuration->output,COM_WRITE,(["value":0]));
+                ValueCache->state = 0;
+                if( !((int) configuration->passive) )
+                   switchboard(SensorProperties->name,configuration->output,COM_WRITE,(["value":0]));
                 break;
              case 0:
              case 3:
-                switchboard(SensorProperties->name,configuration->output,COM_WRITE,(["value":1]));
+                ValueCache->state = 1;
+                if( !((int) configuration->passive) )
+                   switchboard(SensorProperties->name,configuration->output,COM_WRITE,(["value":1]));
                 break;
           }
        }
