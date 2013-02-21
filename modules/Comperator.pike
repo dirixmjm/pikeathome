@@ -13,7 +13,7 @@ constant ModuleParameters = ({
 
 constant SensorBaseParameters = ({
                    ({ "input",PARAM_SENSORINPUT,"","Input Sensor",0 }),
-                   ({ "output",PARAM_SENSOROUTPUT,"","Output Sensor",0 }),
+                   ({ "output",PARAM_SENSOROUTPUTARRAY,"","Output Sensor",0 }),
                    ({ "timer",PARAM_INT,300,"Time Value (Seconds)",0 }),
                    ({ "highlevel",PARAM_INT,300,"Input High Threshold",0 }),
                    ({ "lowlevel",PARAM_INT,300,"Input Low Threshold",0 }),
@@ -122,16 +122,16 @@ class sensor
              case 0:
              {
                 ValueCache->state = 0;
-                if( !((int) configuration->passive) )
-                   switchboard(SensorProperties->name,configuration->output,COM_WRITE,(["value":0]));
+                WriteOut(0);
              }
              break;
              case 1:
              case 2:
+             {
                 ValueCache->state = 1;
-                if( !((int) configuration->passive) )
-                   switchboard(SensorProperties->name,configuration->output,COM_WRITE,(["value":1]));
-                break;
+                WriteOut(1);
+             }
+             break;
           }
        }
        else if( lastlevel > ValueCache->level ) 
@@ -139,19 +139,30 @@ class sensor
           switch( (int) configuration->function )
           {
              case 1:
+             {
                 ValueCache->state = 0;
-                if( !((int) configuration->passive) )
-                   switchboard(SensorProperties->name,configuration->output,COM_WRITE,(["value":0]));
-                break;
+                WriteOut(0);
+             }
+             break;
              case 0:
              case 3:
+             {
                 ValueCache->state = 1;
-                if( !((int) configuration->passive) )
-                   switchboard(SensorProperties->name,configuration->output,COM_WRITE,(["value":1]));
-                break;
+                WriteOut(1);
+             }
+             break;
           }
        }
-   } 
+   }
+ 
+   protected void WriteOut(int value)
+   {
+      if( !((int) configuration->passive) )
+      {
+         foreach( configuration->output || ({}), string output)
+            switchboard(SensorProperties->name,output,COM_WRITE,(["value":value]));
+      }
+   }
 
 }
 

@@ -78,7 +78,7 @@ array get_main_configuration( Parser.HTML p, mapping args, mapping query )
    array|mapping prop = dml->rpc( name , COM_PROP );
 
    if( mappingp(params) && has_index(params,"error"))
-      return ({ sprintf("<H1>Server Return An Error</H1><p>%O",params->error) });
+      return ({ sprintf("<H1>Server Returned An Error</H1><p>%O",params->error) });
    else if( mappingp(params) )
       return ({ "<H1>Error<H1><p>Server returned mapping, array was expected",
                 sprintf("%O\n",params) });
@@ -98,7 +98,7 @@ array get_main_configuration( Parser.HTML p, mapping args, mapping query )
    {
       array|mapping module_sensors = dml->rpc( name, COM_FIND );
       if( mappingp(module_sensors) && has_index(module_sensors,"error"))
-         return ({ sprintf("<H1>Server Return An Error</H1><p>%s",module_sensors->error) });
+         return ({ sprintf("<H1>Server Returned An Error</H1><p>%s",module_sensors->error) });
       foreach(sort(module_sensors), mapping module_sensor)
       {
          if( has_index(module_sensor, "name" ) && has_index( query->entities->form, module_sensor->name  ) )
@@ -217,7 +217,7 @@ array get_main_configuration( Parser.HTML p, mapping args, mapping query )
       {
          array|mapping module_sensors = dml->rpc( name, COM_FIND );
          if( mappingp(module_sensors) && has_index(module_sensors,"error"))
-            return ({ sprintf("<H1>Server Return An Error</H1><p>%s",module_sensors->error) });
+            return ({ sprintf("<H1>Server Returned An Error</H1><p>%s",module_sensors->error) });
          ret+=({ "<FORM method=\"POST\">" });
          ret+=({ "<input type=\"hidden\" name=\"add_mod_sensor\" value=\"1\"/>" });
          ret+=({ "<table border=\"1\">" });
@@ -284,6 +284,8 @@ mapping form_to_save(array params, mapping query, string name)
          if( has_index(query->entities->form, inname) )
             tosave+=([ param[0]:(int) query->entities->form[inname] ]);
          break;
+         case PARAM_SENSOROUTPUTARRAY:
+         case PARAM_SENSORINPUTARRAY:
          case PARAM_ARRAY:
          {
             if( !has_index(query->entities->form,"array_"+inname))
@@ -296,7 +298,7 @@ mapping form_to_save(array params, mapping query, string name)
                //remove empty lines.
                if( !query->entities->form[findit] || 
                   query->entities->form[findit]=="" )
-               continue;
+                  continue;
                Values += ({ query->entities->form[findit] 
                          });
             }
@@ -390,40 +392,42 @@ array make_form_input(array param, mapping query, string name)
    case PARAM_SENSORINPUT:
    {
       string value= sizeof(param)>5?(string)param[5]:(string)param[2];
-      ret+= ({ sprintf("<select name=\"%s\">",inname), });
       array|mapping sensors = dml->rpc( name_split[0], COM_ALLSENSOR, 0 );
       if( ! sensors )
          return ({});
       if( mappingp(sensors) && has_index(sensors,"error"))
-         return ({ sprintf("<H1>Server Return An Error</H1><p>%s",sensors->error) });
+         return ({ sprintf("<H1>Server Returned An Error</H1><p>%s",sensors->error) });
       sensors = sort(sensors );
-      foreach( sort(sensors), string sensor )
+      ret += make_sensor_select(inname,sensors,value,param[1]);
+   }
+   break;
+   case PARAM_SENSOROUTPUTARRAY:
+   case PARAM_SENSORINPUTARRAY:
+   {
+      array Values = sizeof(param)>5?param[5]:(param[2]||({}));
+      int count = 0;
+      array|mapping sensors = dml->rpc( name_split[0], COM_ALLSENSOR, 0 );
+      if( ! sensors )
+         return ({});
+      if( mappingp(sensors) && has_index(sensors,"error"))
+         return ({ sprintf("<H1>Server Returned An Error</H1><p>%s",sensors->error) });
+      sensors = sort(sensors );
+      foreach( Values; string index; string value )
       {
-         //FIXME I should be able to designate output variables from input values
-         mapping prop = dml->rpc(sensor,COM_PROP);
-         if( mappingp(prop) && prop->sensor_type &  (param[1]==PARAM_SENSOROUTPUT?SENSOR_OUTPUT:SENSOR_INPUT) )
-         {
-            mapping vars = dml->rpc(sensor,COM_READ) || ([]);
-            //vars = sort(vars);
-            foreach( indices(vars), string key )
-            {
-               if( param[1] == PARAM_SENSOROUTPUT && vars[key]->direction == DIR_RO )
-                  continue;
-               string sname = prop->name +"."+key;
-               ret+=({ sprintf("<option value=\"%s\" %s>%s</option>",
-                                 sname,sname==value?"selected":"",sname)});
-            }
-         }
+         count++;
+         string svalue = inname+"_value_"+(string) count;
+         ret += make_sensor_select(inname,sensors,value,param[1]);
       }
-      ret+=({ "</select>"});
+      count++;
+      string svalue = inname+"_value_"+(string) count;
+      ret += make_sensor_select(inname,sensors,"",param[1]);
+      ret += ({ sprintf("<input type=\"hidden\" name=\"array_%s\" value=\"%d\" ",inname,count) });
    }
    break;
    case PARAM_ARRAY:
    {
       ret+= ({ "<table>"});
-      array Values = ({});
-      if( sizeof(param)>5 && param[5] )
-         Values = param[5];
+      array Values = sizeof(param)>5?param[5]:(param[2]||({}));
       int count = 0;
       foreach( Values; string index; string value )
       {
@@ -448,9 +452,7 @@ array make_form_input(array param, mapping query, string name)
    case PARAM_MAPPING:
    {
       ret+= ({ "<table>"});
-      mapping Values = ([]);
-      if( sizeof(param)>5 && param[5] )
-         Values = param[5];
+      mapping Values = sizeof(param)>5?param[5]:(param[2]||([]));
       int count = 0;
       foreach( Values; string index; string value )
       {
@@ -556,5 +558,30 @@ sprintf("<td>Output Value <input type=\"text\" name=\"value_%s_%d\" value=\"%s\"
 sprintf("<td>Antedate <input type=\"text\" name=\"antedate_%s_%d\" value=\"%s\"/></td>",name,i,antedate),
 "</tr>"
                });
+   return ret;
+}
+
+protected array make_sensor_select(string inname,array sensors, string value,int type)
+{
+   array ret= ({ sprintf("<select name=\"%s\">",inname),
+                 "<option value="">No Sensor Selected</option>" });
+   foreach( sort(sensors), string sensor )
+   {
+      mapping prop = dml->rpc(sensor,COM_PROP);
+      if( mappingp(prop) && prop->sensor_type &  (type==PARAM_SENSOROUTPUT?SENSOR_OUTPUT:SENSOR_INPUT) )
+      {
+         mapping vars = dml->rpc(sensor,COM_READ) || ([]);
+         //vars = sort(vars);
+         foreach( indices(vars), string key )
+         {
+            if( type == PARAM_SENSOROUTPUT && vars[key]->direction == DIR_RO )
+               continue;
+            string sname = prop->name +"."+key;
+            ret+=({ sprintf("<option value=\"%s\" %s>%s</option>",
+                                 sname,sname==value?"selected":"",sname)});
+         }
+      }
+   }
+   ret+=({ "</select>"});
    return ret;
 }
