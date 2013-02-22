@@ -44,6 +44,9 @@ array cumulative_split_server_module_sensor_value(string what)
       i++;
       i=search(what,".",i);
    }
+   if(sizeof(what))
+      ret+=({ store+what });
+
    return ret;
 }
 
