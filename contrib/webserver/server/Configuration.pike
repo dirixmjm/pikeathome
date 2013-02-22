@@ -416,11 +416,12 @@ array make_form_input(array param, mapping query, string name)
       {
          count++;
          string svalue = inname+"_value_"+(string) count;
-         ret += make_sensor_select(inname,sensors,value,param[1]);
+         ret += make_sensor_select(svalue,sensors,value,param[1]);
+         ret += ({"<br />"});
       }
       count++;
       string svalue = inname+"_value_"+(string) count;
-      ret += make_sensor_select(inname,sensors,"",param[1]);
+      ret += make_sensor_select(svalue,sensors,"",param[1]);
       ret += ({ sprintf("<input type=\"hidden\" name=\"array_%s\" value=\"%d\" ",inname,count) });
    }
    break;
@@ -563,18 +564,21 @@ sprintf("<td>Antedate <input type=\"text\" name=\"antedate_%s_%d\" value=\"%s\"/
 
 protected array make_sensor_select(string inname,array sensors, string value,int type)
 {
+   int typeoutput = 0;
+   if( type == PARAM_SENSOROUTPUT || type == PARAM_SENSOROUTPUTARRAY )
+     typeoutput = 1;
    array ret= ({ sprintf("<select name=\"%s\">",inname),
                  "<option value="">No Sensor Selected</option>" });
    foreach( sort(sensors), string sensor )
    {
       mapping prop = dml->rpc(sensor,COM_PROP);
-      if( mappingp(prop) && prop->sensor_type &  (type==PARAM_SENSOROUTPUT?SENSOR_OUTPUT:SENSOR_INPUT) )
+      if( mappingp(prop) && prop->sensor_type &  (typeoutput?SENSOR_OUTPUT:SENSOR_INPUT) )
       {
          mapping vars = dml->rpc(sensor,COM_READ) || ([]);
          //vars = sort(vars);
          foreach( indices(vars), string key )
          {
-            if( type == PARAM_SENSOROUTPUT && vars[key]->direction == DIR_RO )
+            if( typeoutput && vars[key]->direction == DIR_RO )
                continue;
             string sname = prop->name +"."+key;
             ret+=({ sprintf("<option value=\"%s\" %s>%s</option>",

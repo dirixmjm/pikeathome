@@ -1,6 +1,6 @@
 static string database;
 static Thread.Mutex inuse = Thread.Mutex();
-
+protected static Sql.Sql db;
 
 void create( string dburi )
 {
@@ -13,19 +13,24 @@ void create( string dburi )
 
 }
 
-string _m_delete(string name)
+array query( string _query, mapping _bindings )
 {
    Thread.MutexKey lock = inuse->lock();
-   Sql.Sql db =  Sql.Sql( database ) ;
-   db->query("DELETE FROM  configuration WHERE "+ 
+   if( !db )
+      db =  Sql.Sql( database ) ;
+   return db->query(  _query, _bindings );
+}
+
+string _m_delete(string name)
+{
+   query("DELETE FROM  configuration WHERE "+ 
              "name=:name ;",([ ":name":name]));
    return name;
 }
 
 void createdb( string dburi )
 {
-   Sql.Sql db = Sql.Sql( dburi );
-   db->query("CREATE TABLE configuration ( name VARCHAR(16), key VARCHAR(16), value VARCHAR(256) ) " );
+   query("CREATE TABLE configuration ( name VARCHAR(16), key VARCHAR(16), value,encoded smallint not null default 0) ", ([]) );
 }
 
 
@@ -42,9 +47,7 @@ void create(string cname)
 
 string|array get_value(string key)
 {
-   Thread.MutexKey lock = inuse->lock();
-   Sql.Sql db =  Sql.Sql( database ) ;
-   array queryres = db->query("SELECT value,encoded FROM configuration WHERE " +
+   array queryres = query("SELECT value,encoded FROM configuration WHERE " +
                               "name=:name AND key=:key;",
                              ([ ":name":name,":key":key ]));
    if ( !sizeof ( queryres ) )
@@ -64,17 +67,15 @@ string|array get_value(string key)
 
 void write_value(string key, mixed value )
 {
-   Thread.MutexKey lock = inuse->lock();
-   Sql.Sql db =  Sql.Sql( database ) ;
    //First delete the key, and reinsert the new one.
-   db->query("DELETE FROM  configuration WHERE key=:key AND name=:name;",
+   query("DELETE FROM  configuration WHERE key=:key AND name=:name;",
              ([ ":name":name,":key":key]));
    if( ! stringp(value) && ! intp(value) )
-      db->query("INSERT INTO configuration (name,key,value,encoded)"
+      query("INSERT INTO configuration (name,key,value,encoded)"
                 + " VALUES (:name,:key,:val,1);", 
                 ([":name":name,":key":key,":val":encode_value(value)]));
    else
-      db->query("INSERT INTO configuration (name,key,value)"
+      query("INSERT INTO configuration (name,key,value)"
                 + " VALUES (:name,:key,:value);",
                 ([ ":name":name,":key":key,":value":value ]));
 }
@@ -92,9 +93,7 @@ string|array `[](string key)
 
 array(string) _indices()
 {
-   Thread.MutexKey lock = inuse->lock();
-   Sql.Sql db =  Sql.Sql( database ) ;
-   array queryres = db->query("SELECT distinct(key) FROM configuration "+
+   array queryres = query("SELECT distinct(key) FROM configuration "+
                               " WHERE name=:name", ([ ":name":name ]) );
    return queryres->key;
 }
