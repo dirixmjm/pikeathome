@@ -51,10 +51,19 @@ int main( int argc, array(string) argv )
       master()->CompatResolver()->add_predefine("DEBUG","1");
    master()->add_include_path(run_config->installpath+"/include" );
    master()->add_module_path(run_config->installpath+"/server" );
-   //Deprecated, modules should not be found in the path
-   //master()->add_module_path(run_config->installpath+"/modules" );
+
+   //Check Current Database version
+   Stdio.FILE VerFile = Stdio.FILE(run_config->installpath+"/include/PAHDB");
+   run_config->CurrentDBVersion = (int) VerFile->gets();
+   VerFile->close();
+
    // Init the Domotica master.
    domotica = master()->resolv("Domotica")( run_config );
+   if( !domotica )
+   {
+      werror("Pike At Home failed to start, exiting\n");
+      exit(128);
+   }
    if( ! has_index( run_config, "nodaemon" ) )
    {
       detach();

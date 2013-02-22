@@ -5,7 +5,7 @@
 inherit Base_func;
 
 protected object configuration;
-object domotica;
+protected function switchboard;
 
 int module_type = 0;
 
@@ -17,10 +17,10 @@ mapping ModuleProperties = ([
                       ]);
 
 
-void create( string _name, object domo )
+void create( string _name, object _configuration, function _switchboard )
 {
-   domotica = domo;
-   configuration = domotica->configuration(_name);
+   switchboard = _switchboard;
+   configuration = _configuration;
    ModuleProperties->name=_name;
    logdebug("Init Module %s\n",_name);
    //Maybe decrepate direct "module_type" variable?
@@ -125,18 +125,13 @@ void rpc_command( string sender, string receiver, int command, mapping parameter
    }
 }
 
-void switchboard (mixed ... args )
-{
-   call_out( domotica->switchboard,0, @args );
-}
-
 void logdebug(mixed ... args)
 {
-   call_out(switchboard, 0, ModuleProperties->name, domotica->name, COM_LOGEVENT, ([ "level":LOG_DEBUG, "error":sprintf(@args) ]) );
+   call_out(switchboard, 0, ModuleProperties->name, "broadcast", COM_LOGEVENT, ([ "level":LOG_DEBUG, "error":sprintf(@args) ]) );
 }
 
 void logerror(mixed ... args)
 {
-   call_out(switchboard, 0, ModuleProperties->name, domotica->name, COM_LOGEVENT, ([ "level":LOG_ERR, "error":sprintf(@args) ]) );
+   call_out(switchboard, 0, ModuleProperties->name, "broadcast", COM_LOGEVENT, ([ "level":LOG_ERR, "error":sprintf(@args) ]) );
 
 }

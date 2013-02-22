@@ -1,11 +1,11 @@
 #include <module.h>
-
+inherit Base_func;
 
 protected mapping modules = ([]);
 protected array loggers = ({});
 protected array dataloggers = ({});
 //object xmlrpc;
-object config,ICom;
+object ICom;
 protected object server_configuration;
 protected mapping run_config;
 string name ="";
@@ -15,19 +15,13 @@ void create( mapping rconfig)
 {
    run_config = rconfig;
    name = run_config->name;
-   config = Config( run_config->database );
-   server_configuration = config->Configuration(name);
+   server_configuration = Config( run_config->database, run_config->CurrentDBVersion, name );
 
    //FIXME, should this be here?
    server_configuration->listenaddress = run_config->listenaddress;
-   ICom = .InterCom( this,server_configuration ); 
+   ICom = .InterCom( name,switchboard,server_configuration ); 
    if ( server_configuration->module )
       moduleinit( server_configuration->module );
-}
-
-object configuration(string name )
-{
-   return config->Configuration(name);
 }
 
 //Array with server configuration parameters
@@ -37,58 +31,6 @@ array ServerParameters = ({});
 void logout(int log_level, mixed ... args )
 {
    Stdio.stdout.write(@args);
-}
-
-/* Split a sensor or module pointer into an array.
- * The array contains ({ module, sensor, attribute });
-*/
-array split_server_module_sensor_value(string what)
-{
-   array ret = ({});
-   int i=search(what,".");
-   while(i>0)
-   {
-      if( what[++i] != '.' )
-      {
-         ret += ({ what[..i-2] });
-         what = what[i..];
-         i=0;
-      }
-      i++;
-      i=search(what,".",i);
-   }
-   if(sizeof(what))
-      ret+= ({ what });
-   return ret;
-}
-
-/* Split a sensor or module pointer into an array.
- * The array contains ({ server, server.module, server.module.sensor,etc });
-*/
-array cumulative_split_server_module_sensor_value(string what)
-{
-   array ret = ({});
-   string store = "";
-   int i=search(what,".");
-   if( (i < 0) && sizeof(what) )
-      return ({ what });
-
-   while(i>0)
-   {
-      if( what[++i] != '.' )
-      {
-         ret += ({ store + what[..i-2] });
-         store = store + what[..i-2]+"." ;
-         what = what[i..];
-         i=0;
-      }
-      i++;
-      i=search(what,".",i);
-   }
-   if(sizeof(what))
-      ret+= ({ store + what });
-
-   return ret;
 }
 
 void rpc_command( string sender, string receiver, int command, mapping parameters )
@@ -123,8 +65,9 @@ void rpc_command( string sender, string receiver, int command, mapping parameter
             if( !has_suffix(filename,".pike")) continue;
             sscanf(filename,"%s\.pike",name);
             object themodule;
+            //FIXME should a module be instantiated here, probably for parameters
             mixed catch_result = catch { 
-               themodule =compile_file(dirname+filename)(name,this);
+               themodule =compile_file(dirname+filename)(name,UNDEFINED,UNDEFINED);
             };
             if(catch_result)
             {
@@ -172,7 +115,7 @@ void rpc_command( string sender, string receiver, int command, mapping parameter
             switchboard(module_name, sender, 30, ([ "error":error ]));
          }
          server_configuration->module+=({module_name});
-         object cfg = config->Configuration( module_name );
+         object cfg = server_configuration->Configuration( module_name );
          //FIXME if parameter not given set default parameter?
          foreach ( params; string index; mixed value )
            cfg[index]=value;
@@ -187,7 +130,7 @@ void rpc_command( string sender, string receiver, int command, mapping parameter
          modules[parameters->name]->close();
          m_delete(modules,parameters->name);
          server_configuration->module -= ({ parameters->name });
-         m_delete(config, parameters->name );
+         m_delete(server_configuration, parameters->name );
       }
       break;
       case COM_ERROR:
@@ -240,7 +183,7 @@ void switchboard( string sender, string receiver, int command, mixed parameters 
    // ({ server, server.module,server.module.sensor,server.module.sensor.value})
    //Something went wrong and the switchboard is called
    //Switchboard message for the current server
-   if ( split[0] == name)
+   if ( split[0] == name || split[0]=="broadcast")
    {
       //Message for the server
 
@@ -276,7 +219,7 @@ void moduleinit( array names )
 {
    foreach(names, string name)
    {
-      object mod_conf = config->Configuration(name);
+      object mod_conf = server_configuration->Configuration(name);
       if ( has_index( mod_conf, "debug" ) && (int) mod_conf->debug == 1 )
          master()->CompatResolver()->add_predefine(upper_case(name)+"DEBUG","1");
       else
@@ -284,7 +227,7 @@ void moduleinit( array names )
       object themodule;
       mixed catch_result = catch {
                     
-         themodule = compile_file(run_config->installpath + "/modules/" + mod_conf->filename)( name, this );
+         themodule = compile_file(run_config->installpath + "/modules/" + mod_conf->filename)( name, mod_conf, switchboard );
        
 
       };

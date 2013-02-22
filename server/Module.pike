@@ -1,10 +1,11 @@
 #include <module.h>
 #include <parameters.h>
 #include <command.h>
+inherit Base_func;
 
 protected object configuration;
 
-protected object domotica;
+function switchboard;
 
 int module_type = 0;
 
@@ -19,11 +20,11 @@ constant ModuleParameters = ({});
 
 constant SensorBaseParameters = ({});
 
-void create( string _name, object _domotica )
+void create( string _name, object _configuration, function _switchboard )
 {
-   domotica = _domotica;
+   switchboard = _switchboard;
    ModuleProperties->name=_name;
-   configuration = domotica->configuration(_name);
+   configuration = _configuration;
    ModuleProperties->module_type=module_type;
 }
 
@@ -40,7 +41,7 @@ void init_sensors( array load_sensors )
 {
    foreach(load_sensors, string name )
    {
-      sensors+= ([ name: sensor( name, this, domotica->configuration(name) ) ]);
+      sensors+= ([ name: sensor( name, this, configuration->Configuration(name) ) ]);
    }
 }
 
@@ -106,7 +107,6 @@ void close()
 {
    foreach(values(sensors),object sensor)
       sensor->close();
-   domotica = 0;
    configuration = 0;   
 }
 
@@ -174,7 +174,7 @@ void rpc_command( string sender, string receiver, int command, mapping parameter
                return;
             }
             configuration->sensor+= ({ sensor_name });
-            object cfg = domotica->configuration( sensor_name );
+            object cfg = configuration->Configuration( sensor_name );
             //FIXME set default value if parameters is not in the mapping
             foreach( params; string index; mixed value )
             {
@@ -195,7 +195,7 @@ void rpc_command( string sender, string receiver, int command, mapping parameter
             sensors[sensor_name]->close();
             m_delete(sensors,sensor_name);
             configuration->sensor -= ({ sensor_name });
-            m_delete(domotica->config, sensor_name ); 
+            m_delete(configuration, sensor_name ); 
             switchboard( receiver,sender,-command,UNDEFINED); 
          }
          break;
@@ -208,14 +208,6 @@ void rpc_command( string sender, string receiver, int command, mapping parameter
    }
 }
 
-/* 
-* Helper Function for sensors to call the switchboard
-*/
-void switchboard ( mixed ... args )
-{
-   call_out( domotica->switchboard,0, @args );
-}
-
 /*
 * Helper / Short functions for Modules
 */
@@ -223,12 +215,12 @@ void switchboard ( mixed ... args )
 void logdebug(mixed ... args)
 {
    if( (int) configuration->debug == 1 )
-      call_out(switchboard, 0, ModuleProperties->name, domotica->name, COM_LOGEVENT, ([ "level":LOG_DEBUG, "error":sprintf(@args) ]) );
+      call_out(switchboard, 0, ModuleProperties->name, "broadcast", COM_LOGEVENT, ([ "level":LOG_DEBUG, "error":sprintf(@args) ]) );
 }
 
 void logerror(mixed ... args)
 {
-   call_out(switchboard, 0, ModuleProperties->name, domotica->name, COM_LOGEVENT, ([ "level":LOG_ERR, "error":sprintf(@args) ]) );
+   call_out(switchboard, 0, ModuleProperties->name, "broadcast", COM_LOGEVENT, ([ "level":LOG_ERR, "error":sprintf(@args) ]) );
 
 }
 
@@ -238,11 +230,6 @@ void logdata(string name, string|int|float data, int|void tstamp)
    if ( intp(tstamp) )
      params+= ([ "stamp":tstamp ]);
 
-   call_out(switchboard, 0, name, domotica->name, COM_LOGDATA,
+   call_out(switchboard, 0, name, "broadcast", COM_LOGDATA,
                      params );
-}
-
-array split_server_module_sensor_value(string module_sensor_value)
-{
-   return domotica->split_server_module_sensor_value(module_sensor_value);
 }

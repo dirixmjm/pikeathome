@@ -4,14 +4,14 @@
 inherit Base_func;
 
 protected object configuration;
-protected object domotica;
+function switchboard;
 protected object Port;
 string name;
 
-void create( object domotica_, object configuration_ )
+void create( string servername, function _switchboard, object configuration_ )
 {
-   domotica = domotica_;
-   name = domotica->name + ".ICom";
+   switchboard=_switchboard;
+   name = servername + ".ICom";
    configuration = configuration_;
    logdebug("Init InterCom Interface\n");
    Standards.URI U = Standards.URI(configuration->listenaddress);
@@ -131,29 +131,18 @@ void rpc_command( string sender, string receiver, int command, mapping parameter
       logerror("ICom: Unknown receiver %s\n",receiver);
 }
 
-
-/*
-* Helper Function for sensors to call the switchboard
-*/
-void switchboard ( mixed ... args )
-{
-   call_out( domotica->switchboard,0, @args );
-}
-
-
-
 /*
 * Helper / Short functions for Modules
 */
 
 void logdebug(mixed ... args)
 {
-   call_out(switchboard, 0, name, domotica->name, COM_LOGEVENT, ([ "level":LOG_DEBUG, "error":sprintf(@args) ]) );
+   call_out(switchboard, 0, name, "broadcast", COM_LOGEVENT, ([ "level":LOG_DEBUG, "error":sprintf(@args) ]) );
 }
 
 void logerror(mixed ... args)
 {
-   call_out(switchboard, 0, name, domotica->name, COM_LOGEVENT, ([ "level":LOG_ERR, "error":sprintf(@args) ]) );
+   call_out(switchboard, 0, name, "broadcast", COM_LOGEVENT, ([ "level":LOG_ERR, "error":sprintf(@args) ]) );
 
 }
 

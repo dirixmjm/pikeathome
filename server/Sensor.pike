@@ -2,6 +2,7 @@
 #include <variable.h>
 #include <parameters.h>
 #include <command.h>
+inherit Base_func;
 
 int sensor_type = 0; 
 
@@ -106,7 +107,7 @@ void rpc_command( string sender, string receiver, int command, mapping parameter
       got_answer(command, sender, parameters);
       return;
    }
-   array split = module->split_server_module_sensor_value(receiver);
+   array split = split_server_module_sensor_value(receiver);
    switch(command)
    {
       case COM_READ:

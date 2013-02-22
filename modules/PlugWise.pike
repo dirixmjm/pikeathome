@@ -2,6 +2,7 @@
 #include <sensor.h>
 #include <variable.h>
 inherit Module;
+inherit Base_func;
 
 
 int module_type = MODULE_SENSOR;
@@ -33,7 +34,7 @@ void init_sensors( array load_sensors )
 {
    foreach(load_sensors, string name )
    {
-      sensors+= ([ name: sensor( name, this, domotica->configuration(name) ) ]);
+      sensors+= ([ name: sensor( name, this, configuration->Configuration(name) ) ]);
    }
 }
 
