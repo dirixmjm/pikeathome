@@ -19,7 +19,7 @@ constant SensorBaseParameters = ({
                    //e.g. a heater which wants to dynamically set pre-heating.
                    ({ "preoutput",PARAM_BOOLEAN,0,"Turn On / Off Adaptive Scheduling",0 }),
                    ({ "scheduletime",PARAM_INT,600,"Fallback Schedule Timing",0 }),
-                   ({ "schedule",PARAM_SCHEDULE,"","The Schedule",0 }),
+                   ({ "schedule",PARAM_SCHEDULE,"","The Schedule",POPT_RELOAD }),
                    });
 
 class sensor
@@ -61,6 +61,19 @@ class sensor
       sort(to_sort,theschedule);
 
    }
+
+   //Reload Sensor due to change of option <option>
+   void SensorReload(string option)
+   {
+      remove_call_out(run_schedule);
+      theschedule = configuration->schedule;
+      sort_schedule();
+      find_last_schedule();
+      if( theschedule && sizeof(theschedule) )
+         call_out(run_schedule,0);
+      
+   }
+
 
    /* This is the automatically returning scheduling functies
    */

@@ -82,7 +82,7 @@ void SetParameters( mapping params )
       }
    }
    if( mod_options & POPT_RELOAD )
-      reload();
+      ModuleReload();
 }
 
 
@@ -302,7 +302,7 @@ class sensor
 
 }
 
-void reload()
+void ModuleReload()
 {
    //remove_call_out(log);
    sensors = ([]);

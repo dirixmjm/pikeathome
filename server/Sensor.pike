@@ -76,6 +76,8 @@ void SetParameters( mapping params )
       if( has_index( params, option[0] ) )
       {
          configuration[option[0]]=params[option[0]];
+         if ( option[4] == POPT_RELOAD )
+            SensorReload(option[0]);
       }
    }
    foreach(SensorParameters, array option)
@@ -84,8 +86,16 @@ void SetParameters( mapping params )
       if( has_index( params, option[0] ) )
       {
          configuration[option[0]]=params[option[0]];
+         if ( option[4] == POPT_RELOAD )
+            SensorReload(option[0]);
       }
    }
+}
+
+//Reload Sensor due to change of option <option>
+void SensorReload(string option)
+{
+
 }
 
 void close()

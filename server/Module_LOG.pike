@@ -71,14 +71,14 @@ void SetParameters( mapping params )
       }
    }
    if( mod_options & POPT_RELOAD )
-      reload();
+      ModuleReload();
 }
 
-
-void reload()
+//Reload Stuff When A Parameter Changes
+void ModuleReload()
 {
-   init();
 }
+
 void close()
 {
 

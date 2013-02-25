@@ -81,7 +81,7 @@ void SetParameters( mapping params )
       }
    }
    if( mod_options & POPT_RELOAD ) 
-      reload();
+      ModuleReload();
 }
 
 void got_answer(int command, string name, mixed parameters)
@@ -89,18 +89,9 @@ void got_answer(int command, string name, mixed parameters)
 
 }
 
-
-class sensor
+//Reload Stuff When a Parameter Changes
+void ModuleReload()
 {
-inherit Sensor;
-
-}
-
-void reload()
-{
-   foreach(values(sensors),object sensor)
-      sensor->close();
-   init(); 
 }
 
 void close()
@@ -232,4 +223,10 @@ void logdata(string name, string|int|float data, int|void tstamp)
 
    call_out(switchboard, 0, name, "broadcast", COM_LOGDATA,
                      params );
+}
+
+class sensor
+{
+inherit Sensor;
+
 }

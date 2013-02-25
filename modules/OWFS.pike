@@ -29,6 +29,13 @@ void init()
    init_sensors(configuration->sensor + ({}) );
 }
 
+void ModuleReload(string option)
+{
+   logdebug("Reload Module %s\n",ModuleProperties->name);
+   OWFS=0;
+   OWFS=Public.IO.OWFS( configuration->port ); 
+}
+
 array find_sensors()
 {
    array ret = ({});
