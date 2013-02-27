@@ -44,6 +44,7 @@ data->ymin = (int) args->ymin || 0;
 data->format = "jpg";
 data->name = args->name || "";
 
+data->legend_texts = args->legend?args->legend/",":UNDEFINED;
 //FIXME Error if filename is not given?
 
 DMLParser( ([]), ([ "data":get_data ]), query,data)->parse_html( content );
