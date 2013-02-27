@@ -99,7 +99,7 @@ class sensor
               antedate_seconds = 0;
 
            call_out( switchboard, antedate_seconds, SensorProperties->name,configuration->output,COM_WRITE,(["value": (int) theschedule[ValueCache->next_schedule]->value]));
-            ValueCache->lastoutput = (int) theschedule[ValueCache->next_schedule]->value];
+            ValueCache->lastoutput = (int) theschedule[ValueCache->next_schedule]->value;
 
         }
         //only call pre announcer when there is a valid timespan.
@@ -114,7 +114,7 @@ class sensor
         call_out(run_schedule,600);
       //Set output sensor to current setting to the newly scheduled.
       switchboard(SensorProperties->name,configuration->output,COM_WRITE,(["value": (int) theschedule[ValueCache->current_schedule]->value]));
-      ValueCache->lastoutput = (int) theschedule[ValueCache->next_schedule]->value];
+      ValueCache->lastoutput = (int) theschedule[ValueCache->next_schedule]->value;
       logdebug("Done schedule, output %d\n", (int) theschedule[ValueCache->current_schedule]->value);
    }
 
@@ -123,7 +123,7 @@ class sensor
    {
       if ( has_index(configuration, "preoutput" ) && configuration->preoutput==1 )
          switchboard(SensorProperties->name,configuration->output,COM_WRITE,(["value":theschedule[ValueCache->current_schedule]->value]));
-         ValueCache->lastoutput = (int) theschedule[ValueCache->next_schedule]->value];
+         ValueCache->lastoutput = (int) theschedule[ValueCache->next_schedule]->value;
 
    }
 
