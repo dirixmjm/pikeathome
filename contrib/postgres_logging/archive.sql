@@ -74,13 +74,13 @@ BEGIN
   PERFORM archive_update( v_archive_id );
 
   -- Get start-date
-  SELECT stamp INTO v_archivestamp FROM primarydata 
-    WHERE archive_id=v_archive_id   AND stamp >= i_start 
-    ORDER BY stamp ASC LIMIT 1;
+  -- SELECT stamp INTO v_archivestamp FROM primarydata 
+  --  WHERE archive_id=v_archive_id   AND stamp >= i_start 
+  --  ORDER BY stamp ASC LIMIT 1;
 
-  IF v_archivestamp IS NULL THEN
-    RETURN;
-  END IF;
+  -- IF v_archivestamp IS NULL THEN
+  --  RETURN;
+  -- END IF;
   
 
   SELECT max(stamp) INTO v_max_archivestamp FROM primarydata WHERE
@@ -96,7 +96,7 @@ BEGIN
                  ' stamp AS stamp, ' ||
                   '(value)::INT AS value' ||
                   ' FROM primarydata WHERE ' ||
-                  ' stamp >= ' || quote_literal(v_archivestamp) || ' AND '||
+                  ' stamp >= ' || quote_literal(i_start) || ' AND '||
                   ' stamp <= ' || quote_literal(v_max_archivestamp ) ||
                   ' AND ' || ' archive_id=' || 
                   quote_literal(v_archive_id) || ' ORDER BY STAMP ASC';
