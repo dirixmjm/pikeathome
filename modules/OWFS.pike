@@ -130,7 +130,7 @@ class sensor
       switch ( low_type )
       {
          case "DS2450":
-         if ( configuration->type = "currentcost" )
+         if ( configuration->type == "currentcost" )
          {
             SensorProperties->sensor_type=SENSOR_INPUT;
             ValueCache->VOLTA= ([ "value":0.0, "direction":DIR_RO, "type":VAR_FLOAT ]);
@@ -294,7 +294,7 @@ class sensor
       switch ( low_type )
       {
          case "DS2450":
-         if ( configuration->type = "currentcost" )
+         if ( configuration->type == "currentcost" )
          {
             ValueCache->VOLTA = (float)  OWFSread(configuration->path+"volt.A");
 
