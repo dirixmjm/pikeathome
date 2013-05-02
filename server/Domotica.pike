@@ -167,17 +167,16 @@ int logcount=0;
 
 void switchboard( string sender, string receiver, int command, mixed parameters )
 {
-
-#ifdef DEBUG
-         logout(LOG_DEBUG,"Switchboard %d %O\n",++logcount, parameters );
-         logout(LOG_DEBUG,"Switchboard %d received command %d for %s from %s\n",logcount,command,receiver, sender);
-#endif
-
    //A receiver should always be given
    if( !receiver || !sizeof(receiver ))
    {
       call_out(switchboard, 0, name, sender, COM_ERROR, ([ "error":"No module,sensor or value is requested" ]) );
    }
+
+#ifdef DEBUG
+         logout(LOG_DEBUG,"Switchboard %d %O\n",++logcount, parameters );
+         logout(LOG_DEBUG,"Switchboard %d received command %d for %s from %s\n",logcount,command,receiver, sender);
+#endif
 
    array split = cumulative_split_server_module_sensor_value(receiver);
    // ({ server, server.module,server.module.sensor,server.module.sensor.value})
