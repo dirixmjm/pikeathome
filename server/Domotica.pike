@@ -22,11 +22,22 @@ void create( mapping rconfig)
    ICom = .InterCom( name,switchboard,server_configuration ); 
    if ( server_configuration->module )
       moduleinit( server_configuration->module );
+   if ( server_configuration->logmem )
+      call_out(LogMemory,60);
 }
 
 //Array with server configuration parameters
 //Goal is to keep it to a minimum and let modules worry about operation.
-array ServerParameters = ({});
+array ServerParameters = ({
+                   ({ "logmem",PARAM_BOOLEAN,0,"Turn On / Off Memory Logging",POPT_NONE }),
+
+});
+
+void LogMemory()
+{
+   logdebug("%O\n",_memory_usage());
+      call_out(LogMemory,60);
+}
 
 void logout(int log_level, mixed ... args )
 {
