@@ -9,10 +9,7 @@ CREATE TABLE source_type (
 DROP TABLE SOURCE CASCADE;
 CREATE TABLE source (
    id serial NOT NULL PRIMARY KEY,
-   server VARCHAR(32) NOT NULL,
-   module VARCHAR(32) NOT NULL,
-   sensor VARCHAR(32) NOT NULL,
-   variable VARCHAR(32) NOT NULL,
+   key VARCHAR(256) NOT NULL,
    stype   INT NOT NULL REFERENCES source_type(id),
    precision interval NOT NULL,
    max_age interval NOT NULL DEFAULT '1 day'::interval

@@ -2,8 +2,7 @@
 
 CREATE TYPE logoutput AS ( stamp TIMESTAMP WITH TIME ZONE, value INT );
 
-CREATE OR REPLACE FUNCTION retrieve_archive ( i_server VARCHAR, 
-i_module VARCHAR, i_sensor VARCHAR, i_variable VARCHAR, i_aggregate VARCHAR,
+CREATE OR REPLACE FUNCTION retrieve_archive ( i_key VARCHAR,i_aggregate VARCHAR,
 i_start TIMESTAMP WITH TIME ZONE,
 i_end TIMESTAMP WITH TIME ZONE )
 RETURNS setof  logoutput AS $retrieve_archive$
@@ -14,8 +13,7 @@ DECLARE
   v_archive_id INT;
   v_aggregate_id INT;
 BEGIN
-  SELECT * INTO v_source FROM source WHERE server=i_server AND 
-   module=i_module AND sensor = i_sensor AND variable = i_variable;
+  SELECT * INTO v_source FROM source WHERE key=i_key;
 
   SELECT id INTO v_aggregate_id FROM aggregate WHERE name ilike i_aggregate;
 
@@ -35,8 +33,7 @@ BEGIN
 END;
   $retrieve_archive$ LANGUAGE PLPGSQL;
 
-CREATE OR REPLACE FUNCTION retrieve_archive ( i_server VARCHAR, 
-i_module VARCHAR, i_sensor VARCHAR, i_variable VARCHAR, i_aggregate VARCHAR,
+CREATE OR REPLACE FUNCTION retrieve_archive ( i_key VARCHAR,i_aggregate VARCHAR,
 i_start TIMESTAMP WITH TIME ZONE,
 i_end TIMESTAMP WITH TIME ZONE, i_precision interval )
 RETURNS setof  logoutput AS $retrieve_archive$
@@ -51,8 +48,7 @@ DECLARE
   v_max_archivestamp timestamp with time zone;
   v_loopquery TEXT;
 BEGIN
-  SELECT * INTO v_source FROM source WHERE server=i_server AND 
-   module=i_module AND sensor = i_sensor AND variable = i_variable;
+  SELECT * INTO v_source FROM source WHERE key=i_key;
 
   SELECT * INTO v_aggregate FROM aggregate WHERE name ilike i_aggregate;
 

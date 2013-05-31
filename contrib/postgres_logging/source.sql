@@ -1,5 +1,21 @@
 -- Copyright (c) 2012, Marc Dirix (marc@dirix.nu)
 
+CREATE OR REPLACE FUNCTION log_data(i_key VARCHAR,i_value INT, i_tstamp TIMESTAMP WITH TIME ZONE)
+RETURNS VOID AS $log_data$
+DECLARE
+    v_source source%ROWTYPE;
+BEGIN
+  SELECT * INTO v_source FROM source WHERE key=i_key;
+  IF v_source IS NULL THEN
+  -- Guess variable type and create it
+    INSERT INTO source (key,stype,precision, max_age) VALUES
+      (i_key,1,'00:01:00'::INTERVAL,'01:00:00'::INTERVAL);
+    SELECT * INTO v_source FROM source WHERE key=i_key;
+  END IF;
+    INSERT INTO log (source_id,stamp,value) VALUES 
+      (v_source.id,i_tstamp,i_value);
+END;
+  $log_data$ LANGUAGE PLPGSQL;
 
 CREATE OR REPLACE FUNCTION log_before_insert()
 RETURNS TRIGGER AS $log_insert$ 

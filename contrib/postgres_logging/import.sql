@@ -7,12 +7,12 @@ DECLARE
  v_ress RECORD;
 BEGIN
  FOR v_loop IN SELECT a.source_id,a.rrs_id,a.aggregate_id,b.parent,
-   c.module AS module ,c.sensor AS sensor ,d.name AS name FROM
+   c.key AS key ,d.name AS name FROM
    source_rrs_aggregate AS a JOIN rrs AS b ON a.rrs_id=b.id JOIN source
    AS c on a.source_id = c.id JOIN aggregate AS d ON a.aggregate_id = d.id
    WHERE b.parent IS NULL  ORDER BY a.source_id,a.aggregate_id,coalesce(b.parent,-1),a.rrs_id
    LOOP
-   RAISE NOTICE 'RUNNING % % % %',v_loop.module,v_loop.sensor,v_loop.name,v_loop.rrs_id;
+   RAISE NOTICE 'RUNNING % % % %',v_loop.key,v_loop.name,v_loop.rrs_id;
    IF v_loop.parent IS NULL THEN
      EXECUTE log_init(v_loop.source_id,v_loop.rrs_id,v_loop.aggregate_id );
    ELSE
@@ -43,16 +43,14 @@ BEGIN
   SELECT * INTO v_aggregate FROM aggregate WHERE id=i_aggregate_id;
 
  SELECT min(stamp) INTO v_min_values_time FROM oldlog WHERE
- server=v_source.server AND module=v_source.module AND 
- sensor=v_source.sensor AND variable=v_source.variable;
+ key=v_source.key;
 
  --There are no buckets yet, so start with the oldest possible bucket
  v_bucket_start_time := init_bucket_time(v_min_values_time,v_rrs.precision);
  RAISE NOTICE 'Start LOG at %',v_bucket_start_time;
 
  SELECT max(stamp) INTO v_end_time FROM oldlog WHERE
- server=v_source.server AND module=v_source.module AND 
- sensor=v_source.sensor AND variable=v_source.variable;
+ key=v_source.key;
 
  RAISE NOTICE 'END LOG at %',v_end_time;
 
@@ -68,10 +66,7 @@ BEGIN
                  quote_literal(v_bucket_start_time) || ' AS stamp,' || 
                  quote_ident(v_aggregate.aggregatefun) || '( value) AS value' ||
                  ' FROM oldlog WHERE ' ||
-                 'server = ' || quote_literal(v_source.server) || 'AND '||
-                 ' module=' || quote_literal(v_source.module) || 'AND ' ||
-                 ' sensor=' || quote_literal(v_source.sensor) || 'AND ' ||
-                 ' variable=' || quote_literal(v_source.variable) ||' AND ' ||
+                 'key = ' || quote_literal(v_source.key) || 'AND '||
                  'stamp >=' || quote_literal(v_bucket_start_time) || ' AND ' ||
                  'stamp <' || quote_literal( v_bucket_start_time +v_rrs.precision);
       RAISE DEBUG '%', v_sql;
