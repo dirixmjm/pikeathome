@@ -32,7 +32,6 @@ Sql.Sql getdb()
 void log_data( string name, float|int data, int|void tstamp )
 {
    DB = getdb();
-   array split = split_server_module_sensor_value(name);
  
    int stamp;
    if ( zero_type(tstamp) )
@@ -46,10 +45,7 @@ void log_data( string name, float|int data, int|void tstamp )
    int value = (int) ((float) data*(int) configuration->precision);
    mixed error = catch {
       DB->query( configuration->logdataquery,
-                 ([ ":server":split[0],
-                    ":module":split[1],
-                    ":sensor":split[2],
-                    ":variable":split[3],
+                 ([ ":key":name,
                     ":timestamp":stamp,
                     ":value":(int) value]) );
    };
@@ -60,11 +56,7 @@ void log_data( string name, float|int data, int|void tstamp )
 mapping retr_data( mapping parameters )
 {
    DB = getdb();
-   array split = split_server_module_sensor_value(parameters->name);
-   mapping queryparam = ([ ":server":split[0],
-                    ":module":split[1],
-                    ":sensor":split[2],
-                    ":variable":split[3]]);
+   mapping queryparam = ([ ":key":paramaters->name]);
 
    if ( has_index( parameters,"end" ) )
    {
