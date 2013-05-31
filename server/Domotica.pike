@@ -35,8 +35,15 @@ array ServerParameters = ({
 
 void LogMemory()
 {
-   logdebug("%O\n",_memory_usage());
-      call_out(LogMemory,60);
+   int tstamp = time(1);
+   foreach(_memory_usage();string key; int value)
+   {
+      if(has_suffix(key,"_bytes"))
+         value=value/1024;
+      call_out(switchboard,0,name,"broadcast",COM_LOGDATA,
+      (["name":name+"."+key,"stamp":tstamp,"data":value]) );
+   }
+   call_out(LogMemory,60);
 }
 
 void logout(int log_level, mixed ... args )
