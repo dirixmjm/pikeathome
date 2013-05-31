@@ -56,7 +56,7 @@ void log_data( string name, float|int data, int|void tstamp )
 mapping retr_data( mapping parameters )
 {
    DB = getdb();
-   mapping queryparam = ([ ":key":paramaters->name]);
+   mapping queryparam = ([ ":key":parameters->name]);
 
    if ( has_index( parameters,"end" ) )
    {
