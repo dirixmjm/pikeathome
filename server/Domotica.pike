@@ -41,7 +41,7 @@ void LogMemory()
    {
       if(has_suffix(key,"_bytes"))
          value=value/1024;
-      call_out(switchboard,0,name,configuration->logoutput,COM_LOGDATA,
+      call_out(switchboard,0,name,server_configuration->logoutput,COM_LOGDATA,
       (["name":name+"."+key,"stamp":tstamp,"data":value]) );
    }
    call_out(LogMemory,60);
