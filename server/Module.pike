@@ -217,7 +217,7 @@ void logerror(mixed ... args)
 
 void logdata(string name, string|int|float data, int|void tstamp)
 {
-   if ( ! has_index(configuration,logoutput) )
+   if ( ! has_index(configuration,"logoutput") )
    {
       logerror("Module %s tries to log data without logoutput defined",name);
       return;
