@@ -253,7 +253,7 @@ class sensor
          if( log_item->hour - time(1) > 60 )
             logerror("Loghour %d is larger then current timestamp %d\n",log_item->hour, time(1)); 
          //Make sure logging occurs timesynchronised.
-         call_out(logdata,0.1*logcount++,SensorProperties->name+".Wh",log_item->kwh,log_item->hour);
+         call_out(logdata,0.1*logcount++,SensorProperties->name+".Wh",log_item->kwh,log_item->hour,module->configuration->logoutput);
       }
       //Get next log if we lag behind  
       if( logaddress+1 < logpointer )

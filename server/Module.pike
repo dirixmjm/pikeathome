@@ -215,18 +215,12 @@ void logerror(mixed ... args)
 
 }
 
-void logdata(string name, string|int|float data, int|void tstamp)
+void logdata(string name, string|int|float data, int|void tstamp,string|void logoutput)
 {
-   if ( ! has_index(configuration,"logoutput") )
-   {
-      logerror("Module %s tries to log data without logoutput defined",name);
-      return;
-   }
    mapping params = ([ "name":name,"data":data ]);
    if ( intp(tstamp) )
      params+= ([ "stamp":tstamp ]);
-
-   call_out(switchboard, 0, name, configuration->logoutput, COM_LOGDATA,
+   call_out(switchboard, 0, name, sizeof(logoutput)?logoutput:"broadcast", COM_LOGDATA,
                      params );
 }
 

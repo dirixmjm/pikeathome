@@ -41,7 +41,7 @@ class sensor
    {
       if ( command == -COM_READ )
          //FIXME broadcasting is deprecated
-         logdata(name,params->value,time(1));
+         logdata(name,params->value,time(1),configuration->logoutput);
       else
          logdebug("Logger can't handle return data for command %d\n",command);
    } 

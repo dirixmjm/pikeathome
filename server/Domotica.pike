@@ -36,13 +36,16 @@ array ServerParameters = ({
 
 void LogMemory()
 {
-   int tstamp = time(1);
-   foreach(_memory_usage();string key; int value)
+   if ( server_configuration->logmem == 1 )
    {
-      if(has_suffix(key,"_bytes"))
-         value=value/1024;
-      call_out(switchboard,0,name,server_configuration->logoutput,COM_LOGDATA,
-      (["name":name+"."+key,"stamp":tstamp,"data":value]) );
+      int tstamp = time(1);
+      foreach(_memory_usage();string key; int value)
+      {
+         if(has_suffix(key,"_bytes"))
+            value=value/1024;
+         call_out(switchboard,0,name,server_configuration->logoutput,COM_LOGDATA,
+         (["name":name+"."+key,"stamp":tstamp,"data":value]) );
+      }
    }
    call_out(LogMemory,60);
 }
@@ -192,7 +195,7 @@ void switchboard( string sender, string receiver, int command, mixed parameters 
    //A receiver should always be given
    if( !receiver || !sizeof(receiver ))
    {
-      call_out(switchboard, 0, name, sender, COM_ERROR, ([ "error":"No module,sensor or value is requested" ]) );
+      call_out(switchboard, 0, name, sender, COM_ERROR, ([ "error":"No module,sensor or value is requested\n" ]) );
    }
 
 #ifdef DEBUG
