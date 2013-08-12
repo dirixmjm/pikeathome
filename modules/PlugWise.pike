@@ -11,6 +11,8 @@ object PlugWise;
 
 constant ModuleParameters = ({
                    ({ "port",PARAM_STRING,"/dev/ttyUSB0","TTY Port of the USB Stick", POPT_RELOAD }),
+                   ({ "logoutput", PARAM_MODULELOGDATA,"","Data logging module",0 }),
+
                    ({ "plugfind",PARAM_BOOLEAN,0,"Turn On / Off Plug Finder for 5 Minutes",POPT_NONE }),
                    ({ "debug",PARAM_BOOLEAN,0,"Turn On / Off Debugging",POPT_NONE }),
                    });

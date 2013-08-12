@@ -159,8 +159,23 @@ array get_main_configuration( Parser.HTML p, mapping args, mapping query )
    {
       ret+= ({ "<H1>This Module Has No Parameters</H1>\n" });
    }
-   werror("HERE\n");
-
+   if( prop && mappingp(prop))
+   {
+      if( has_index(prop, "memory" ) )
+      {
+      ret+=({"<table>"});
+         foreach(sort(indices(prop->memory)),string index )
+            ret+=({ sprintf("<tr><td>%s</td><td>%d</td></tr>",index,prop->memory[index])});
+      ret+=({"</table>"});
+      }
+      if( has_index(prop, "references" ) )
+      {
+      ret+=({"<table>"});
+         foreach(prop->references;string index; int count )
+            ret+=({ sprintf("<tr><td>%s</td><td>%d</td></tr>",index,count)});
+      ret+=({"</table>"});
+      }
+   }
    //Check if this is a server or a module, and check if it contains sensor's, 
    //then list them
    if( sizeof(name_split) <= 2 ) 
@@ -274,6 +289,7 @@ mapping form_to_save(array params, mapping query, string name)
          case PARAM_SELECT:
          case PARAM_STRING:
          case PARAM_RO:
+         case PARAM_MODULELOGDATA:
          //Don't save if the paramater hasn't changed
          if( has_index(query->entities->form, inname)) 
             tosave+=([ param[0]:query->entities->form[inname] ]);
@@ -399,6 +415,18 @@ array make_form_input(array param, mapping query, string name)
          return ({ sprintf("<H1>Server Returned An Error</H1><p>%s",sensors->error) });
       sensors = sort(sensors );
       ret += make_sensor_select(inname,sensors,value,param[1]);
+   }
+   break;
+   case PARAM_MODULELOGDATA:
+   {
+      string value= sizeof(param)>5?(string)param[5]:(string)param[2];
+      array|mapping modules = dml->rpc( name_split[0], COM_LIST, 0 );
+      if( ! modules )
+         return ({});
+      if( mappingp(modules) && has_index(modules,"error"))
+         return ({ sprintf("<H1>Server Returned An Error</H1><p>%s",modules->error) });
+      modules = sort(modules );
+      ret += make_module_select(inname,modules,value,param[1]);
    }
    break;
    case PARAM_SENSOROUTPUTARRAY:
@@ -584,6 +612,30 @@ protected array make_sensor_select(string inname,array sensors, string value,int
             ret+=({ sprintf("<option value=\"%s\" %s>%s</option>",
                                  sname,sname==value?"selected":"",sname)});
          }
+      }
+   }
+   ret+=({ "</select>"});
+   return ret;
+}
+
+protected array make_module_select(string inname,array modules, string value,int type)
+{
+   int moduletype = 0;
+   if( type == PARAM_MODULELOGDATA )
+      moduletype = MODULE_LOGDATA;
+   else if ( type == PARAM_MODULELOGEVENT )
+      moduletype = MODULE_LOGEVENT;
+
+   array ret= ({ sprintf("<select name=\"%s\">",inname),
+                 "<option value="">No Sensor Selected</option>" });
+   foreach( sort(modules), string module )
+   {
+      mapping prop = dml->rpc(module,COM_PROP);
+      if( mappingp(prop) && (prop->module_type & moduletype) )
+      {
+            string sname = prop->name;
+            ret+=({ sprintf("<option value=\"%s\" %s>%s</option>",
+                                 sname,sname==value?"selected":"",sname)});
       }
    }
    ret+=({ "</select>"});

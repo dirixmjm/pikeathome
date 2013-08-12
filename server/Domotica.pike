@@ -30,6 +30,7 @@ void create( mapping rconfig)
 //Goal is to keep it to a minimum and let modules worry about operation.
 array ServerParameters = ({
                    ({ "logmem",PARAM_BOOLEAN,0,"Turn On / Off Memory Logging",POPT_NONE }),
+		   ({ "logoutput", PARAM_MODULELOGDATA,"","Data logging module",0 }),
 
 });
 
@@ -40,7 +41,7 @@ void LogMemory()
    {
       if(has_suffix(key,"_bytes"))
          value=value/1024;
-      call_out(switchboard,0,name,"broadcast",COM_LOGDATA,
+      call_out(switchboard,0,name,configuration->logoutput,COM_LOGDATA,
       (["name":name+"."+key,"stamp":tstamp,"data":value]) );
    }
    call_out(LogMemory,60);
@@ -167,7 +168,10 @@ void rpc_command( string sender, string receiver, int command, mapping parameter
       case COM_LOGDATA:
       foreach(dataloggers, string logger)
       {
-         modules[logger]->log_data( parameters->name, parameters->data,has_index(parameters,"stamp")?parameters->stamp:UNDEFINED );
+         //Distribute log data over switchboard
+         //FIXME log data broadcasting is deprecated
+         switchboard(sender,logger, COM_LOGDATA, parameters);
+//         modules[logger]->log_data( parameters->name, parameters->data,has_index(parameters,"stamp")?parameters->stamp:UNDEFINED );
       }
       break;
       default:

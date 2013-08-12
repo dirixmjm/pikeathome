@@ -11,6 +11,8 @@
 #define PARAM_SENSOROUTPUTARRAY 10
 #define PARAM_RO 11
 #define PARAM_SELECT 12
+#define PARAM_MODULELOGDATA 13
+#define PARAM_MODULELOGEVENT 14
 
 //Parameter Options
 #define POPT_NONE        0

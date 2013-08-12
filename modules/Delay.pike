@@ -11,8 +11,8 @@ constant ModuleParameters = ({
 
 constant SensorBaseParameters = ({
                    ({ "output",PARAM_SENSOROUTPUT,"","Output Sensor",0 }),
-                   ({ "delayhigh",PARAM_INT,300,"Input High Threshold",0 }),
-                   ({ "delaylow",PARAM_INT,300,"Input Low Threshold",0 }),
+                   ({ "delayhigh",PARAM_INT,300,"Input High Delay",0 }),
+                   ({ "delaylow",PARAM_INT,300,"Input Low Delay",0 }),
                    });
 
 

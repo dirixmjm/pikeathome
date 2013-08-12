@@ -7,6 +7,7 @@ inherit Module;
 int module_type = MODULE_SENSOR;
 
 object OWFS;
+array SensorParameters = ({});
 
 constant ModuleParameters = ({
                    ({ "port",PARAM_STRING,"/dev/ttyUSB0","TTY Port of the USB Stick", POPT_RELOAD }),
@@ -219,6 +220,7 @@ class sensor
             SensorProperties->sensor_type=SENSOR_INPUT;
             if( configuration->type == "CO2" )
             {
+               SensorParameters+=({ ({ "offset",PARAM_INT,0,"Offset", 0 }) });
                ValueCache->concentration = ([ "value":0, "direction":DIR_RO, "type":VAR_INT ]);
                ValueCache->vis = ([ "value":0.0, "direction":DIR_RO, "type":VAR_FLOAT ]);
             }
