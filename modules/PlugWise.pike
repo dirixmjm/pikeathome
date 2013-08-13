@@ -11,8 +11,6 @@ object PlugWise;
 
 constant ModuleParameters = ({
                    ({ "port",PARAM_STRING,"/dev/ttyUSB0","TTY Port of the USB Stick", POPT_RELOAD }),
-                   ({ "logoutput", PARAM_MODULELOGDATA,"","Data logging module",0 }),
-
                    ({ "plugfind",PARAM_BOOLEAN,0,"Turn On / Off Plug Finder for 5 Minutes",POPT_NONE }),
                    ({ "debug",PARAM_BOOLEAN,0,"Turn On / Off Debugging",POPT_NONE }),
                    });
@@ -23,6 +21,7 @@ constant SensorBaseParameters = ({
                    ({ "mac",PARAM_STRING,-1,"Plug Hardware Address",0   }),
                    ({ "nextaddress",PARAM_INT,-1,"Current Log Pointer (-1 use plug headpointer)",0   }),
                    ({ "log",PARAM_BOOLEAN,0,"Turn On / Off Logging",0   }),
+                   ({ "logoutput", PARAM_MODULELOGDATA,"","Data logging module",0 }),
                 });
 
 void init() 
@@ -253,7 +252,7 @@ class sensor
          if( log_item->hour - time(1) > 60 )
             logerror("Loghour %d is larger then current timestamp %d\n",log_item->hour, time(1)); 
          //Make sure logging occurs timesynchronised.
-         call_out(logdata,0.1*logcount++,SensorProperties->name+".Wh",log_item->kwh,log_item->hour,module->configuration->logoutput);
+         call_out(logdata,0.1*logcount++,SensorProperties->name+".Wh",log_item->kwh,log_item->hour,has_index(configuration,"logoutput")?configuration->logoutput:UNDEFINED);
       }
       //Get next log if we lag behind  
       if( logaddress+1 < logpointer )
