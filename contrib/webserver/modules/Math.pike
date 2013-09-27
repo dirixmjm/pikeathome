@@ -40,7 +40,7 @@ array DMLMath(Parser.HTML p,
    }
    if( has_index( args, "add" ) )
    {
-      value = value + (float) args->mult;
+      value = value + (float) args->add;
    }
    if( has_index( args, "round" ) )
    {
