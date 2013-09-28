@@ -21,33 +21,59 @@ mapping containers = ([
 
 array DMLConfiguration(Parser.HTML p, mapping args, mapping query )
 {
+   //Set name to the value of the current object we're configuring
+   string name = query->entities ->form->name || dml->servername;
+
    array ret = ({});
    ret+= ({ "<div class=\"modules\">",
             "&nbsp;Modules<br />"});
    //First start with the webserver 
    ret+= ({ sprintf("<a href=\"/configuration/index.dml?name=%s\">%s</a><br />",dml->servername,dml->servername) });
-   array|mapping module_sensors = dml->rpc( dml->servername, COM_LIST );
-   if( mappingp(module_sensors) && has_index(module_sensors,"error") )
-      ret+=({ module_sensors->error });
-   else if ( arrayp(module_sensors) ) 
+   array|mapping modules = dml->rpc( dml->servername, COM_LIST );
+   if( mappingp(modules) && has_index(modules,"error") )
+      ret+=({ modules->error });
+   else if ( arrayp(modules) ) 
    {
-      foreach( sort(module_sensors) , string module_sensor )
+      foreach( sort(modules) , string module )
       {
-         ret+= ({ sprintf("&nbsp;<a href=\"/configuration/index.dml?name=%s\">%s</a><br />",module_sensor,module_sensor) });
+         array module_split = split_server_module_sensor_value(module); 
+         ret+= ({ sprintf("&nbsp;<a href=\"/configuration/index.dml?name=%s\">%s</a><br />",module,module_split[1]) });
       }
    }
    // Next list all peers
    foreach( sort(indices(configuration->peers || ({}))), string peername )
    {
       ret+= ({ sprintf("<a href=\"/configuration/index.dml?name=%s\">%s</a><br />",peername,peername) });
-      array|mapping module_sensors = dml->rpc( peername, COM_LIST );
-      if( mappingp(module_sensors) && has_index(module_sensors,"error") )
-         ret+=({ module_sensors->error });
-      else if ( arrayp(module_sensors) ) 
+      array|mapping modules = dml->rpc( peername, COM_LIST );
+      if( mappingp(modules) && has_index(modules,"error") )
+         ret+=({ modules->error });
+      else if ( arrayp(modules) ) 
       {
-         foreach( sort(module_sensors) , string module_sensor )
+         foreach( sort(modules) , string module )
          {
-            ret+= ({ sprintf("&nbsp;<a href=\"/configuration/index.dml?name=%s\">%s</a><br />",module_sensor,module_sensor) });
+            array module_split = split_server_module_sensor_value(module); 
+            ret+= ({ sprintf("&nbsp;<a href=\"/configuration/index.dml?name=%s\">%s</a><br />",module,module_split[1]) });
+            if( has_prefix(name, module) )
+            {
+               array|mapping sensors = dml->rpc( module, COM_LIST );
+               if( mappingp(sensors) && has_index(sensors,"error") )
+                  ret+=({ sensors->error });
+               if( arrayp(sensors) )
+                  foreach( sort(sensors) , string sensor )
+                  {
+                     array sensor_split = split_server_module_sensor_value(sensor); 
+                     ret+= ({ sprintf("&nbsp;&nbsp;<a href=\"/configuration/index.dml?name=%s\">%s</a><br />",sensor,sensor_split[2]) });
+                     if( has_prefix(name, sensor))
+                     {
+                        array|mapping variables = dml->rpc( sensor, COM_READ );
+                        if( mappingp( variables))
+                           foreach( sort(indices(variables)) , string variable )
+                           {
+                              ret+= ({ sprintf("&nbsp;&nbsp;&nbsp;<a href=\"/configuration/index.dml?name=%s\">%s</a><br />",sensor+"."+variable,variable) });
+                           }
+                     }
+                  }
+            }
          }
       }
    }
@@ -67,10 +93,6 @@ array get_main_configuration( Parser.HTML p, mapping args, mapping query )
    if(!name || !sizeof(name) )
       return ({});
    array name_split = split_server_module_sensor_value(name);
-
-   //Name should be module or module.sensor
-   if( sizeof(name_split) > 3 )
-      return ({ "<H1>Error</H1><p>Configuration not available for values" });
 
    //Find Parameters of the module or sensor.
    array|mapping params = dml->rpc( name , COM_PARAM );
@@ -125,14 +147,15 @@ array get_main_configuration( Parser.HTML p, mapping args, mapping query )
 
    if( has_index( query->entities->form, "Delete" ) )
    {
-      mapping tosave = (["name":query->entities->form->Delete]);
-      mapping serv = dml->rpc( name, COM_DROP, tosave);
+      mapping tosave = (["name":name]);
+      //A Delete should be send to one layer up.
+      mapping serv = dml->rpc( name_split[0..sizeof(name_split)-2]*".", COM_DROP, tosave);
       //Check that I'm deleting one of my own (server->module, module->sensor)
    } 
    
    array ret = ({});
    //Build form code
-   if(params && arrayp(params)  )
+   if( params && arrayp(params) )
    {
       ret+=({ "<FORM method=\"POST\">" });
       if( (int) configuration->debug )
@@ -149,12 +172,77 @@ array get_main_configuration( Parser.HTML p, mapping args, mapping query )
       //FIXME this should be configurable
       if( sizeof(name_split) == 1 )
          ret+=({ "<input type=\"submit\" name=\"find_sensor\" value=\"Add Module\" /></td></tr>" }); 
-      else if ( sizeof(name_split) == 2 && mappingp(prop) && 
+      else if ( sizeof(name_split) == 2)
+      { 
+      if( mappingp(prop) && 
                 (prop["module_type"] & (MODULE_SENSOR |MODULE_SCHEDULE)))
-         ret+=({ "<input type=\"submit\" name=\"find_sensor\" value=\"Add Sensor\" /></td></tr>" }); 
+         ret+=({ "<input type=\"submit\" name=\"find_sensor\" value=\"Add Sensor\" />" }); 
+         ret+=({ "<input type=\"submit\" name=\"Delete\" value=\"Delete Module\" /></td></tr>" }); 
+      }
+      else if ( sizeof(name_split) == 3)
+         ret+=({ "<input type=\"submit\" name=\"Delete\" value=\"Delete Sensor\" /></td></tr>" }); 
+
       ret+=({ "</table>" });
       ret+=({ "</FORM>" });
-   } //FIXME No Params.
+   }
+   //Variable
+   else if ( sizeof(name_split) == 4 ) 
+   {
+      array|mapping variable = dml->rpc( name, COM_READ );
+      if( mappingp(variable) && has_index(variable,"error"))
+         return ({ sprintf("<H1>Server Returned An Error</H1><p>%s",variable->error) });
+      if ( mappingp(variable) )
+      {
+         ret+=({ "<FORM method=\"POST\">" });
+         if( (int) configuration->debug )
+            ret+=({ sprintf("%O",query->request->variables) });
+         ret+=({ "<input type=\"hidden\" name=\"formref\" value=\""+name+"\" />" });
+         ret+=({ "<table border=\"1\" >" });
+            ret+=({ "<tr><td>Direction</td><td align=\"left\" >" });
+            switch( variable->direction )
+            {
+               case DIR_RO:
+                  ret+=({ "R" });
+                  break;
+               case DIR_RW:
+                  ret+=({ "RW" });
+                  break;
+               case DIR_WO:
+                  ret+=({ "W" });
+                  break;
+            }
+            ret+=({ "</td></tr>" });
+            ret+=({ "<tr><td>Type</td><td align=\"left\">" });
+            switch( variable->type )
+            {
+               case VAR_INT:
+                  ret+=({ "INT" });
+                  break;
+               case VAR_FLOAT:
+                  ret+=({ "FLOAT" });
+                  break;
+               case VAR_BOOLEAN:
+                  ret+=({ "BOOL" });
+                  break;
+               case VAR_STRING:
+                  ret+=({ "STRING" });
+                  break;
+            }
+            ret+=({ "</td></tr>" });
+            ret+=({ "<tr><td>Log</td><td align=\"left\">" });
+            ret+=({ "<select name=\"log\">" });
+            ret+=({ sprintf("<option value=\"1\" %s>ON",variable->log?"selected":"") });
+            ret+=({ sprintf("<option value=\"0\" %s>OFF",variable->log?"":"selected") });
+            ret+=({ "</select>" });
+            ret+=({ "</td></tr>" });
+            ret+=({ "</td></tr>" });
+            ret+=({ "<tr><td>Log Time</td><td align=\"left\">" });
+            ret+=({ sprintf("<input type=\"text\" value=\"%d\" name=\"logtime\" />",variable->logtime) });
+            ret+=({ "<tr><td>&nbsp;</td><td><input type=\"submit\" name=\"SaveVar\" value=\"Save\" />" }); 
+         ret+=({ "</table>" });
+         ret+=({ "</FORM>" });
+      }
+   }
    else
    {
       ret+= ({ "<H1>This Module Has No Parameters</H1>\n" });
@@ -180,53 +268,6 @@ array get_main_configuration( Parser.HTML p, mapping args, mapping query )
    //then list them
    if( sizeof(name_split) <= 2 ) 
    {
-      array|mapping module_sensors = dml->rpc( name, COM_LIST );
-      if( mappingp(module_sensors) && has_index(module_sensors,"error"))
-         return ({ sprintf("<H1>Server Returned An Error</H1><p>%s",module_sensors->error) });
-      ret+=({ "<FORM method=\"POST\" > " });
-      ret+=({ "<input type=\"hidden\" name=\"update_mod_sensor\" value=\"1\"/>" });
-      ret+=({ "<table border=\"1\">" });
-      foreach( sort(module_sensors || ({})), string sensor )
-      {
-         array module_sensor_split = split_server_module_sensor_value(sensor);
-         string module_sensor_name = "";
-         if( sizeof(module_sensor_split) == 3 )
-            module_sensor_name = module_sensor_split[2];
-         else 
-            module_sensor_name = sensor; 
-         array params = dml->rpc( sensor , COM_PARAM );
-         //Check if there was an update for this sensor
-         if( has_index( query->entities->form, "update_mod_sensor" ) &&
-             has_index( query->entities->form, sensor ) &&
-             query->entities->form[sensor] == "Update" && params)
-         {
-            mapping tosave=form_to_save(params,query,sensor);
-            if(sizeof(tosave))
-               dml->rpc( sensor , COM_PARAM, tosave );
-         }
-
-         ret+=({ "<tr><td align=\"left\" >"});
-         ret+=({ sprintf("<a href=\"index.dml?name=%s\">%s</a>",sensor,module_sensor_name ) });
-         ret+=({ "</td>" });
-         if ( (int) configuration->inlineconfig == 1 )
-         {
-            foreach( params|| ({}), array param )
-            {
-               ret+=({ sprintf( "<td align=\"lef\">%s&nbsp;",(string) param[0]) });
-               ret+= make_form_input(param,query,sensor);
-               ret+= ({ "</td>"});
-            }
-            ret+= ({ sprintf("<td><input type=\"submit\" name=\"%s\""+
-                                  " value=\"Update\" /></td>",sensor) });
-         }
-         ret+=({ "<td>" });
-         ret+=({ sprintf("<a href=\"index.dml?name=%s&Delete=%s\"><img src=\"/icons/Delete.png\" height=\"15px\" /></a>",name,sensor ) });
-
-         ret+=({ "</td></tr>" });
-
-      } 
-      ret+=({ "</FORM> " });
-      ret+=({ "</table>" });
       //List sensors That can be added
       if( has_index( query->entities->form, "find_sensor" ) )
       {
@@ -272,6 +313,19 @@ array get_main_configuration( Parser.HTML p, mapping args, mapping query )
          ret+=({ "</FORM>" });
       }
    }
+   /*
+   //This is a sensor, list all variables
+   else if ( sizeof(name_split) == 3)
+   {
+         array|mapping variables = dml->rpc( name, COM_READ );
+         if( mappingp(variables) && has_index(variables,"error"))
+            return ({ sprintf("<H1>Server Returned An Error</H1><p>%s",variables->error) });
+         if ( mappingp(variables) )
+         {
+            ret+=({ "<table border=\"1\">" });
+         }
+   }
+   */
 
    return ret;
 }
