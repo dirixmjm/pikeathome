@@ -31,14 +31,14 @@ class sensor
    int counter = 0;
    array gracevalues = ({});
 
-   protected object ValueCache = VariableStorage( );
+   //protected object ValueCache = VariableStorage( );
  
    mapping SensorProperties = ([
                                   "module":"Comperator",
                                   "name":"",
                                   "type":sensor_type,
                                   ]);
- 
+   protected int initstart = 1; 
    void sensor_init(  )
    {
       counter = (int) configuration->gracecount;
@@ -152,6 +152,26 @@ class sensor
              }
              break;
           }
+       }
+       // Send HIGH and LOW on init.
+       if ( initstart )
+       {
+          switch( (int) configuration->function )
+          {
+             case 0:
+             if( ValueCache->level)
+                WriteOut(1);
+             else
+                WriteOut(0);
+             break;
+             case 1:
+             if( ValueCache->level)
+                WriteOut(0);
+             else
+                WriteOut(1);
+             break;
+          }
+          initstart = 0;
        }
    }
  
