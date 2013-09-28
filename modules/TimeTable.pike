@@ -18,6 +18,7 @@ constant SensorBaseParameters = ({
                    //Preoutput is used by an external module, 
                    //e.g. a heater which wants to dynamically set pre-heating.
                    ({ "preoutput",PARAM_BOOLEAN,0,"Turn On / Off Adaptive Scheduling",0 }),
+                   ({ "sendinit",PARAM_BOOLEAN,0,"Send Output On Init",0 }),
                    ({ "scheduletime",PARAM_INT,600,"Fallback Schedule Timing",0 }),
                    ({ "schedule",PARAM_SCHEDULE,"","The Schedule",POPT_RELOAD }),
                    });
@@ -44,7 +45,21 @@ class sensor
       sort_schedule();
       find_last_schedule();
       if( theschedule && sizeof(theschedule) )
-         call_out(run_schedule,0);
+      {
+         //Run scheduler now (and send init value) or wait until next schedule
+         if ( configuration->sendinit )
+            call_out(run_schedule,0);
+         else
+         {
+            int seconds  = schedule();
+            if ( seconds >= 0 )
+               call_out(run_schedule,seconds);
+            else if ( has_index(configuration, "scheduletime") )
+               call_out(run_schedule,(int) configuration->scheduletime);
+            else 
+               call_out(run_schedule,600);
+         }
+      }
    }
 
    void sort_schedule()
@@ -106,16 +121,17 @@ class sensor
         //The pretimer can be changed by an external module using the TimeTable.
         if( has_index(theschedule[ValueCache->current_schedule],"pretimer") && (int) theschedule[ValueCache->current_schedule]->pretimer > 0 && (seconds-(int) theschedule[ValueCache->current_schedule]->pretimer) > 0 )
            call_out(preannounce,seconds-(int) theschedule[ValueCache->current_schedule]->pretimer);
- 
+
+         //Set output sensor to current setting to the newly scheduled.
+         switchboard(SensorProperties->name,configuration->output,COM_WRITE,(["value": (int) theschedule[ValueCache->current_schedule]->value]));
+        ValueCache->lastoutput = (int) theschedule[ValueCache->next_schedule]->value;
+        logdebug("Done schedule, output %d\n", (int) theschedule[ValueCache->current_schedule]->value);
      }
+     // No Schedule was found, or some error happend, try again after timeout.
      else if ( has_index(configuration, "scheduletime") )
         call_out(run_schedule,(int) configuration->scheduletime);
      else 
         call_out(run_schedule,600);
-      //Set output sensor to current setting to the newly scheduled.
-      switchboard(SensorProperties->name,configuration->output,COM_WRITE,(["value": (int) theschedule[ValueCache->current_schedule]->value]));
-      ValueCache->lastoutput = (int) theschedule[ValueCache->next_schedule]->value;
-      logdebug("Done schedule, output %d\n", (int) theschedule[ValueCache->current_schedule]->value);
    }
 
 

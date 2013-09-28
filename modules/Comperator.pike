@@ -66,6 +66,20 @@ class sensor
    {
       ValueCache->lastinput = input->value;
       int lastlevel = ValueCache->level;
+       // Set lastlevel to opposite HIGH and LOW on init.
+       if ( initstart )
+       {
+          switch( (int) configuration->function )
+          {
+             case 1:
+                lastlevel = 0;
+             break;
+             case 0:
+                lastlevel = 1;
+             break;
+          }
+          initstart = 0;
+       }
       switch( configuration->grace )
       {
          case "last":
@@ -100,13 +114,13 @@ class sensor
          break;
          case "off":
          default:
-            //Hystereses
+            //Hystereses FIXME is this logic correct?
             if( lastlevel == 0 )
               ValueCache->level = (float) input->value >= (float) configuration->highlevel;
             else
               ValueCache->level = (float) input->value > (float) configuration->lowlevel;
       }
-
+      werror("COMP %s %d\n",SensorProperties->name,ValueCache->level);
       /*Detect LOW (function = 0) or HIGH (function = 1) levels.
        *The sensor sensor will send ON (1) and OFF (0) signals to
        *the output each time the signal level changes.
@@ -152,26 +166,6 @@ class sensor
              }
              break;
           }
-       }
-       // Send HIGH and LOW on init.
-       if ( initstart )
-       {
-          switch( (int) configuration->function )
-          {
-             case 0:
-             if( ValueCache->level)
-                WriteOut(1);
-             else
-                WriteOut(0);
-             break;
-             case 1:
-             if( ValueCache->level)
-                WriteOut(0);
-             else
-                WriteOut(1);
-             break;
-          }
-          initstart = 0;
        }
    }
  

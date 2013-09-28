@@ -116,7 +116,7 @@ class Variable
 {
 
 array VariableParameters = ({
-                   ({ "direction",PARAM_INT,1,"Variable Direction",0}),
+                   ({ "direction",PARAM_SELECT,(["ReadOnly":DIR_RO,"WriteOnly":DIR_WO,"Read/Write":DIR_RW]),"Variable Direction",0}),
                    ({ "log",PARAM_BOOLEAN,1,"Automatic Log Enable",0}),
                    ({ "logtime",PARAM_INT,60,"Automatic Log Time",0}),
                                  });
@@ -142,7 +142,18 @@ array VariableParameters = ({
          }
          type= (int) Value->type;
          value= Value->value;
-         direction= Value->direction || DIR_RO;
+         if ( has_index( Value, "direction") )
+         {
+            direction= Value->direction;
+            //If the direction is set to RO or WO the direction is fixed in software.
+            if ( direction == DIR_RO )
+               VariableParameters[0]= ({ "direction",PARAM_SELECT,(["ReadOnly":DIR_RO]),"Variable Direction",0});
+            if ( direction == DIR_WO )
+               VariableParameters[0]= ({ "direction",PARAM_SELECT,(["WriteOnly":DIR_WO]),"Variable Direction",0});
+         }
+         else
+            direction= DIR_RO;
+
          if( has_index(Value,"log") )
             log = Value->log;
          if( has_index(Value,"logtime") )
