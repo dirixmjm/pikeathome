@@ -102,7 +102,6 @@ class sensor
          {
             ValueCache->state= ([ "value":0, "direction":DIR_RW, "type":VAR_BOOLEAN ]);
             ValueCache->power= ([ "value":0.0, "direction":DIR_RO, "type":VAR_FLOAT ]);
-            ValueCache->Wh= ([ "value":0, "direction":DIR_RO, "type":VAR_FLOAT ]);
             if( has_index( configuration, "log" ) && (int) configuration->log == 1)
                call_out(log,30);
          }
@@ -248,7 +247,6 @@ class sensor
             logerror("Loghour %d is larger then current timestamp %d\n",log_item->hour, time(1)); 
          //Make sure logging occurs timesynchronised.
          call_out(logdata,0.1*logcount++,SensorProperties->name+".Wh",log_item->kwh,log_item->hour);
-         ValueCache->Wh=log_item->kwh;
       }
       //Get next log if we lag behind  
       if( logaddress+1 < logpointer )

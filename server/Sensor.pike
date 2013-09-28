@@ -24,7 +24,7 @@ void create( string name, object _module, object _configuration )
 {
    module = _module;
    configuration = _configuration;
-   ValueCache = VariableStorage(_configuration);
+   ValueCache = VariableStorage(_configuration, LogValue );
    SensorProperties->module = _module->ModuleProperties->name;
    SensorProperties->name = name;
    SensorProperties->sensor_type = sensor_type;
@@ -49,8 +49,19 @@ mixed write( mapping what )
  * updates ValueCache.
  */
 
-void UpdateSensor()
+protected void UpdateSensor()
 {
+}
+
+
+/* This is the basic logging function. If other logic is needed
+ * it is recommended that the sensor class overloads this function
+ */
+protected void LogValue(string variable_name)
+{
+   string name = SensorProperties->name + "." + variable_name; 
+   UpdateSensor();
+   logdata(name,ValueCache[variable_name],time(1));
 }
 
 mapping property()

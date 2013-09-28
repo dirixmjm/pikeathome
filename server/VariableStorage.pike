@@ -10,17 +10,12 @@ This class functions as a stand-in for the former mapping variable storage in se
 mapping Storage = ([]);
 object Sensor;
 protected object configuration;
+protected function LogValue;
 
-void create ( object _configuration, void|mapping InitVariable )
+void create ( object _configuration, function _LogValue )
 {
    configuration = _configuration;
-   if( InitVariable && mappingp(InitVariable) )
-   {
-      foreach ( InitVariable; string Name; mixed Data ) 
-      {
-         Storage+= ([ Name : Variable(Name,Data,configuration->Configuration(Name)) ]);
-      }
-   }
+   LogValue = _LogValue;
 }
 
 array GetParameters(string Key)
@@ -67,7 +62,7 @@ mixed `->=(string Key, mixed Value)
    }
    else
    {
-      Storage[Key] = Variable(Key,Value,configuration->Configuration(Key));
+      Storage[Key] = Variable(Key,Value,configuration->Configuration(Key),LogValue);
    }
 }
 
@@ -85,7 +80,7 @@ mixed `[]=(string Key, mixed Value)
    }
    else
    {
-      Storage[Key] = Variable(Key,Value,configuration->Configuration(Key));
+      Storage[Key] = Variable(Key,Value,configuration->Configuration(Key),LogValue);
    }
 }
 
@@ -127,11 +122,13 @@ array VariableParameters = ({
    int logtime = 60;
    string Name = "";
    object configuration;
+   function LogValue;
 
-   protected void create( string Key, mixed Value, object _configuration )
+   protected void create( string Key, mixed Value, object _configuration, function _LogValue )
    {
       Name = Key;
       configuration = _configuration;
+      LogValue = _LogValue;
       //This Sets the Defaults, which can have a configuration-override
       if ( mappingp( Value ) )
       {
@@ -180,9 +177,11 @@ array VariableParameters = ({
       if ( has_index(configuration,"direction") )
          direction = configuration->direction;
       if ( has_index(configuration,"log") )
-         log = configuration->log;
+         log = (int) configuration->log;
       if ( has_index(configuration,"logtime") )
-         logtime = configuration->logtime;
+         logtime = (int) configuration->logtime;
+      if ( log && (logtime > 0) )
+         call_out(LogValue,logtime,Name);
    }
 
    void `->=( string Key, mixed Value )
@@ -311,5 +310,8 @@ array VariableParameters = ({
             }
          }
       }
+      remove_call_out(LogValue);
+      if ( log && logtime > 0 )
+         call_out(LogValue,logtime,Name);
    }
 }

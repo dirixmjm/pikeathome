@@ -233,15 +233,15 @@ class sensor
          
          break;
       }
-      SensorProperties.init = 1;
+      SensorProperties->init = 1;
       UpdateSensor();
    }
 
    mapping write( mapping what )
    {
-      if ( SensorProperties.init == 0 )
+      if ( SensorProperties->init == 0 )
          sensor_init();
-      if ( SensorProperties.init == 0 )
+      if ( SensorProperties->init == 0 )
          return ([]);
  
       string low_type = "";
@@ -284,11 +284,10 @@ class sensor
 
    void UpdateSensor()
    {
-      if ( SensorProperties.init == 0 )
-      {
+      if ( SensorProperties->init == 0 )
          sensor_init();
-         return;
-      }
+      if ( SensorProperties->init == 0 )
+         return; 
       string low_type = "";
       low_type = OWFSread(configuration->path+"type") ;
       if( !low_type )

@@ -31,8 +31,6 @@ class sensor
    int counter = 0;
    array gracevalues = ({});
 
-   //protected object ValueCache = VariableStorage( );
- 
    mapping SensorProperties = ([
                                   "module":"Comperator",
                                   "name":"",
