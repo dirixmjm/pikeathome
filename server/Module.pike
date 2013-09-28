@@ -215,13 +215,12 @@ void logerror(mixed ... args)
 
 }
 
-void logdata(string name, string|int|float data, int|void tstamp,string|void logoutput)
+void logdata(string name, string|int|float data, int|void tstamp)
 {
    mapping params = ([ "name":name,"data":data ]);
    if ( intp(tstamp) )
      params+= ([ "stamp":tstamp ]);
-   call_out(switchboard, 0, name, sizeof(logoutput)?logoutput:"broadcast", COM_LOGDATA,
-                     params );
+   call_out(switchboard, 0, name, "broadcast", COM_LOGDATA, params );
 }
 
 class sensor

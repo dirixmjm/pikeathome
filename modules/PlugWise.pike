@@ -21,7 +21,6 @@ constant SensorBaseParameters = ({
                    ({ "mac",PARAM_STRING,-1,"Plug Hardware Address",0   }),
                    ({ "nextaddress",PARAM_INT,-1,"Current Log Pointer (-1 use plug headpointer)",0   }),
                    ({ "log",PARAM_BOOLEAN,0,"Turn On / Off Logging",0   }),
-                   ({ "logoutput", PARAM_MODULELOGDATA,"","Data logging module",0 }),
                 });
 
 void init() 
@@ -93,13 +92,8 @@ class sensor
 
    int sensor_type = SENSOR_INPUT | SENSOR_OUTPUT;
 
-   void create( string name, object _module, object _configuration)
+   void sensor_init()
    {
-      module = _module;
-      configuration = _configuration;
-      SensorProperties->module = _module->ModuleProperties->name;
-      SensorProperties->name = name;
-      SensorProperties->sensor_type = sensor_type;
       //Logging only for Circle+, Circle and (Sense)
       switch( (int) configuration->type )
       {
@@ -108,6 +102,7 @@ class sensor
          {
             ValueCache->state= ([ "value":0, "direction":DIR_RW, "type":VAR_BOOLEAN ]);
             ValueCache->power= ([ "value":0.0, "direction":DIR_RO, "type":VAR_FLOAT ]);
+            ValueCache->Wh= ([ "value":0, "direction":DIR_RO, "type":VAR_FLOAT ]);
             if( has_index( configuration, "log" ) && (int) configuration->log == 1)
                call_out(log,30);
          }
@@ -252,7 +247,8 @@ class sensor
          if( log_item->hour - time(1) > 60 )
             logerror("Loghour %d is larger then current timestamp %d\n",log_item->hour, time(1)); 
          //Make sure logging occurs timesynchronised.
-         call_out(logdata,0.1*logcount++,SensorProperties->name+".Wh",log_item->kwh,log_item->hour,has_index(configuration,"logoutput")?configuration->logoutput:UNDEFINED);
+         call_out(logdata,0.1*logcount++,SensorProperties->name+".Wh",log_item->kwh,log_item->hour);
+         ValueCache->Wh=log_item->kwh;
       }
       //Get next log if we lag behind  
       if( logaddress+1 < logpointer )

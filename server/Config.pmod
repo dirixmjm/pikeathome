@@ -54,7 +54,7 @@ _Configuration  NewConfiguration(string cname)
    if( has_prefix(cname,name) )
       return _Configuration(cname);
    else
-     return UNDEFINED;
+     return _Configuration(name+"."+cname);
 }
 
 

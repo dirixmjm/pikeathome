@@ -1,4 +1,5 @@
 #include <variable.h>
+#include <parameters.h>
 #include <command.h>
 
 /* 
@@ -8,22 +9,38 @@ This class functions as a stand-in for the former mapping variable storage in se
 
 mapping Storage = ([]);
 object Sensor;
+protected object configuration;
 
-void create ( void|mapping InitVariable )
+void create ( object _configuration, void|mapping InitVariable )
 {
+   configuration = _configuration;
    if( InitVariable && mappingp(InitVariable) )
    {
       foreach ( InitVariable; string Name; mixed Data ) 
       {
-         Storage+= ([ Name : Variable(Name,Data) ]);
+         Storage+= ([ Name : Variable(Name,Data,configuration->Configuration(Name)) ]);
       }
    }
 }
 
+array GetParameters(string Key)
+{
+   if( has_index ( Storage, Key) )
+      return Storage[Key]->GetParameters(); 
+}
 
+array SetParameters(string Key, array Parameters)
+{
+   if( has_index ( Storage, Key) )
+      return Storage[Key]->SetParameters(Parameters); 
+}
 
 mixed `->(string Key)
 {
+   if ( Key == "GetParameters" )
+      return GetParameters;
+   if ( Key == "SetParameters" )
+      return SetParameters;
    if( has_index ( Storage, Key) )
       return Storage[Key]->value; 
    return UNDEFINED;
@@ -50,7 +67,7 @@ mixed `->=(string Key, mixed Value)
    }
    else
    {
-      Storage[Key] = Variable(Key,Value);
+      Storage[Key] = Variable(Key,Value,configuration->Configuration(Key));
    }
 }
 
@@ -68,7 +85,7 @@ mixed `[]=(string Key, mixed Value)
    }
    else
    {
-      Storage[Key] = Variable(Key,Value);
+      Storage[Key] = Variable(Key,Value,configuration->Configuration(Key));
    }
 }
 
@@ -97,19 +114,39 @@ mixed cast( string type )
 
 class Variable
 {
+
+array VariableParameters = ({
+                   ({ "direction",PARAM_INT,1,"Variable Direction",0}),
+                   ({ "log",PARAM_BOOLEAN,1,"Automatic Log Enable",0}),
+                   ({ "logtime",PARAM_INT,60,"Automatic Log Time",0}),
+                                 });
    int type = VAR_INT;
    mixed value;
    int direction = DIR_RO;
+   int log = 0;
+   int logtime = 60;
    string Name = "";
+   object configuration;
 
-   protected void create( string Key, mixed Value )
+   protected void create( string Key, mixed Value, object _configuration )
    {
       Name = Key;
+      configuration = _configuration;
+      //This Sets the Defaults, which can have a configuration-override
       if ( mappingp( Value ) )
       {
+         foreach( VariableParameters; int index; array param )
+         {
+            if( has_index(Value,param[0]) )
+               VariableParameters[index][2] = Value[param[0]];
+         }
          type= (int) Value->type;
          value= Value->value;
          direction= Value->direction || DIR_RO;
+         if( has_index(Value,"log") )
+            log = Value->log;
+         if( has_index(Value,"logtime") )
+            logtime = Value->logtime;
       }
       else
       {
@@ -127,6 +164,14 @@ class Variable
             break;
          }
       }
+      //Check if the configuration has information stored about this variable
+      //FIXME Check direction mask
+      if ( has_index(configuration,"direction") )
+         direction = configuration->direction;
+      if ( has_index(configuration,"log") )
+         log = configuration->log;
+      if ( has_index(configuration,"logtime") )
+         logtime = configuration->logtime;
    }
 
    void `->=( string Key, mixed Value )
@@ -210,5 +255,50 @@ class Variable
       }
       error("Can't cast Variable to %s\n");
    }
-   
+
+   array GetParameters()
+   {
+      array ret = ({});
+      foreach(VariableParameters, array var)
+      {
+         switch(var[0])
+         {
+            case "direction":
+               ret+= ({ var + ({ direction })});
+               break;
+            case "log":
+               ret+= ({ var + ({ log })});
+               break;
+            case "logtime":
+               ret+= ({ var + ({ logtime })});
+               break;
+         }
+      }
+      return ret;
+   }
+
+   void SetParameters( mapping params )
+   {
+      int mod_options = 0;
+      foreach(VariableParameters, array option)
+      {
+         //Find the parameter, and always set it
+         if( has_index( params, option[0] ) )
+         {
+            configuration[option[0]]=params[option[0]];
+            switch(option[0])
+            {
+               case "direction":
+                  direction= (int) params[option[0]];;
+                  break;
+               case "log":
+                  log= (int) params[option[0]];;
+                  break;
+               case "logtime":
+                  logtime= (int) params[option[0]];;
+                  break;
+            }
+         }
+      }
+   }
 }

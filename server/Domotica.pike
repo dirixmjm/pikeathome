@@ -30,7 +30,7 @@ void create( mapping rconfig)
 //Goal is to keep it to a minimum and let modules worry about operation.
 array ServerParameters = ({
                    ({ "logmem",PARAM_BOOLEAN,0,"Turn On / Off Memory Logging",POPT_NONE }),
-		   ({ "logoutput", PARAM_MODULELOGDATA,"","Data logging module",0 }),
+		   ({ "logoutput", PARAM_MODULELOGDATA,"","Global Data logging module",0 }),
 
 });
 
@@ -169,12 +169,12 @@ void rpc_command( string sender, string receiver, int command, mapping parameter
       }
       break;
       case COM_LOGDATA:
-      foreach(dataloggers, string logger)
       {
-         //Distribute log data over switchboard
-         //FIXME log data broadcasting is deprecated
-         switchboard(sender,logger, COM_LOGDATA, parameters);
-//         modules[logger]->log_data( parameters->name, parameters->data,has_index(parameters,"stamp")?parameters->stamp:UNDEFINED );
+         //Log only to global log module
+         //FIXME Create internal logging
+         if( has_index(server_configuration,"logoutput") 
+                       && server_configuration->logoutput != "internal" )
+           switchboard(sender,server_configuration->logoutput, COM_LOGDATA, parameters);
       }
       break;
       default:

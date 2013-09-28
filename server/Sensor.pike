@@ -8,11 +8,11 @@ int sensor_type = 0;
 
 protected object configuration;
 object module;
+protected object ValueCache;
 
 array SensorParameters = ({});
 
 
-object ValueCache = VariableStorage();
 
 mapping SensorProperties = ([
                                "module":"",
@@ -24,12 +24,14 @@ void create( string name, object _module, object _configuration )
 {
    module = _module;
    configuration = _configuration;
+   ValueCache = VariableStorage(_configuration);
    SensorProperties->module = _module->ModuleProperties->name;
    SensorProperties->name = name;
    SensorProperties->sensor_type = sensor_type;
    sensor_init();
 }
 
+/* Function called to initialize the sensor and variables */
 void sensor_init()
 {
 }
@@ -136,9 +138,19 @@ void rpc_command( string sender, string receiver, int command, mapping parameter
       break;
       case COM_PARAM:
       {
-         if( parameters && mappingp(parameters) )
-            SetParameters(parameters);
-         switchboard( receiver,sender, -command, GetParameters() );
+         werror("SIZE %O\n",sizeof(split));
+         if ( sizeof(split) == 3 )
+         {
+            if( parameters && mappingp(parameters) )
+               SetParameters(parameters);
+            switchboard( receiver,sender, -command, GetParameters() );
+         }
+         else if ( sizeof(split) == 4 )
+         {
+            if( parameters && mappingp(parameters) )
+               ValueCache->SetParameters(split[3],parameters);
+            switchboard( receiver, sender, -command, ValueCache->GetParameters(split[3])); 
+         }
       }
       break;
       case COM_PROP:

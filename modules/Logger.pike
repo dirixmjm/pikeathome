@@ -10,7 +10,6 @@ constant ModuleParameters= ({
                  });
 constant SensorBaseParameters = ({
                    ({ "input", PARAM_SENSORINPUT,"","Input Sensor",0 }),
-                   ({ "logoutput", PARAM_MODULELOGDATA,"","Log to",0 }),
                    ({ "logtime", PARAM_INT,600,"Log Repeat",0 }),
                    });
 
@@ -41,7 +40,7 @@ class sensor
    {
       if ( command == -COM_READ )
          //FIXME broadcasting is deprecated
-         logdata(name,params->value,time(1),configuration->logoutput);
+         logdata(name,params->value,time(1));
       else
          logdebug("Logger can't handle return data for command %d\n",command);
    } 
