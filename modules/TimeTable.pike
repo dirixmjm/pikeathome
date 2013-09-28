@@ -104,7 +104,7 @@ class sensor
         }
         //only call pre announcer when there is a valid timespan.
         //The pretimer can be changed by an external module using the TimeTable.
-        if( has_index(theschedule[ValueCache->current_schedule],"pretimer") && (int) theschedule[ValueCache->current_schedule]->pretimer > 0 && seconds-(int) theschedule[ValueCache->current_schedule]->pretimer > 0 )
+        if( has_index(theschedule[ValueCache->current_schedule],"pretimer") && (int) theschedule[ValueCache->current_schedule]->pretimer > 0 && (seconds-(int) theschedule[ValueCache->current_schedule]->pretimer) > 0 )
            call_out(preannounce,seconds-(int) theschedule[ValueCache->current_schedule]->pretimer);
  
      }
@@ -139,8 +139,16 @@ class sensor
       int day = 0;
       int dow = Calendar.Day()->week_day();
       int schedule_start = sizeof(theschedule);
-      while( !last_schedule || this_minute <= last_schedule )
+      while( !last_schedule || ( this_minute <= last_schedule ) )
       {
+         if(schedule_start == 0 )
+         {
+            schedule_start = sizeof(theschedule);
+            day++;
+            object a = Calendar.Day() - Calendar.Day()*day;
+            dow = a->week_day();
+         }
+
          if(loopcount++ > 16 )
          {
             logerror("TimePlan Loop Safety Gauch Applied");
@@ -154,16 +162,7 @@ class sensor
             last_schedule = last_schedule + Calendar.Minute()*(int) theschedule[schedule_start]->start;
             last_schedule = last_schedule->beginning();
          }
-         
-         if(schedule_start == 0 )
-         {
-            schedule_start = sizeof(theschedule);
-            day++;
-            object a = Calendar.Day() - Calendar.Day()*day;
-            dow = a->week_day();
-         }
       }
-
       logdebug("Current %O %d\n", last_schedule->format_nice(), schedule_start );
       //Set the current (and next, schedule sets current = next)
       ValueCache->current_schedule=schedule_start;
