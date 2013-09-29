@@ -177,6 +177,14 @@ void rpc_command( string sender, string receiver, int command, mapping parameter
            switchboard(sender,server_configuration->logoutput, COM_LOGDATA, parameters);
       }
       break;
+      case COM_RETRLOGDATA:
+      {
+         //Retrieve log from global log module
+         if( has_index(server_configuration,"logoutput") 
+                       && server_configuration->logoutput != "internal" )
+           switchboard(sender,server_configuration->logoutput, COM_RETRLOGDATA, parameters);
+      }
+      break;
       default:
       switchboard(name, sender, COM_ERROR, ([ "error":sprintf("Unknown Command %d for server",command) ]) );
    }

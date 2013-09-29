@@ -110,7 +110,6 @@ void rpc_command( string sender, string receiver, int command, mapping parameter
    {
       if ( ! has_index(sensors,split[0]+"."+split[1]+"."+split[2]) )
       {
-         werror("%O\n",indices(sensors));
          switchboard( receiver,sender,COM_ERROR, ([ "error":sprintf("Sensor %s in module %s not found, sender %s, receiver %s\n",split[2],split[1],sender,receiver) ]) );
       }
       else
@@ -221,6 +220,12 @@ void logdata(string name, string|int|float data, int|void tstamp)
    if ( intp(tstamp) )
      params+= ([ "stamp":tstamp ]);
    call_out(switchboard, 0, name, "broadcast", COM_LOGDATA, params );
+}
+
+void retrlogdata(string sensor, string sender, mapping parameters)
+{
+   parameters["name"] = sensor;
+   call_out(switchboard, 0, sender, "broadcast", COM_RETRLOGDATA, parameters );
 }
 
 class sensor

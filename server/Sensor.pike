@@ -149,7 +149,6 @@ void rpc_command( string sender, string receiver, int command, mapping parameter
       break;
       case COM_PARAM:
       {
-         werror("SIZE %O\n",sizeof(split));
          if ( sizeof(split) == 3 )
          {
             if( parameters && mappingp(parameters) )
@@ -185,6 +184,27 @@ void rpc_command( string sender, string receiver, int command, mapping parameter
             switchboard(receiver, sender, COM_ERROR, ([ "error":
                              sprintf( "Variable not found %s",receiver) ]) );
 
+      }
+      break;
+      case COM_RETRLOGDATA:
+      {
+         /* Logging goes through the Sensor since the requesting server
+          * must not necessarily know which logging module is used
+          */
+         if ( ! parameters || !mappingp(parameters) )
+         {
+            switchboard(receiver, sender, COM_ERROR, ([ "error":
+                             sprintf( "Bad parameters retrieve log data for %s",receiver) ]) );
+            return;
+         }
+         if ( sizeof(split) < 4 )
+         {
+            switchboard(receiver, sender, COM_ERROR, ([ "error":
+                             sprintf( "Need variable name for retrieving log data for %s",receiver) ]) );
+            return;
+         }
+         //Need to retrieve log over the switchboard.
+         module->retrlogdata(receiver,sender,parameters);
       }
       break;
       case COM_ERROR:

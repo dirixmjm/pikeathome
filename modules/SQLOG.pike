@@ -78,7 +78,7 @@ mapping retr_data( mapping parameters )
 
    if( has_index ( parameters, "precision" ) )
       queryparam[":precision"]=parameters->precision;
-
+   werror("RETR: %O\n",queryparam);
    array res=({});
    mixed error = catch {
       res = DB->query( configuration->retrdataquery, queryparam);

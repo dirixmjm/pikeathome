@@ -118,7 +118,6 @@ class sensor
             else
               ValueCache->level = (float) input->value > (float) configuration->lowlevel;
       }
-      werror("COMP %s %d\n",SensorProperties->name,ValueCache->level);
       /*Detect LOW (function = 0) or HIGH (function = 1) levels.
        *The sensor sensor will send ON (1) and OFF (0) signals to
        *the output each time the signal level changes.

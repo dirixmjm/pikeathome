@@ -96,9 +96,10 @@ void rpc_command( string sender, string receiver, int command, mapping parameter
       break;
       case COM_RETRLOGDATA:
       {
-         mapping ret = retr_data( parameters );
-         switchboard( receiver,sender, -command, ret );
+         //Parameters->name has the original sensor name
+         switchboard( parameters->name ,sender, -command, retr_data(parameters) );
       }
+      break;
       case COM_RETRLOGEVENT:
       {
          mapping ret = retr_event( parameters );
