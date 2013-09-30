@@ -60,10 +60,10 @@ mapping retr_data( mapping parameters )
 
    if ( has_index( parameters,"end" ) )
    {
-      queryparam += ([ ":end":Calendar.Second("unix",(int) parameters->end)->format_time() ]);
+      queryparam += ([ ":end":(int) parameters->end ]);
    }
    else
-      queryparam += ([ ":end":Calendar.now()->format_time() ]);
+      queryparam += ([ ":end":time(1) ]);
 
    //Just select a default here for compatability with other Logging modules.
    queryparam[":aggregate"]= parameters->aggregate || "AVERAGE";
@@ -71,10 +71,10 @@ mapping retr_data( mapping parameters )
    if ( has_index( parameters,"start" ) )
    {
       
-      queryparam += ([ ":start": Calendar.Second("unix",(int) parameters->start)->format_time() ]);
+      queryparam += ([ ":start": (int) parameters->start ]);
    }
    else
-      queryparam += ([ ":start":"2009-01-01" ]);
+      queryparam += ([ ":start":0 ]);
 
    if( has_index ( parameters, "precision" ) )
       queryparam[":precision"]=parameters->precision;
@@ -86,7 +86,13 @@ mapping retr_data( mapping parameters )
    if( error )
      logerror("Retrieving Data Failed %s with %O\n",parameters->name, DB->error());
    if( res && sizeof(res) )
+   {
+      res = map(res, lambda(mapping dataunit){
+         dataunit->value = (float) ((float) dataunit->value / (int) configuration->precision); 
+         return dataunit;
+                                           });
       return ([ "data":res ]);
+   }
    else
       return UNDEFINED;
 }
