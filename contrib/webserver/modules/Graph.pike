@@ -384,7 +384,7 @@ string get_source( mapping tag, mapping m, mapping query, mapping data)
                   xnames += ({ ( split_interval + index*precision_interval )->week_day_name() });
                   break;
                case "month":
-                  xnames += ({ ( split_interval + index*precision_interval )->month_name() });
+                  xnames += ({ ( split_interval + index*precision_interval )->month_name()[0..2] });
                   break;
                case "year":
                   xnames += ({ ( split_interval + index*precision_interval )->year_no() });
@@ -410,7 +410,7 @@ string get_source( mapping tag, mapping m, mapping query, mapping data)
                break;
             case "month":
                foreach ( timeslots, int stamp )
-                  xnames += ({ Calendar.Month("unix",stamp)->month_name() });
+                  xnames += ({ Calendar.Month("unix",stamp)->month_name()[0..2] });
                break;
             case "year":
                foreach ( timeslots, int stamp )
