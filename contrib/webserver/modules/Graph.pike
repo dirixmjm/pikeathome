@@ -332,6 +332,8 @@ string get_source( mapping tag, mapping m, mapping query, mapping data)
                split_count = Calendar.Year() / precision_interval; 
                break;
             default:
+               split_pointer = Calendar.now();
+               split_interval = Calendar.Year();
                split_count = sizeof(values);
          }
          array legend =  ({ split_pointer->format_nice() });
