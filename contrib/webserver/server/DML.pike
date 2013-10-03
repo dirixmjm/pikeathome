@@ -99,6 +99,10 @@ void init_modules( array names )
    }
 }
 
+string webpath()
+{
+   return configuration->webpath;
+}
 
 array entity_callback(Parser.HTML p, 
                string entity, mapping query )

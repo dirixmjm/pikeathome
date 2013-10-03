@@ -32,8 +32,7 @@ array DMLGraph(Parser.HTML p,
 if ( !has_index( args, "img" ) )
    return ({ "Need img parameter to store image data" });
 
-//FIXME image location should be dynamic?
-string filename = sprintf("/var/pikeathome/www/img/%s.jpg",args->img);
+string filename = sprintf("%s/img/%s.jpg",DML->webpath(),args->img);
 array imghtml = ({ sprintf( "<img src=\"/img/%s.jpg\" />",args->img) });
 
 if( has_index( args, "keep" ) && Stdio.is_file(filename) )
@@ -174,7 +173,7 @@ string get_source( mapping tag, mapping m, mapping query, mapping data)
    mapping parameters = ([]);
    if ( !has_index(m,"name") )
    {
-      //FIXME Error?
+      DML->logerror("<source> needs name parameter\n");
       return UNDEFINED;
    }
   
@@ -212,8 +211,11 @@ string get_source( mapping tag, mapping m, mapping query, mapping data)
       }
    }
    else
+   {
       //FIXME Error or should the database make up the precision?
+      DML->logerror("<source> needs precision parameter\n");
       return UNDEFINED;
+   }
    switch(precision)
    {
       case "day":
