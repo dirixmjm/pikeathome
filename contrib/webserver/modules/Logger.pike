@@ -19,7 +19,7 @@ array EmitLog( mapping m, mapping query )
    mapping parameters = ([]);
    if ( !has_index(m,"name") )
    {
-      DML->logerror("<emit log> has no name parameter\n");
+      dml->logerror("<emit log> has no name parameter\n");
       return UNDEFINED;
    }
   
@@ -59,7 +59,7 @@ array EmitLog( mapping m, mapping query )
    else
    {
       //FIXME Error or should the database make up the precision?
-      DML->logerror("<emit log> has no precision parameters\n");
+      dml->logerror("<emit log> has no precision parameters\n");
       return UNDEFINED;
    }
    switch(precision)
@@ -137,10 +137,10 @@ array EmitLog( mapping m, mapping query )
       }
    }
 #ifdef DEBUG
-   DML->logdebug("%O\n",parameters);
+   dml->logdebug("%O\n",parameters);
 #endif
    //FIXME if date parameter differs, storage overwrites data
-   mapping response =	DML->rpc(name, COM_RETRLOGDATA, parameters);
+   mapping response =	dml->rpc(name, COM_RETRLOGDATA, parameters);
    if ( response && has_index(response,"data" ) )
       return response["data"];
    else
