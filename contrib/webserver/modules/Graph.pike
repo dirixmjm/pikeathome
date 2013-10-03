@@ -9,30 +9,20 @@
 #include <module.h>
 inherit DMLModule;
 
-protected object DML;
-protected object configuration;
-
-
 #define SEP ","
 
 mapping containers = ([
-   "graph":DMLGraph,
+   "graph":dmlGraph,
 ]);
 
 
-void create( object dml_ , object Config)
-{
-   DML = dml_;
-   configuration = Config;
-}
-
-array DMLGraph(Parser.HTML p, 
+array dmlGraph(Parser.HTML p, 
                mapping args, string content, mapping query )
 {
 if ( !has_index( args, "img" ) )
    return ({ "Need img parameter to store image data" });
 
-string filename = sprintf("%s/img/%s.jpg",DML->webpath(),args->img);
+string filename = sprintf("%s/img/%s.jpg",dml->webpath(),args->img);
 array imghtml = ({ sprintf( "<img src=\"/img/%s.jpg\" />",args->img) });
 
 if( has_index( args, "keep" ) && Stdio.is_file(filename) )
@@ -122,7 +112,7 @@ string get_data( mapping tag, mapping m, string content, mapping query, mapping 
    string linesep = m->lineseparator || "\n";
    
    if( !m->noparse)
-      content = DML.parse_dml( content, query );
+      content = dml.parse_dml( content, query );
 
    array lines = content/linesep-({""});
 
@@ -173,7 +163,7 @@ string get_source( mapping tag, mapping m, mapping query, mapping data)
    mapping parameters = ([]);
    if ( !has_index(m,"name") )
    {
-      DML->logerror("<source> needs name parameter\n");
+      dml->logerror("<source> needs name parameter\n");
       return UNDEFINED;
    }
   
@@ -213,7 +203,7 @@ string get_source( mapping tag, mapping m, mapping query, mapping data)
    else
    {
       //FIXME Error or should the database make up the precision?
-      DML->logerror("<source> needs precision parameter\n");
+      dml->logerror("<source> needs precision parameter\n");
       return UNDEFINED;
    }
    switch(precision)
@@ -291,10 +281,10 @@ string get_source( mapping tag, mapping m, mapping query, mapping data)
       }
    }
 #ifdef DEBUG
-   DML->logdebug("%O\n",parameters);
+   dml->logdebug("%O\n",parameters);
 #endif
    //FIXME if data parameter differs, storage overwrites data
-   mapping response =	DML->rpc(name, COM_RETRLOGDATA, parameters);
+   mapping response =	dml->rpc(name, COM_RETRLOGDATA, parameters);
    //Display code
    if( response && has_index( response, "data") )
    {
@@ -383,7 +373,7 @@ string get_source( mapping tag, mapping m, mapping query, mapping data)
                   xnames += ({ ( split_interval + index*precision_interval )->format_mod() });
                   break;
                case "day":
-                  xnames += ({ ( split_interval + index*precision_interval )->week_day_name() });
+                  xnames += ({ ( split_interval + index*precision_interval )->week_day_name()[0..2] });
                   break;
                case "month":
                   xnames += ({ ( split_interval + index*precision_interval )->month_name()[0..2] });
@@ -408,7 +398,7 @@ string get_source( mapping tag, mapping m, mapping query, mapping data)
                break;
             case "day":
                foreach ( timeslots, int stamp )
-                  xnames += ({ Calendar.Day("unix",stamp)->week_day_name() });
+                  xnames += ({ Calendar.Day("unix",stamp)->week_day_name()[0..2] });
                break;
             case "month":
                foreach ( timeslots, int stamp )
