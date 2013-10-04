@@ -496,8 +496,7 @@ class DMLParser
 void switchboard( string sender, string receiver, int command, mixed|void parameters)
 {
 #ifdef DEBUG
-   logdebug("RPC: Receive Request %s %d\n",sender, command );
-   logdebug("RPC: %O\n",parameters );
+   logdebug("RPC: Receive Request %s %d %O\n",sender, command, parameters );
 #endif
    if ( command == COM_ERROR ) 
    {
@@ -525,21 +524,31 @@ mixed rpc( string receiver, int command, mapping|void parameters )
       return internal_command(receiver, command,parameters );
    }
 
-#ifdef DEBUG
-   logdebug("RPC: Send Request %s %d\n",receiver, command );
-   logdebug("RPC: %O\n",parameters );
-#endif
    if( !has_index(rpc_cache, receiver) || 
        !has_index(rpc_cache[receiver],command) ) 
    {
       if( !has_index(rpc_cache, receiver) )
          rpc_cache[receiver]= ([]);
-      rpc_cache[receiver][command] = ([ "timeout":time(1),"data":UNDEFINED ]);
+      rpc_cache[receiver][command] = ([ "timeout":time()+1,"data":UNDEFINED ]);
+#ifdef DEBUG
+   logdebug("RPC: Send Request %s %d %O\n",receiver, command,parameters );
+#endif
       call_out(ICom->rpc_command,0, receiver, command, parameters);
    }
-   else if (rpc_cache[receiver][command]->timeout <= (time(1)-10))
+   //Ratelimit the number of commands send to one every 10 seconds
+   else if ( rpc_cache[receiver][command]->timeout < (time()))
    {
+#ifdef DEBUG
+   logdebug("RPC: Send Request %s %d %O\n",receiver, command,parameters );
+#endif
       call_out(ICom->rpc_command,0, receiver, command, parameters);
+   }
+   else
+   {
+      ;
+#ifdef DEBUG
+   logdebug("RPC: Request Cached %s %d %O\n",receiver, command,parameters );
+#endif
    }
    
    // always return the cached value

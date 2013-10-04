@@ -84,6 +84,9 @@ if( !data->data || ! sizeof(data->data) )
 
 if( data->orientation ) data->orient = data->orientation;
 string img;
+#ifdef DEBUG
+   logdebug("Graph Data %O\n",data);
+#endif
 switch( args->type ||"line" )
 {
    case "pie":
