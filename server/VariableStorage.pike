@@ -10,12 +10,12 @@ This class functions as a stand-in for the former mapping variable storage in se
 mapping Storage = ([]);
 object Sensor;
 protected object configuration;
-protected function LogValue;
+protected function SensorLogValue;
 
-void create ( object _configuration, function _LogValue )
+void create ( object _configuration, function _SensorLogValue )
 {
    configuration = _configuration;
-   LogValue = _LogValue;
+   SensorLogValue = _SensorLogValue;
 }
 
 array GetParameters(string Key)
@@ -62,7 +62,7 @@ mixed `->=(string Key, mixed Value)
    }
    else
    {
-      Storage[Key] = Variable(Key,Value,configuration->Configuration(Key),LogValue);
+      Storage[Key] = Variable(Key,Value,configuration->Configuration(Key),SensorLogValue);
    }
 }
 
@@ -80,7 +80,7 @@ mixed `[]=(string Key, mixed Value)
    }
    else
    {
-      Storage[Key] = Variable(Key,Value,configuration->Configuration(Key),LogValue);
+      Storage[Key] = Variable(Key,Value,configuration->Configuration(Key),SensorLogValue);
    }
 }
 
@@ -122,13 +122,13 @@ array VariableParameters = ({
    int logtime = 60;
    string Name = "";
    object configuration;
-   function LogValue;
+   function SensorLogValue;
 
-   protected void create( string Key, mixed Value, object _configuration, function _LogValue )
+   protected void create( string Key, mixed Value, object _configuration, function _SensorLogValue )
    {
       Name = Key;
       configuration = _configuration;
-      LogValue = _LogValue;
+      SensorLogValue = _SensorLogValue;
       //This Sets the Defaults, which can have a configuration-override
       if ( mappingp( Value ) )
       {
@@ -296,22 +296,29 @@ array VariableParameters = ({
          if( has_index( params, option[0] ) )
          {
             configuration[option[0]]=params[option[0]];
+            //FIXME should I keep these variables locally?
             switch(option[0])
             {
                case "direction":
-                  direction= (int) params[option[0]];;
+                  direction= (int) params->direction;;
                   break;
                case "log":
-                  log= (int) params[option[0]];;
+                  log= (int) params->log;;
                   break;
                case "logtime":
-                  logtime= (int) params[option[0]];;
+                  logtime= (int) params->logtime;;
                   break;
             }
          }
       }
       remove_call_out(LogValue);
       if ( log && logtime > 0 )
+         call_out(LogValue,logtime,Name);
+   }
+   
+   void LogValue()
+   {
+         call_out(SensorLogValue,0,Name);
          call_out(LogValue,logtime,Name);
    }
 }
