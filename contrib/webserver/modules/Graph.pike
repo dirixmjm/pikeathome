@@ -341,28 +341,30 @@ string get_source( mapping tag, mapping m, mapping query, mapping data)
          }
          array legend =  ({ split_pointer->format_nice() });
          split_pointer = split_pointer+split_interval; 
-         int loop_count=0,store_index=0;
+         int loop_count=0;
          array(array) dataset = ({});
-         array valuestore = zeros(split_count);
+         array valuestore = ({});
          foreach( timeslots; int index; int stamp )
          {
             if ( stamp < split_pointer->unix_time() )
             {
-               if ( loop_count == 0 )
-                  valuestore[split_count-store_index++-1] = values[index];
-               else
-                  valuestore[store_index++] = values[index];
+                  valuestore += ({ values[index]});
             }
             else
             {
                legend +=  ({ split_pointer->format_nice() });
                split_pointer = split_pointer+split_interval; 
-               loop_count = 1;
+               //Reverse first dataset
+               if ( loop_count == 0 )
+               {
+                loop_count = 1;
+                int pre_count = split_count - sizeof(valuestore);
+                for ( ;pre_count > 0; pre_count--)
+                   valuestore = ({0.0}) + valuestore;
+               }
                //copy value to dataset
                dataset += ({ valuestore+({}) });
-               valuestore = zeros(split_count);
-               store_index = 0;
-               valuestore[store_index++] = values[index];
+               valuestore = ({ values[index] });
             }
          }
          dataset += ({ valuestore+({}) });
