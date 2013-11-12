@@ -136,6 +136,14 @@ void rpc_command( string sender, string receiver, int command, mapping parameter
       case COM_READ:
       {
          UpdateSensor();
+         //If the sensor can be offline, then do not return a value, since
+         //then we would return the value 0.0 which offputs the comperator
+         //FIXME think about this behaviour.
+         if ( has_index( ValueCache, "online" ) && (ValueCache->online == 0) )
+         {
+            logdebug("Sensor %s not online so not returning any data\n",receiver);
+            return;
+         }
          if ( sizeof(split) == 3 )
             switchboard(receiver, sender, -command, (mapping) ValueCache );
          else if ( sizeof(split) == 4 && has_index( ValueCache, split[3] ) )
