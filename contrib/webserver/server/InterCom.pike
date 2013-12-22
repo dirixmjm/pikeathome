@@ -98,6 +98,40 @@ class Communicator
       socket::set_write_callback(write_callback);
    }
 
+   mapping write_blocking ( string sender, string receiver, int command, mapping parameters )
+   {
+      socket::set_blocking();
+      mapping data = ([ "sender":sender,"receiver":receiver,"command":command,
+                        "parameters":parameters ]);
+      string towrite = encode_value(data)+"\r\n\r\n";
+      int written = socket::write(towrite);
+      while ( written < sizeof(towrite) )
+      {
+         towrite = towrite[written..];
+         written = socket::write(towrite);
+      }
+      for(;;)
+      {
+         read_buffer+=socket::read();
+         int ptr = search( read_buffer , "\r\n\r\n");
+         while( ptr == 0 )
+         {
+            read_buffer+=socket::read();
+            ptr = search( read_buffer , "\r\n\r\n");
+         }
+         string data_buffer = read_buffer[..ptr-1];
+         mapping call = decode_value( data_buffer );
+         read_buffer = read_buffer[ptr+4..];
+         if ( has_index(call,receiver) && call->receiver == sender)
+         {
+           socket::set_nonblocking(read_callback,write_callback,destruct_com);
+           return call;
+         }
+         else
+            read(data_buffer); 
+      }
+   }
+
    void write_callback(mixed id)
    {
       int written=0;
@@ -107,7 +141,7 @@ class Communicator
          write_buffer = write_buffer[written..];
       }
    }
- 
+
    void destruct_com()
    {
       destruct(this);
@@ -121,28 +155,36 @@ void deletepeer(string peername)
    m_delete(sockets,peername);
 }
 
-void rpc_command( string receiver, int command, mapping parameters )
+void|mapping rpc_command( string receiver, int command, mapping parameters, int|void blocking )
 {
    array receiver_split = split_server_module_sensor_value(receiver);
 
-   if( has_index( sockets, receiver_split[0] ))
-      call_out ( sockets[receiver_split[0]]->write, 0, 
-                  dml->servername, receiver, command, parameters);
-   else if ( has_index( configuration->peers, receiver_split[0] ) )
+   if ( !has_index(sockets,receiver_split[0]))
    {
+      if( has_index( configuration->peers, receiver_split[0] ) )
+      {
       
-      Standards.URI U = Standards.URI(configuration->peers[receiver_split[0]]);
-      Stdio.File newcon = Stdio.File();
-                 newcon->connect(U->host,U->port);
+         Standards.URI U = Standards.URI(configuration->peers[receiver_split[0]]);
+         Stdio.File newcon = Stdio.File();
+         newcon->connect(U->host,U->port);
    
-      object Com = Communicator(newcon,this);
-      Com->peername=receiver_split[0];
-      sockets += ([ receiver_split[0]: Com ]);
-      call_out ( sockets[receiver_split[0]]->write, 0, 
-                  dml->servername, receiver, command, parameters);
+         object Com = Communicator(newcon,this);
+         Com->peername=receiver_split[0];
+         sockets += ([ receiver_split[0]: Com ]);
+      }
+      else
+      {
+         logerror("ICom: Unknown receiver %s\n",receiver);
+         return UNDEFINED;
+      }
    }
-   else
-      logerror("ICom: Unknown receiver %s\n",receiver);
+   if ( blocking )
+   {
+     return sockets[receiver_split[0]]->write_blocking( 
+         dml->servername, receiver, command, parameters);
+   }  
+   call_out ( sockets[receiver_split[0]]->write, 0, 
+         dml->servername, receiver, command, parameters);
 }
 
 
