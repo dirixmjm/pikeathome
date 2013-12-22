@@ -152,7 +152,7 @@ void rpc_command( string sender, string receiver, int command, mapping parameter
          }
          else
             switchboard(receiver, sender, COM_ERROR, ([ "error":
-                             sprintf( "Variable not found %s",receiver) ]) );
+                             sprintf( "Variable not found %s\n",receiver) ]) );
       }
       break;
       case COM_PARAM:
@@ -190,7 +190,7 @@ void rpc_command( string sender, string receiver, int command, mapping parameter
              switchboard(receiver, sender, -command, write( ([ split[3]:parameters->value ]) ));
          else
             switchboard(receiver, sender, COM_ERROR, ([ "error":
-                             sprintf( "Variable not found %s",receiver) ]) );
+                             sprintf( "Variable not found %s\n",receiver) ]) );
 
       }
       break;
