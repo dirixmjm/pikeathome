@@ -125,7 +125,10 @@ void rpc_command( string sender, string receiver, int command, mapping parameter
          sockets[receiver_split[0]]->write( sender, receiver, command,
                                                                    parameters);
       else
+      {
+         logerror("ICom: Peer connection lost%s\n",receiver_split[0]);
          deletepeer(receiver_split[0]);
+      }
    }
    else
       logerror("ICom: Unknown receiver %s\n",receiver);
