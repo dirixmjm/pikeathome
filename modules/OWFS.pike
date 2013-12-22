@@ -26,7 +26,13 @@ constant SensorBaseParameters = ({
 void init() 
 {
    logdebug("Init Module %s\n",ModuleProperties->name);
-   OWFS = Public.IO.OWFS( configuration->port );
+   mixed err = catch {
+   };
+   if ( err )
+   {
+     logerror("Error Unable to open port %s\n",configuration->port);
+     return;
+   }
    init_sensors(configuration->sensor + ({}) );
 }
 
