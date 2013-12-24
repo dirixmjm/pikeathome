@@ -27,6 +27,7 @@ void init()
 {
    logdebug("Init Module %s\n",ModuleProperties->name);
    mixed err = catch {
+      OWFS=Public.IO.OWFS( configuration->port ); 
    };
    if ( err )
    {

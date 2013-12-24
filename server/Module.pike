@@ -4,7 +4,7 @@
 inherit Base_func;
 
 protected object configuration;
-
+protected string servername = "";
 function switchboard;
 
 int module_type = 0;
@@ -24,6 +24,8 @@ void create( string _name, object _configuration, function _switchboard )
 {
    switchboard = _switchboard;
    ModuleProperties->name=_name;
+   array split = split_server_module_sensor_value(_name);
+   servername = split[0];
    configuration = _configuration;
    ModuleProperties->module_type=module_type;
 }
@@ -105,8 +107,8 @@ void rpc_command( string sender, string receiver, int command, mapping parameter
 {
    array split = split_server_module_sensor_value(receiver);
  
-   //Check if the request is for a sensor.
-   if( sizeof(split) > 2 )
+   //Check if the modules has sensors, and if the request is for a sensor.
+   if( (ModuleProperties->module_type & MODULE_SENSOR) && sizeof(split) > 2 )
    {
       if ( ! has_index(sensors,split[0]+"."+split[1]+"."+split[2]) )
       {
