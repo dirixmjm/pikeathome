@@ -467,7 +467,7 @@ array make_form_input(array param, mapping query, string name)
          return ({});
       if( mappingp(sensors) && has_index(sensors,"error"))
          return ({ sprintf("<H1>Server Returned An Error</H1><p>%s",sensors->error) });
-      sensors = sort(sensors );
+      sensors = sort( sensors->name );
       ret += make_sensor_select(inname,sensors,value,param[1]);
    }
    break;

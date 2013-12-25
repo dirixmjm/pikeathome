@@ -187,8 +187,10 @@ array EmitSensors( mapping args, mapping query )
    }
    if ( has_index( args, "sort" ) )
    {
-      sensors=sort(sensors);
+      sensors=sort(sensors->name);
    }
+   else
+      sensors = sensors->name;
    foreach( sensors , string sensor )
    {
       mapping prop = rpc( sensor, COM_PROP );

@@ -121,7 +121,7 @@ void rpc_command( string sender, string receiver, int command, mapping parameter
            if( ! (modules[module]->module_type & MODULE_SENSOR) )
               continue;
            foreach( values(modules[module]->sensors), object sensor )
-              sensors+=({ sensor->SensorProperties->name });
+              sensors+=({ ([ "name":sensor->SensorProperties->name ]) });
          }
          switchboard(name, sender , -command, sensors);
       }
