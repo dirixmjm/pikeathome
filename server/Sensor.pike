@@ -142,6 +142,8 @@ void rpc_command( string sender, string receiver, int command, mapping parameter
          if ( has_index( ValueCache, "online" ) && (ValueCache->online == 0) )
          {
             logdebug("Sensor %s not online so not returning any data\n",receiver);
+            switchboard(receiver, sender, COM_ERROR, ([ "error":
+                             sprintf( "Sensor %s not online so not returning any data\n",receiver) ]) );
             return;
          }
          if ( sizeof(split) == 3 )
