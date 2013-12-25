@@ -6,65 +6,176 @@ inherit Module;
 int module_type = MODULE_INTERFACE;
 
 constant ModuleParameters = ({
-                   ({ "listenaddress",PARAM_STRING,"","Listen Address", 0 }),
+                   ({ "listenaddress",PARAM_STRING,"127.0.0.1","Listen Address", POPT_RELOAD }),
+                   ({ "port",PARAM_STRING,"8000","Listen Port",POPT_RELOAD }),
+                   ({ "timeout",PARAM_STRING,"128","Connection Timeout",0}),
+                   ({ "webpath",PARAM_STRING,"","Physical Web Location",POPT_RELOAD }),
+                   ({ "username",PARAM_STRING,"","Username",0 }),
+                   ({ "password",PARAM_STRING,"","Password",0 }),
                     });
 
 protected object HTTPServer;
-string name;
+constant htmlservername = "Pike At Home JSON HTTP Server";
 
 void init()
 {
    logdebug("Init JSONCom Interface\n");
-   Standards.URI U = Standards.URI(configuration->listenaddress);
-   Protocols.HTTP.Server.Port HTTPServer = Protocols.HTTP.Server.Port( http_callback, U->port?U->port:4090, U->host?U->host:"127.0.0.1");
+   //Check if webpath is configured and available.
+   if ( !configuration->webpath || ! sizeof( configuration->webpath ) 
+                                || !file_stat(configuration->webpath) )
+   {
+      logerror("Web path not specified or found, not opening port\n");
+      return;
+   }
+   HTTPServer = Protocols.HTTP.Server.Port( http_callback, 
+                 sizeof(configuration->port)?configuration->port:8000, 
+                 sizeof(configuration->listenaddress)?configuration->listenaddress:"0.0.0.0");
 }
-
-mapping sockets = ([]);
 
 void http_callback( Protocols.HTTP.Server.Request request )
 {
-   while(has_prefix(request->not_query,"/"))
-      request->not_query = request->not_query[1..];
-   if ( request->not_query=="" )
-   {
-      request->response_and_finish( ([ 
-                               "data": "<title>No Sensor Provided</title>",
-                               "error":404
-                                    ]) );
-      return;
-   }
-   //remove any trailing "/"
-   while(has_suffix(request->not_query,"/"))
-      request->not_query = request->not_query[..sizeof(request->not_query)-2];
-   //Replace "/" by ".".
-   string smsv = replace(request->not_query,"/",".");
-   //If the servername is missing add it, and with that constrain requests to this server.
-   smsv = servername + "." + smsv;
-   //Store the connection for the reply. The index is the fake sensor name
-   string peername = (string) time(1); 
-   sockets+= ([ peername: request]);
-   //Fake add a sensor, such that we recognize the answer for the correct peer.
-   switchboard(ModuleProperties->name+"."+peername,smsv,COM_READ,([]));
+   //FIXME does time(1) differentiate enough between requests?
+   string sensorname = ModuleProperties->name + "." + (string) time(1);
+   RequestHandler RQH = RequestHandler( sensorname, configuration, this, request);
+   sensors+=([ sensorname:RQH ]); 
    return;
 }
 
-void deletepeer(string peername)
+void request_done(string sensorname)
 {
-   m_delete(sockets,peername);
+   destruct(sensors[sensorname]);
+   m_delete(sensors,sensorname);
 }
 
-void got_answer( string receiver, string sender, int command, mapping parameters )
+/*The request handler acts as a sensor having only a short lifetime
+* since the module has not MODULE_SENSOR set, it should not be shown in
+* the sensor list
+*/
+class RequestHandler
 {
-   array receiver_split = split_server_module_sensor_value(receiver);
-   if ( sizeof(receiver_split) > 2 )
+
+protected object configuration;
+protected string name;
+protected object module;
+protected Protocols.HTTP.Server.Request request;
+
+void create( string _name, object _configuration, object _module, Protocols.HTTP.Server.Request _request )
+{
+   name = _name;
+   configuration = _configuration;
+   module = _module;
+   request = _request;
+   //FIXME Check Auth.
+   Stdio.File ser = find_file(request);
+   if ( ser )
    {
-      if( has_index( sockets, receiver_split[2] ))
+      request->response_and_finish( ([
+                                 "file":ser,
+                                 "server":module->htmlservername ]) );
+      call_out(request_done,0,name);
+   }
+   else if ( has_suffix(request->not_query, "json") )
+   {
+      if ( ! has_index(request->variables,"command") || ! has_index(request->variables,"receiver" ) )
       {
-         sockets[receiver_split[2]]->response_and_finish( ([
-                         "data":Standards.JSON.encode(parameters) ]));
-         deletepeer(receiver_split[2]);
+         logerror("Received JSON query without the necessary parameters\n");
+         return_not_found();
       }
       else
-         logerror("JSONCom: Unknown receiver %s\n",receiver);
+      {
+         //FIXME use connection_timeout_delay?
+         logdebug("JSON connection timeout delay %d\n",request->connection_timeout_delay);
+         logdebug("JSON send timeout delay %d\n",request->send_timeout_delay);
+         call_out(return_not_found,(int) (configuration->timeout?configuration->timeout:128));
+         //FIXME Sanity check variables!
+         switchboard(name,(string) request->variables->receiver,(int) request->variables->command,request->variables->parameters?request->variables->parameters:([]));
+      }
    }
+   else
+      return_not_found();
+}
+
+
+protected Stdio.File find_file(object request)
+{
+    request->not_query = Protocols.HTTP.uri_decode(request->not_query);
+    while(has_prefix(request->not_query,"/"))
+       request->not_query = request->not_query[1..];
+    if( request->not_query=="" )
+       request->not_query="index.html";
+    //FIXME Is this save, how about "../" ?
+    if ( Stdio.is_file( configuration->webpath + request->not_query ) )
+       return Stdio.File(configuration->webpath + request->not_query,"R");
+    else if ( Stdio.is_file( configuration->webpath + request->not_query + "index.html" ) )
+       return Stdio.File(configuration->webpath + request->not_query + "index.html","R");
+    else
+       return 0;
+}
+
+void rpc_command( string sender, string receiver, int command, mapping|array parameters )
+{
+   remove_call_out( return_not_found );
+   if( command > 0 )
+   {
+      switch(command)
+      {
+      case COM_ERROR:
+         logerror(parameters->error);
+         //Send Error to the client
+         return_data_and_finish(parameters);
+         break;
+      default:
+         logerror("%s is trying to communicate with fake sensor in JSON module\n",sender);
+         call_out(request_done,0,name);
+      }
+   }
+   else
+   {
+      //FIXME sanity check command?
+      return_data_and_finish(parameters);
+   }
+}
+
+protected void return_not_found()
+{
+   request->response_and_finish( ([
+                                 "data":"File Not Found",
+                                 "error":404,
+                                 "type":"text/plain",
+                                 "server":module->htmlservername ]));
+   call_out(request_done,0,name);
+}
+
+protected void return_data_and_finish(mapping parameters)
+{
+   request->response_and_finish( ([
+                                 "data":Standards.JSON.encode(parameters,2),
+                                 "type":"text/plain",
+                                 "server":module->htmlservername ]));
+   call_out(request_done,0,name);
+}
+
+/*
+* Helper Function for sensors to call the switchboard
+*/
+void request_done ( string name )
+{
+   call_out(module->request_done,0,name);
+}
+
+void switchboard ( mixed ... args )
+{
+   module->switchboard( @args );
+}
+
+void logdebug(mixed ... args)
+{
+   module->logdebug(@args);
+}
+
+void logerror(mixed ... args)
+{
+   module->logerror(@args);
+}
+
 }
