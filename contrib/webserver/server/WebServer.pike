@@ -177,7 +177,10 @@ mixed internal_command( string receiver, int command, mapping parameters )
          return var;
       }
       case COM_LIST:
-         return configuration->module + ({ name + ".DML" });
+         array modulelist = ({});
+         foreach( configuration->module + ({ name + ".DML" }) , string module )
+            modulelist += ({ ([ "name":module ]) });
+         return modulelist;
       break;
       case COM_FIND:
       {

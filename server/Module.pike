@@ -108,7 +108,7 @@ void rpc_command( string sender, string receiver, int command, mapping parameter
    array split = split_server_module_sensor_value(receiver);
  
    //Check if the modules has sensors, and if the request is for a sensor.
-   if( (ModuleProperties->module_type & MODULE_SENSOR) && sizeof(split) > 2 )
+   if( sizeof(split) > 2 )
    {
       if ( ! has_index(sensors,split[0]+"."+split[1]+"."+split[2]) )
       {
@@ -144,7 +144,10 @@ void rpc_command( string sender, string receiver, int command, mapping parameter
          break;
          case COM_LIST:
          {
-            switchboard( receiver,sender, -command, indices(sensors)  );
+            array sensorlist = ({});
+            foreach( indices(sensors), string sensor )
+               sensorlist+= ({ ([ "name":sensor ]) });
+            switchboard( receiver,sender, -command, sensorslist  );
          }
          break;
          case COM_FIND:

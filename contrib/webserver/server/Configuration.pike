@@ -34,6 +34,7 @@ array DMLConfiguration(Parser.HTML p, mapping args, mapping query )
       ret+=({ modules->error });
    else if ( arrayp(modules) ) 
    {
+      modules = modules->name;
       foreach( sort(modules) , string module )
       {
          array module_split = split_server_module_sensor_value(module); 
@@ -49,6 +50,7 @@ array DMLConfiguration(Parser.HTML p, mapping args, mapping query )
          ret+=({ modules->error });
       else if ( arrayp(modules) ) 
       {
+         modules = modules->name;
          foreach( sort(modules) , string module )
          {
             array module_split = split_server_module_sensor_value(module); 
@@ -59,6 +61,7 @@ array DMLConfiguration(Parser.HTML p, mapping args, mapping query )
                if( mappingp(sensors) && has_index(sensors,"error") )
                   ret+=({ sensors->error });
                if( arrayp(sensors) )
+                  sensors = sensors->name;
                   foreach( sort(sensors) , string sensor )
                   {
                      array sensor_split = split_server_module_sensor_value(sensor); 
@@ -479,7 +482,7 @@ array make_form_input(array param, mapping query, string name)
          return ({});
       if( mappingp(modules) && has_index(modules,"error"))
          return ({ sprintf("<H1>Server Returned An Error</H1><p>%s",modules->error) });
-      modules = sort(modules );
+      modules = sort(modules->names );
       ret += make_module_select(inname,modules,value,param[1]);
    }
    break;

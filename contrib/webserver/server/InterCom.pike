@@ -147,6 +147,11 @@ class Communicator
       destruct(this);
       icom->deletepeer(peername);
    }
+ 
+   int is_open()
+   {
+      return socket::is_open();
+   }
 
 }
 
@@ -159,7 +164,7 @@ void|mapping rpc_command( string receiver, int command, mapping parameters, int|
 {
    array receiver_split = split_server_module_sensor_value(receiver);
 
-   if ( !has_index(sockets,receiver_split[0]))
+   if ( !has_index(sockets,receiver_split[0]) || !sockets[receiver_split[0]]->is_open() )
    {
       if( has_index( configuration->peers, receiver_split[0] ) )
       {
@@ -167,14 +172,18 @@ void|mapping rpc_command( string receiver, int command, mapping parameters, int|
          Standards.URI U = Standards.URI(configuration->peers[receiver_split[0]]);
          Stdio.File newcon = Stdio.File();
          newcon->connect(U->host,U->port);
-   
+         if ( !newcon->is_open() )
+         {
+            logerror("ICom: Can't connect to server %s\n",receiver_split[0]);
+            return;
+         }
          object Com = Communicator(newcon,this);
          Com->peername=receiver_split[0];
          sockets += ([ receiver_split[0]: Com ]);
       }
       else
       {
-         logerror("ICom: Unknown receiver %s\n",receiver);
+         logerror("ICom: Unknown server %s\n",receiver_split[0]);
          return UNDEFINED;
       }
    }

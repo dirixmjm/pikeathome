@@ -110,7 +110,12 @@ void rpc_command( string sender, string receiver, int command, mapping parameter
       break;
       case COM_LIST:
       {
-         switchboard(name, sender, -command, indices(modules) );
+         array modulenames=({});
+         foreach( indices(modules), string module)
+         {
+            modulenames += ({ ([ "name":module ]) });
+         }
+         switchboard(name, sender, -command, modulenames );
       }
       break;
       case COM_ALLSENSOR:
