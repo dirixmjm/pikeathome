@@ -136,7 +136,7 @@ void rpc_command( string sender, string receiver, int command, mapping|array par
             if ( mappingp(parameters[paramindex]) )
                answer+= ({ ([ "name":paramindex])+parameters[paramindex] });
             else if ( stringp(parameters[paramindex]) 
-                         || intp(parameters[paramindex]) || floatp(parameters[paramindex]  )
+                         || intp(parameters[paramindex]) || floatp(parameters[paramindex]  ))
                answer+= ({ ([ "name":paramindex, 
                                      "value":parameters[paramindex]  ]) });
          }
