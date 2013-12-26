@@ -66,15 +66,26 @@ void create( string _name, object _configuration, object _module, Protocols.HTTP
    module = _module;
    request = _request;
    //FIXME Check Auth.
-   Stdio.File ser = find_file(request);
-   if ( ser )
+   string filename = Protocols.HTTP.uri_decode(request->not_query);
+    while(has_prefix(filename,"/"))
+       filename = filename[1..];
+   //FIXME Is this save, how about "../" ?
+   if ( Stdio.is_file( configuration->webpath + filename ) )
    {
       request->response_and_finish( ([
-                                 "file":ser,
+                                 "file":Stdio.File(configuration->webpath + filename,"R"),
                                  "server":module->htmlservername ]) );
       call_out(request_done,0,name);
    }
-   else if ( has_suffix(request->not_query, "json") )
+   else if ( Stdio.is_dir(configuration->webpath+filename) && Stdio.is_file( configuration->webpath + filename + "/index.html" ) )
+   {
+      request->response_and_finish( ([
+                                 "type":"text/html",
+                                 "file":Stdio.File(configuration->webpath + filename+"/index.html","R"),
+                                 "server":module->htmlservername ]) );
+      call_out(request_done,0,name);
+   }
+   else if ( has_suffix(filename, "json") )
    {
       if ( ! has_index(request->variables,"command") || ! has_index(request->variables,"receiver" ) )
       {
@@ -96,22 +107,6 @@ void create( string _name, object _configuration, object _module, Protocols.HTTP
 }
 
 
-protected Stdio.File find_file(object request)
-{
-    request->not_query = Protocols.HTTP.uri_decode(request->not_query);
-    while(has_prefix(request->not_query,"/"))
-       request->not_query = request->not_query[1..];
-    if( request->not_query=="" )
-       request->not_query="index.html";
-    //FIXME Is this save, how about "../" ?
-    if ( Stdio.is_file( configuration->webpath + request->not_query ) )
-       return Stdio.File(configuration->webpath + request->not_query,"R");
-    else if ( Stdio.is_file( configuration->webpath + request->not_query + "index.html" ) )
-       return Stdio.File(configuration->webpath + request->not_query + "index.html","R");
-    else
-       return 0;
-}
-
 void rpc_command( string sender, string receiver, int command, mapping|array parameters )
 {
    remove_call_out( return_not_found );
@@ -120,7 +115,7 @@ void rpc_command( string sender, string receiver, int command, mapping|array par
       switch(command)
       {
       case COM_ERROR:
-         logerror(parameters->error);
+         //logerror(parameters->error);
          //Send Error to the client
          return_data_and_finish(parameters);
          break;
@@ -132,7 +127,23 @@ void rpc_command( string sender, string receiver, int command, mapping|array par
    else
    {
       //FIXME sanity check command?
-      return_data_and_finish(parameters);
+      array answer = ({});
+      //FIXME maybe change all return code to resemble array(mapping)?
+      if ( mappingp(parameters) )
+      {
+         foreach( indices(parameters), string paramindex )
+         {
+            if ( mappingp(parameters[paramindex]) )
+               answer+= ({ ([ "name":paramindex])+parameters[paramindex] });
+            else if ( stringp(parameters[paramindex]) 
+                         || intp(parameters[paramindex]) || floatp(parameters[paramindex]  )
+               answer+= ({ ([ "name":paramindex, 
+                                     "value":parameters[paramindex]  ]) });
+         }
+      }
+      else
+         answer = parameters;
+      return_data_and_finish(answer);
    }
 }
 
@@ -146,7 +157,7 @@ protected void return_not_found()
    call_out(request_done,0,name);
 }
 
-protected void return_data_and_finish(mapping parameters)
+protected void return_data_and_finish(array parameters)
 {
    request->response_and_finish( ([
                                  "data":Standards.JSON.encode(parameters,2),
