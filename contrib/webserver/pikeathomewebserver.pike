@@ -15,7 +15,7 @@
 
 constant log_progname="Pike At Home Webserver";
 constant progname="PikeAtHomeWebServer";
-constant pid_file="/var/run/pikeathomewebserver/pikeathomewebserver.pid";
+constant pid_file="/var/run/pikeathomewebserver.pid";
 
 constant default_installpath="/usr/local/pikeathome";
 constant default_webpath="/usr/local/pikeathome/www/";

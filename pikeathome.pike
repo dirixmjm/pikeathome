@@ -15,7 +15,7 @@
 
 constant log_progname="Pike At Home";
 constant progname="PikeAtHome";
-constant pid_file="/var/run/pikeathome/pikeathome.pid";
+constant pid_file="/var/run/pikeathome.pid";
 
 constant default_installpath="/usr/local/pikeathome";
 constant default_config = "/usr/local/pikeathome/pikeathome.conf";
