@@ -147,7 +147,7 @@ void rpc_command( string sender, string receiver, int command, mapping parameter
             array sensorlist = ({});
             foreach( indices(sensors), string sensor )
                sensorlist+= ({ ([ "name":sensor ]) });
-            switchboard( receiver,sender, -command, sensorslist  );
+            switchboard( receiver,sender, -command, sensorlist  );
          }
          break;
          case COM_FIND:
