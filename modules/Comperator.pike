@@ -42,8 +42,7 @@ class sensor
       counter = (int) configuration->gracecount;
       call_out(sensor_timer, (int) configuration->timer);
       ValueCache->level= ([ "value":0, "direction":DIR_RO, "type":VAR_BOOLEAN ]);
-      if ( (int) configuration->passive == 1 )
-         ValueCache->state= ([ "value":0, "direction":DIR_RO, "type":VAR_BOOLEAN ]);
+      ValueCache->state= ([ "value":0, "direction":DIR_RO, "type":VAR_BOOLEAN ]);
    }
 
    protected void sensor_timer()
