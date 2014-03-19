@@ -132,11 +132,6 @@ array VariableParameters = ({
       //This Sets the Defaults, which can have a configuration-override
       if ( mappingp( Value ) )
       {
-         foreach( VariableParameters; int index; array param )
-         {
-            if( has_index(Value,param[0]) )
-               VariableParameters[index][2] = Value[param[0]];
-         }
          type= (int) Value->type;
          value= Value->value;
          if ( has_index( Value, "direction") )
@@ -144,9 +139,13 @@ array VariableParameters = ({
             direction= Value->direction;
             //If the direction is set to RO or WO the direction is fixed in software.
             if ( direction == DIR_RO )
+            {
                VariableParameters[0]= ({ "direction",PARAM_SELECT,(["ReadOnly":DIR_RO]),"Variable Direction",0});
+            }
             if ( direction == DIR_WO )
+            {
                VariableParameters[0]= ({ "direction",PARAM_SELECT,(["WriteOnly":DIR_WO]),"Variable Direction",0});
+            }
          }
          else
             direction= DIR_RO;

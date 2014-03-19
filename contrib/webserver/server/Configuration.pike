@@ -61,6 +61,7 @@ array DMLConfiguration(Parser.HTML p, mapping args, mapping query )
                if( mappingp(sensors) && has_index(sensors,"error") )
                   ret+=({ sensors->error });
                if( arrayp(sensors) )
+               {
                   sensors = sensors->name;
                   foreach( sort(sensors) , string sensor )
                   {
@@ -76,6 +77,7 @@ array DMLConfiguration(Parser.HTML p, mapping args, mapping query )
                            }
                      }
                   }
+               }
             }
          }
       }
@@ -575,6 +577,7 @@ array make_form_input(array param, mapping query, string name)
          current = (string) param[5];
       
       ret= ({ sprintf("<select name=\"%s\">",inname) });
+      logerror("PARAM %O\n",param);
       foreach(param[2]; string ind; mixed value )
       {
           ret+=({ sprintf("<option value=\"%s\" %s>%s</option>",
