@@ -66,7 +66,12 @@ array GetParameters()
 {
    array ret = ({});
    foreach(ModuleParameters, array var)
-      ret+= ({ var + ({ configuration[var[0]] })});
+   {
+      if ( has_index( configuration, var[0] ) )
+         ret+= ({ var + ({ configuration[var[0]] })});
+      else
+         ret += ({ var });
+   }
    return ret;
 }
 
