@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en" ng-app="DePAHApp">
+<head>
+  <meta charset="utf-8">
+  <title>Sensor List</title>
+  <link rel="stylesheet" href="css/app.css">
+  <link rel="stylesheet" href="css/bootstrap.css">
+  <script src="lib/angular/angular.js"></script>
+  <script src="lib/angular/angular-resource.js"></script>
+  <script src="lib/angular/angular-route.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/controllers.js"></script>
+  <script src="js/services.js"></script>
+</head>
+<body>
+
+
+<div class="container-fluid">
+ <div class="row-fluid">
+ <!--
+  <div class="span9" ng-controller="GetValue"> 
+    <h1>Diepvries</h1>
+    <ul class="specs">
+     <li ng-repeat="variable in variables">{{variable.name}}:{{variable.value}}</li>
+   </ul>
+  </div>
+-->
+         <!--Body content-->
+  <div class="span10" ng-controller='SensorListCtrl' >
+    <a  ng-click="count = count+1" ng-init="count = 0">count {{count}}</a><div ng-show="doClick">ABC</div>
+  <ul > 
+    <li ng-repeat="sensor in sensors | orderBy:orderProp " ><a ng-click="count = count+1" ng-init="count = 0">{{sensor.name}} {{count}}</a>
+    <div ng-show="doClick">ABC</div>
+    </li>
+  </ul>
+  </div>
+ </div>
+</div>
+
+</body>
+</html>

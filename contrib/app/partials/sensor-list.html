@@ -1,0 +1,21 @@
+
+
+<div class="container-fluid">
+ <div class="row-fluid">
+ <!--
+  <div class="span9" ng-controller="GetValue"> 
+    <h1>Diepvries</h1>
+    <ul class="specs">
+     <li ng-repeat="variable in variables">{{variable.name}}:{{variable.value}}</li>
+   </ul>
+  </div>
+-->
+         <!--Body content-->
+  <div class="span10" >
+  <ul > 
+    <li ng-repeat="sensor in sensors | orderBy:orderProp " ><a href="#/main/{{sensor.name}}">{{sensor.name}}</a>
+    </li>
+  </ul>
+  </div>
+ </div>
+</div>
