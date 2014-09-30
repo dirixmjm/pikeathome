@@ -498,7 +498,7 @@ array make_form_input(array param, mapping query, string name)
          return ({});
       if( mappingp(sensors) && has_index(sensors,"error"))
          return ({ sprintf("<H1>Server Returned An Error</H1><p>%s",sensors->error) });
-      sensors = sort(sensors );
+      sensors = sort( sensors->name );
       foreach( Values; string index; string value )
       {
          count++;
@@ -541,6 +541,7 @@ array make_form_input(array param, mapping query, string name)
    {
       ret+= ({ "<table>"});
       mapping Values = sizeof(param)>5?param[5]:(param[2]||([]));
+      logerror("%O %d\n",Values,sizeof(param));
       int count = 0;
       foreach( Values; string index; string value )
       {
