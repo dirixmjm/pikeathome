@@ -287,7 +287,9 @@ string get_source( mapping tag, mapping m, mapping query, mapping data)
    dml->logdebug("%O\n",parameters);
 #endif
    //FIXME if data parameter differs, storage overwrites data
-   mapping response =	dml->rpc(name, COM_RETRLOGDATA, parameters);
+   //Do Blocking communication
+   mapping response =	dml->rpc(name, COM_RETRLOGDATA, parameters,1);
+   //mapping response =	dml->rpc(name, COM_RETRLOGDATA, parameters);
    //Display code
    if( response && has_index( response, "data") )
    {
