@@ -1,4 +1,5 @@
 #include <module.h>
+#define DDEBUGSWITCHBOARD
 inherit Base_func;
 
 protected mapping modules = ([]);
@@ -211,7 +212,7 @@ void switchboard( string sender, string receiver, int command, mixed parameters 
       call_out(switchboard, 0, name, sender, COM_ERROR, ([ "error":"No module,sensor or value is requested\n" ]) );
    }
 
-#ifdef DEBUG
+#ifdef DEBUGSWITCHBOARD
          logout(LOG_DEBUG,"Switchboard %d %O\n",++logcount, parameters );
          logout(LOG_DEBUG,"Switchboard %d received command %d for %s from %s\n",logcount,command,receiver, sender);
 #endif
