@@ -106,8 +106,8 @@ class Communicator
  
    void destruct_com()
    {
-      destruct(this);
       icom->deletepeer(peername);
+      destruct(this);
    }
 }
 
