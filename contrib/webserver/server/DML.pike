@@ -518,12 +518,20 @@ void switchboard( string sender, string receiver, int command, mixed|void parame
 
 mapping rpc_cache=([]);
 
-mixed rpc( string receiver, int command, mapping|void parameters )
+mixed rpc( string receiver, int command, mapping|void parameters, int|void sync )
 {
+   if (!receiver || receiver == 0 )
+     return UNDEFINED;
+
     //Check if the receiver is internal
    if ( receiver == servername || has_prefix( receiver, servername ) )
    {
       return internal_command(receiver, command,parameters );
+   }
+   
+   if (sync)
+   {
+      return ICom->rpc_command(receiver,command,parameters,1);
    }
 
    if( !has_index(rpc_cache, receiver) || 
