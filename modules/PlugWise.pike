@@ -138,6 +138,7 @@ class sensor
       }
       //Initialise Variables
       ValueCache->online= ([ "value":0, "direction":DIR_RO, "type":VAR_BOOLEAN ]);
+      ValueCache->logpointer= ([ "value":0, "direction":DIR_RO, "type":VAR_INT ]);
    }
 
    object getplug( string mac )
@@ -201,6 +202,7 @@ class sensor
             }
          }
          ValueCache->online = plug->online;
+         ValueCache->logpointer = plug->log_pointer();
    }
 
    //Repeated callback, since at start we probably don't know or see the switch
@@ -226,8 +228,7 @@ class sensor
    {
       object plug = getplug(configuration->mac);
       logdebug("Plug %s logaddress %d\n",SensorProperties->name,logaddress);
-      //Check for roundtrip
-      //Seems to be a bug
+      //Check for undetected roundtrip
       int logpointer = plug->log_pointer();
       if( logaddress >= logpointer )
       {
@@ -278,14 +279,20 @@ class sensor
       plug->info();
       int logpointer = plug->log_pointer();
 
-      //If no nextaddress is know, initialize it with the log head.
+      //If no nextaddress is known, initialize it with the log head.
       if( !has_index(configuration, "nextaddress" ) || 
                       (int) configuration->nextaddress== -1 )
       {
          configuration->nextaddress = (int) logpointer;
          return;
       }
-      
+     
+      //Check for roundtrip
+      if ( (int) configuration->nextaddress > logpointer && logpointer > 6000 )
+      {
+         logdebug("Logpointer Roundtrip Starting from address 1\n");
+         configuration->nextaddress = 1;
+      }
 
       if( (int) configuration->nextaddress < logpointer )
       {
