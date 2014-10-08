@@ -1,5 +1,6 @@
 #include <module.h>
 #include <command.h>
+#define MAXRESPONSECOUNT 5
 
 inherit Base_func;
 
@@ -118,10 +119,19 @@ class Communicator
       }
       //Keep reading data until the returned command is the 
       //response to this call
+      int responsecount = 0;
       for(;;)
       {
+         responsecount++;
+         if ( responsecount++ > MAXRESPONSECOUNT )
+         {
+           logerror("Synchronized Communication Error Occured: MaxResponseCount reached\n");
+           socket::set_nonblocking_keep_callbacks();
+           return UNDEFINED;
+            
+         }
          //Check if data is available
-         int peek = socket::peek(500,1);
+         int peek = socket::peek(10,1);
          if (peek <= 0 )
          {
             logerror("Synchronized Communication Error Occured: %s\n",peek<0?errno():"Timeout");
