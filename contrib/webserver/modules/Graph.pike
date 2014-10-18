@@ -177,6 +177,10 @@ string get_source( mapping tag, mapping m, mapping query, mapping data)
    string precision;
    object precision_interval;
    int precision_count;
+   float multiply = 1.0;
+   if ( has_index(m, "multiply") )
+     multiply = (float) m->multiply;
+
    if ( has_index(m, "precision") )
    {
       parameters->precision = m->precision;
@@ -298,7 +302,7 @@ string get_source( mapping tag, mapping m, mapping query, mapping data)
       array timeslots = ({});
       foreach( response->data, mapping value )
       {
-        values += ({ (float) value->value });
+        values += ({ (float) value->value * multiply });
         timeslots += ({ (int) value->stamp });
       }
 
